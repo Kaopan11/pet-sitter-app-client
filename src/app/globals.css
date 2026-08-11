@@ -2,77 +2,74 @@
 
 :root {
   /* Orange — primary brand */
-  --orange-50: #fff4ed;
-  --orange-100: #ffe8d9;
-  --orange-200: #ffd0b3;
-  --orange-300: #ffb088;
-  --orange-400: #ff8f5a;
-  --orange-500: #ff7037;
-  --orange-600: #e85a20;
-  --orange-700: #c44612;
-  --orange-800: #9a360e;
-  --orange-900: #7a2e0f;
+  --orange-100: #FFF1EC;
+  --orange-200: #FFD5C2;
+  --orange-300: #FFB899;
+  --orange-400: #FF986F;
+  --orange-500: #FF7037;
+  --orange-600: #E44A0C;
 
   /* Gray — neutral */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  --gray-100: #FFFFFF;
+  --gray-200: #DCDFED;
+  --gray-300: #AEB1C3;
+  --gray-400: #7B7E8F;
+  --gray-500: #5B5D6F;
+  --gray-600: #000000;
 
   /* Secondary / status */
-  --yellow: #f5c518;
-  --blue: #38bdf8;
-  --green: #12b76a;
-  --pink: #f472b6;
-  --red: #ef4444;
+  --yellow: #FFCA62;
+  --yellow-light: #FFF5EC;
+  --blue: #76D0FC;
+  --blue-light: #ECFBFF;
+  --green: #1CCD83;
+  --green-light: #E7FDF4;
+  --pink: #FA8AC0;
+  --pink-light: #FFF0F1;
+  --red: #EA1010;
+  --red-light: #FFF0F1;
   --black: #000000;
+  --white: #FFFFFF;
 
   /* Semantic */
-  --background: var(--gray-50);
-  --foreground: var(--gray-900);
+  --background: var(--gray-100);
+  --foreground: var(--gray-600);
   --surface: #ffffff;
   --primary: var(--orange-500);
   --primary-hover: var(--orange-600);
   --border: var(--gray-200);
-  --muted: var(--gray-500);
+  --muted: var(--gray-400);
   --footer: #2d2d2d;
 }
 
 @theme inline {
   /* Colors */
-  --color-orange-50: var(--orange-50);
   --color-orange-100: var(--orange-100);
   --color-orange-200: var(--orange-200);
   --color-orange-300: var(--orange-300);
   --color-orange-400: var(--orange-400);
   --color-orange-500: var(--orange-500);
   --color-orange-600: var(--orange-600);
-  --color-orange-700: var(--orange-700);
-  --color-orange-800: var(--orange-800);
-  --color-orange-900: var(--orange-900);
 
-  --color-gray-50: var(--gray-50);
   --color-gray-100: var(--gray-100);
   --color-gray-200: var(--gray-200);
   --color-gray-300: var(--gray-300);
   --color-gray-400: var(--gray-400);
   --color-gray-500: var(--gray-500);
   --color-gray-600: var(--gray-600);
-  --color-gray-700: var(--gray-700);
-  --color-gray-800: var(--gray-800);
-  --color-gray-900: var(--gray-900);
 
   --color-yellow: var(--yellow);
+  --color-yellow-light: var(--yellow-light);
   --color-blue: var(--blue);
+  --color-blue-light: var(--blue-light);
   --color-green: var(--green);
+  --color-green-light: var(--green-light);
   --color-pink: var(--pink);
+  --color-pink-light: var(--pink-light);
   --color-red: var(--red);
+  --color-red-light: var(--red-light);
+  --color-black: var(--black);
+  --color-white: var(--white);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -217,7 +214,7 @@
   }
 
   .btn-outline:hover:not(:disabled) {
-    background-color: var(--orange-50);
+    background-color: var(--orange-100);
   }
 
   .btn:disabled,
