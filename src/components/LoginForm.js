@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { login } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
+import SocialAuthButtons from "@/components/SocialAuthButtons";
 
+// ฟอร์ม login ใช้ร่วม owner / sitter — หน้าแต่ละ role ส่ง props คนละชุด
 export default function LoginForm({
   title,
   subtitle,
@@ -13,11 +15,12 @@ export default function LoginForm({
   registerPrompt,
   registerLabel = "Register",
   showRemember = false,
+  showForgotPassword = false,
+  showSocial = false,
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +32,7 @@ export default function LoginForm({
 
     try {
       const data = await login({ email, password });
+      // ถ้าหน้าไม่มี Remember ให้ persist เสมอ
       saveAuth(data, showRemember ? remember : true);
       router.push("/");
     } catch (err) {
@@ -40,13 +44,13 @@ export default function LoginForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h3">{title}</h1>
-        <p className="text-body-3 text-muted">{subtitle}</p>
+      <header className="flex flex-col items-center gap-2 text-center">
+        <h1 className="text-h2">{title}</h1>
+        <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
 
       <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Email</span>
+        <span className="text-body-3 font-bold text-black">Email</span>
         <input
           className="input"
           type="email"
@@ -60,31 +64,22 @@ export default function LoginForm({
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Password</span>
-        <div className="relative">
-          <input
-            className="input pr-16"
-            type={showPassword ? "text" : "password"}
-            name="password"
-            autoComplete="current-password"
-            placeholder="Create your password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-          <button
-            type="button"
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-body-3 text-primary"
-            onClick={() => setShowPassword((value) => !value)}
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
-        </div>
+        <span className="text-body-3 font-bold text-black">Password</span>
+        <input
+          className="input"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+        />
       </label>
 
-      {showRemember ? (
+      {showRemember && showForgotPassword ? (
         <div className="flex items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-body-3 text-gray-600">
+          <label className="flex items-center gap-2 text-body-3 text-gray-500">
             <input
               type="checkbox"
               checked={remember}
@@ -92,14 +87,28 @@ export default function LoginForm({
             />
             Remember?
           </label>
+          {/* ยังไม่เชื่อม API forgot-password */}
+          <button type="button" className="text-body-3 font-medium text-primary">
+            Forget Password?
+          </button>
         </div>
       ) : null}
 
-      {error ? <p className="text-body-3 text-red">{error}</p> : null}
+      {showForgotPassword && !showRemember ? (
+        <p className="text-center">
+          <button type="button" className="text-body-3 font-medium text-primary">
+            Forget Password?
+          </button>
+        </p>
+      ) : null}
+
+      {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
 
       <button className="btn btn-primary w-full" type="submit" disabled={loading}>
         {loading ? "Logging in..." : "Login"}
       </button>
+
+      {showSocial ? <SocialAuthButtons /> : null}
 
       <p className="text-center text-body-3 text-gray-500">
         {registerPrompt}{" "}

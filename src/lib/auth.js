@@ -1,3 +1,7 @@
+// เก็บ session ฝั่งเบราว์เซอร์หลัง login/register
+// persist=true  → localStorage (Remember / เปิดใหม่ยังอยู่)
+// persist=false → sessionStorage (ปิดแท็บแล้วหาย)
+
 const TOKEN_KEY = "pet-sitter-token";
 const USER_KEY = "pet-sitter-user";
 

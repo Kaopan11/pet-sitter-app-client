@@ -1,3 +1,6 @@
+// เรียก backend ตาม NEXT_PUBLIC_API_URL ใน .env
+// local: http://localhost:4000 | prod: https://pet-sitter-app-server.onrender.com
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function assertApiUrl() {
@@ -36,6 +39,7 @@ export async function getUsers() {
   return json.data ?? [];
 }
 
+// สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
 export async function login({ email, password }) {
   const json = await apiFetch("/api/auth/login", {
     method: "POST",
@@ -44,6 +48,7 @@ export async function login({ email, password }) {
   return json.data;
 }
 
+// role ที่ backend รับ: "pet_owner" | "pet_sitter"
 export async function register({ email, name, phone, password, role }) {
   const json = await apiFetch("/api/auth/register", {
     method: "POST",

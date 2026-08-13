@@ -257,17 +257,18 @@
     color: var(--orange-600);
   }
 
-  .btn-social {
+  .btn.btn-social {
     background-color: var(--gray-100);
     color: var(--gray-600);
     font-weight: 700;
+    border-radius: var(--radius-xl);
   }
 
-  .btn-social:hover:not(:disabled) {
+  .btn.btn-social:hover:not(:disabled) {
     color: var(--gray-400);
   }
 
-  .btn-social:active:not(:disabled) {
+  .btn.btn-social:active:not(:disabled) {
     color: var(--gray-600);
   }
 

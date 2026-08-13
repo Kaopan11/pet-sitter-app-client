@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
+import SocialAuthButtons from "@/components/SocialAuthButtons";
 
+// ฟอร์มสมัครใช้ร่วม owner / sitter — role มาจากหน้า page (pet_owner | pet_sitter)
 export default function RegisterForm({
   title,
   subtitle,
@@ -13,13 +15,14 @@ export default function RegisterForm({
   loginHref,
   loginPrompt,
   loginLabel = "Login",
+  showName = true,
+  showSocial = false,
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,8 +31,18 @@ export default function RegisterForm({
     setError("");
     setLoading(true);
 
+    const resolvedName = showName
+      ? name
+      : email.split("@")[0] || "Pet Owner";
+
     try {
-      const data = await register({ email, name, phone, password, role });
+      const data = await register({
+        email,
+        name: resolvedName,
+        phone,
+        password,
+        role,
+      });
       saveAuth(data, true);
       router.push("/");
     } catch (err) {
@@ -41,27 +54,44 @@ export default function RegisterForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-h3">{title}</h1>
-        <p className="text-body-3 text-muted">{subtitle}</p>
+      <header className="flex flex-col items-center gap-2 text-center">
+        <h1 className="text-h2">{title}</h1>
+        <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
 
+      {showName ? (
+        <label className="flex flex-col gap-2">
+          <span className="text-body-3 font-bold text-black">Name</span>
+          <input
+            className="input"
+            type="text"
+            name="name"
+            autoComplete="name"
+            placeholder="Your name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            required
+          />
+        </label>
+      ) : null}
+
       <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Name</span>
+        <span className="text-body-3 font-bold text-black">Password</span>
         <input
           className="input"
-          type="text"
-          name="name"
-          autoComplete="name"
-          placeholder="Your name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+          type="password"
+          name="password"
+          autoComplete="new-password"
+          placeholder="Create your password"
+          minLength={6}
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
           required
         />
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Email</span>
+        <span className="text-body-3 font-bold text-black">Email</span>
         <input
           className="input"
           type="email"
@@ -75,7 +105,7 @@ export default function RegisterForm({
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Phone</span>
+        <span className="text-body-3 font-bold text-black">Phone</span>
         <input
           className="input"
           type="tel"
@@ -88,35 +118,13 @@ export default function RegisterForm({
         />
       </label>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-medium text-gray-600">Password</span>
-        <div className="relative">
-          <input
-            className="input pr-16"
-            type={showPassword ? "text" : "password"}
-            name="password"
-            autoComplete="new-password"
-            placeholder="Create your password"
-            minLength={6}
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-          <button
-            type="button"
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-body-3 text-primary"
-            onClick={() => setShowPassword((value) => !value)}
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
-        </div>
-      </label>
-
-      {error ? <p className="text-body-3 text-red">{error}</p> : null}
+      {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
 
       <button className="btn btn-primary w-full" type="submit" disabled={loading}>
         {loading ? "Registering..." : "Register"}
       </button>
+
+      {showSocial ? <SocialAuthButtons /> : null}
 
       <p className="text-center text-body-3 text-gray-500">
         {loginPrompt}{" "}
