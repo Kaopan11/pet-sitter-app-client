@@ -96,12 +96,12 @@ export default function SearchBar() {
                                         onClick={() =>
                                             setSelectedRating(isSelected ? null : rating)
                                         }
-                                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-all ${isSelected
-                                            ? "border-[#FF7037] bg-white"
-                                            : "border-gray-200 bg-white hover:border-gray-300"
+                                        className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${isSelected
+                                            ? "border-[#FF7037] bg-white hover:bg-[#FFF1EC]"
+                                            : "border-gray-200 bg-white hover:border-[#FF7037] hover:bg-[#FFF1EC]"
                                             }`}
                                     >
-                                        <span className={`text-[14px] font-medium ${isSelected ? 'text-[#FF7037]' : 'text-gray-500'}`}>
+                                        <span className={`text-[14px] font-medium transition-colors ${isSelected ? "text-[#FF7037]" : "text-gray-500 group-hover:text-[#FF7037]"}`}>
                                             {rating}
                                         </span>
                                         <div className="flex items-center gap-[2px]">
@@ -157,7 +157,7 @@ export default function SearchBar() {
                     {/* Search Button */}
                     <button
                         type="submit"
-                        className="w-full lg:w-auto px-12 py-3 bg-[#FF7037] hover:bg-[#E44A0C] text-white text-[15px] font-bold rounded-full transition-colors flex-shrink-0"
+                        className="w-full lg:w-auto flex-shrink-0 cursor-pointer rounded-full bg-[#FF7037] px-12 py-3 text-[15px] font-bold text-white transition-colors hover:bg-[#FF986F] active:bg-[#E44A0C]"
                     >
                         Search
                     </button>
