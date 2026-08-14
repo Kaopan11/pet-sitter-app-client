@@ -1,15 +1,17 @@
 import React from "react";
-import Link from "next/link";
+
 
 export default function OwnerProfilePage() {
   return (
-    <div className="flex flex-row bg-gray-100 h-screen">
-      <div className="flex flex-col mt-20 m-4 gap-2 bg-white rounded-lg p-4 shadow-md w-1/3">
-        <h4>Account</h4>
-      </div>
-      <div className="flex flex-col mt-20 m-4 p-4 bg-white rounded-lg shadow-md w-2/3">
-        <div className="flex flex-col gap-2">
-          <h4 className="text-2xl font-bold">Profile</h4>
+    <div className="flex bg-gray-100 h-full">
+      <div className="flex flex-row mt-6 mx-10 w-full justify-center">
+        <div className="flex flex-col m-4 p-6 mr-6 bg-white rounded-lg shadow-md h-[289px] w-[292px]">
+          <div className="text-h4 font-bold">Account</div>
+        </div>
+        <div className="flex flex-col m-4 p-6 ml-6 bg-white rounded-lg shadow-md w-2/3 h-[888px]">
+          <div className="flex flex-col gap-[10px]">
+            <div className="text-h3 font-bold">Profile</div>
+          </div>
         </div>
       </div>
 
