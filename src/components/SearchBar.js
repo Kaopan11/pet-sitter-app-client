@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SearchBar() {
+    const router = useRouter();
     const [selectedPets, setSelectedPets] = useState([]);
     const [selectedRating, setSelectedRating] = useState(null);
     const [experience, setExperience] = useState("0-2 Years");
@@ -26,7 +28,7 @@ export default function SearchBar() {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        console.log("Search query:", { selectedPets, selectedRating, experience });
+        router.push("/find-sitter");
     };
 
     return (
