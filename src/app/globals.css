@@ -377,3 +377,161 @@
     border-radius: var(--radius-full);
   }
 }
+
+  /* Status — colored bullet + label */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-body-3);
+    font-weight: var(--text-body-3--font-weight);
+    line-height: var(--text-body-3--line-height);
+  }
+
+  .status::before {
+    content: "";
+    display: block;
+    width: 0.5rem;
+    height: 0.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background-color: currentColor;
+  }
+
+  .status-pink,
+  .status-waiting-confirm,
+  .status-waiting-approve,
+  .status-new-report {
+    color: var(--pink);
+  }
+
+  .status-yellow,
+  .status-waiting-service {
+    color: var(--yellow);
+  }
+
+  .status-blue,
+  .status-in-service,
+  .status-pending {
+    color: var(--blue);
+  }
+
+  .status-green,
+  .status-success,
+  .status-approved,
+  .status-normal,
+  .status-resolved {
+    color: var(--green);
+  }
+
+  .status-red,
+  .status-canceled,
+  .status-rejected,
+  .status-banned {
+    color: var(--red);
+  }
+
+  /* Pet type badges — pill */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.75rem;
+    border: 1px solid;
+    border-radius: var(--radius-full);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-3);
+    font-weight: var(--text-body-3--font-weight);
+    line-height: 1.5;
+  }
+
+  .badge-dog {
+    background-color: var(--green-light);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .badge-cat {
+    background-color: var(--pink-light);
+    border-color: var(--pink);
+    color: var(--pink);
+  }
+
+  .badge-bird {
+    background-color: var(--blue-light);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  .badge-rabbit {
+    background-color: var(--orange-100);
+    border-color: var(--orange-400);
+    color: var(--orange-400);
+  }
+
+  /* Progress step — numbered circle + label */
+  .progress-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--gray-300);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-2);
+    font-weight: var(--text-body-2--font-weight);
+    line-height: 1;
+  }
+
+  .progress-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background-color: var(--gray-200);
+    color: var(--white);
+    font-size: var(--text-body-3);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .progress-step-active {
+    color: var(--orange-500);
+  }
+
+  .progress-step-active .progress-step-number {
+    background-color: var(--orange-500);
+  }
+
+  .progress-step-black {
+    color: var(--black);
+  }
+
+  .progress-step-black .progress-step-number {
+    background-color: var(--black);
+  }
+
+  .progress-step-sm {
+    gap: 0.5rem;
+    font-size: var(--text-body-3);
+  }
+
+  .progress-step-sm .progress-step-number {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.75rem;
+  }
+
+  /* Progress bar — horizontal step tracker */
+  .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1rem 1.5rem;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xl);
+    background-color: var(--white);
+  }
