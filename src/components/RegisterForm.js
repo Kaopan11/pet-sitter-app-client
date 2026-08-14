@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation";
 import { register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
+import PasswordInput from "@/components/PasswordInput";
 
-// ฟอร์มสมัครใช้ร่วม owner / sitter — role มาจากหน้า page (pet_owner | pet_sitter)
+// ฟอร์มสมัครร่วม owner/sitter — role ส่งจากหน้า page (pet_owner | pet_sitter)
 export default function RegisterForm({
   title,
   subtitle,
@@ -75,12 +76,12 @@ export default function RegisterForm({
         </label>
       ) : null}
 
-      <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-bold text-black">Password</span>
-        <input
-          className="input"
-          type="password"
-          name="password"
+      <div className="flex flex-col gap-2">
+        <label htmlFor="register-password" className="text-body-3 font-bold text-black">
+          Password
+        </label>
+        <PasswordInput
+          id="register-password"
           autoComplete="new-password"
           placeholder="Create your password"
           minLength={6}
@@ -88,7 +89,7 @@ export default function RegisterForm({
           onChange={(event) => setPassword(event.target.value)}
           required
         />
-      </label>
+      </div>
 
       <label className="flex flex-col gap-2">
         <span className="text-body-3 font-bold text-black">Email</span>

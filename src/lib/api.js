@@ -1,5 +1,5 @@
-// เรียก backend ตาม NEXT_PUBLIC_API_URL ใน .env
-// local: http://localhost:4000 | prod: https://pet-sitter-app-server.onrender.com
+// src/lib — คุยกับ backend / เก็บ session
+// เรียก API ตาม NEXT_PUBLIC_API_URL (local:4000 | prod: Render)
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

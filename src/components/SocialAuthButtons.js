@@ -33,7 +33,7 @@ function GoogleIcon() {
   );
 }
 
-// UI ตาม Figma เท่านั้น — ยังไม่เชื่อม Facebook / Google
+// ปุ่ม Facebook / Gmail ตาม Figma — ยังไม่ต่อ OAuth (ต้องมี backend)
 export default function SocialAuthButtons() {
   return (
     <div className="flex flex-col gap-4">

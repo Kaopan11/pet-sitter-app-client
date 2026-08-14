@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { login } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
+import PasswordInput from "@/components/PasswordInput";
 
-// ฟอร์ม login ใช้ร่วม owner / sitter — หน้าแต่ละ role ส่ง props คนละชุด
+// src/components — UI ใช้ซ้ำได้
+// ฟอร์ม login ร่วม owner/sitter — หน้า page เป็นคนเปิด Remember / social
 export default function LoginForm({
   title,
   subtitle,
@@ -63,19 +65,19 @@ export default function LoginForm({
         />
       </label>
 
-      <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-bold text-black">Password</span>
-        <input
-          className="input"
-          type="password"
-          name="password"
+      <div className="flex flex-col gap-2">
+        <label htmlFor="login-password" className="text-body-3 font-bold text-black">
+          Password
+        </label>
+        <PasswordInput
+          id="login-password"
           autoComplete="current-password"
           placeholder="Enter your password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           required
         />
-      </label>
+      </div>
 
       {showRemember && showForgotPassword ? (
         <div className="flex items-center justify-between gap-3">

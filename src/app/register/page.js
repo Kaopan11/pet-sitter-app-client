@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
-// /register → หน้า owner
+// src/app/register — หน้าสมัครสมาชิก
+// /register → ส่งต่อไป owner
 export default function RegisterIndexPage() {
   redirect("/register/owner");
 }

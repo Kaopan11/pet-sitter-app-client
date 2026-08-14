@@ -1,5 +1,5 @@
-// เลย์เอาต์หน้า auth
-// light = owner (พื้นขาว + ลายมุม) | plain = sitter (ขาวล้วน) | dark = การ์ดบนพื้นเข้ม
+// src/components — เลย์เอาต์หน้า auth
+// light = owner (ลายมุม) | plain = sitter (ขาวล้วน) | dark = การ์ดบนพื้นเข้ม
 
 export default function AuthShell({ label, variant = "dark", children }) {
   const isLight = variant === "light" || variant === "plain";

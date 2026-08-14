@@ -1,3 +1,5 @@
+// src/app — หน้าเว็บตามโฟลเดอร์ (App Router)
+// ไฟล์นี้ครอบทุกหน้า: ใส่ CSS รวม + title ของแอป
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
