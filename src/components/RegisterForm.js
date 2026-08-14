@@ -8,41 +8,37 @@ import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
 
-// ฟอร์มสมัครร่วม owner/sitter — role ส่งจากหน้า page (pet_owner | pet_sitter)
+// หน้าสมัครเดียว — toggle Owner/Sitter ส่ง asSitter ให้ backend
 export default function RegisterForm({
-  title,
-  subtitle,
-  role,
-  loginHref,
-  loginPrompt,
+  title = "Join Us!",
+  subtitle = "Find your perfect pet sitter with us",
+  loginHref = "/login/owner",
+  loginPrompt = "Already have an account?",
   loginLabel = "Login",
-  showName = true,
-  showSocial = false,
 }) {
   const router = useRouter();
+  const [mode, setMode] = useState("owner");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const asSitter = mode === "sitter";
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
     setLoading(true);
 
-    const resolvedName = showName
-      ? name
-      : email.split("@")[0] || "Pet Owner";
-
     try {
       const data = await register({
+        name,
         email,
-        name: resolvedName,
         phone,
         password,
-        role,
+        asSitter,
       });
       saveAuth(data, true);
       router.push("/");
@@ -60,21 +56,52 @@ export default function RegisterForm({
         <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
 
-      {showName ? (
-        <label className="flex flex-col gap-2">
-          <span className="text-body-3 font-bold text-black">Name</span>
-          <input
-            className="input"
-            type="text"
-            name="name"
-            autoComplete="name"
-            placeholder="Your name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
-        </label>
-      ) : null}
+      <div
+        className="mx-auto flex w-full max-w-70 rounded-full bg-gray-100 p-1"
+        role="tablist"
+        aria-label="Register as"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "owner"}
+          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+            mode === "owner"
+              ? "bg-white text-orange-500 ring-1 ring-orange-500"
+              : "text-gray-400"
+          }`}
+          onClick={() => setMode("owner")}
+        >
+          Owner
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "sitter"}
+          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+            mode === "sitter"
+              ? "bg-white text-orange-500 ring-1 ring-orange-500"
+              : "text-gray-400"
+          }`}
+          onClick={() => setMode("sitter")}
+        >
+          Sitter
+        </button>
+      </div>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-body-3 font-bold text-black">Name</span>
+        <input
+          className="input"
+          type="text"
+          name="name"
+          autoComplete="name"
+          placeholder="Your name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          required
+        />
+      </label>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="register-password" className="text-body-3 font-bold text-black">
@@ -111,10 +138,16 @@ export default function RegisterForm({
           className="input"
           type="tel"
           name="phone"
+          inputMode="numeric"
           autoComplete="tel"
           placeholder="Your phone number"
+          maxLength={10}
+          pattern="[0-9]{10}"
+          title="Phone must be 10 digits"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
+          onChange={(event) =>
+            setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))
+          }
           required
         />
       </label>
@@ -122,10 +155,14 @@ export default function RegisterForm({
       {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
 
       <button className="btn btn-primary w-full" type="submit" disabled={loading}>
-        {loading ? "Registering..." : "Register"}
+        {loading
+          ? "Registering..."
+          : asSitter
+            ? "Register as Sitter"
+            : "Register as Owner"}
       </button>
 
-      {showSocial ? <SocialAuthButtons /> : null}
+      <SocialAuthButtons />
 
       <p className="text-center text-body-3 text-gray-500">
         {loginPrompt}{" "}
