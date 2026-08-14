@@ -272,7 +272,8 @@
   }
 
   .btn-icon {
-    width: 3.75rem; /* 60px — Figma Only icon */
+    width: 3.75rem;
+    /* 60px — Figma Only icon */
     height: 3.75rem;
     padding: 0;
     border-radius: var(--radius-full);
@@ -303,10 +304,13 @@
 
   .input {
     width: 100%;
-    min-height: 3rem; /* 48px */
-    padding: 0.75rem 1rem 0.75rem 0.75rem; /* 12 16 12 12 */
+    min-height: 3rem;
+    /* 48px */
+    padding: 0.75rem 1rem 0.75rem 0.75rem;
+    /* 12 16 12 12 */
     border: 1px solid var(--gray-200);
-    border-radius: var(--radius-md); /* 8px */
+    border-radius: var(--radius-md);
+    /* 8px */
     background-color: var(--white);
     color: var(--black);
     font-family: var(--font-sans);
