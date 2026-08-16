@@ -67,7 +67,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
     const [query, setQuery] = useState("");
     const [selectedPets, setSelectedPets] = useState([]);
     const [selectedRating, setSelectedRating] = useState(null);
-    const [experience, setExperience] = useState("0-2 Years");
+    const [experience, setExperience] = useState("");
     const [viewMode, setViewMode] = useState("list");
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -81,7 +81,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
         setQuery("");
         setSelectedPets([]);
         setSelectedRating(null);
-        setExperience("0-2 Years");
+        setExperience("");
     };
 
     const handleSearch = (e) => {
@@ -219,8 +219,13 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                 <select
                                     value={experience}
                                     onChange={(e) => setExperience(e.target.value)}
-                                    className="input appearance-none cursor-pointer pr-10"
+                                    className={`input appearance-none cursor-pointer pr-10 ${
+                                        experience ? "text-black" : "text-gray-400"
+                                    }`}
                                 >
+                                    <option value="" disabled>
+                                        Select experience
+                                    </option>
                                     <option value="0-2 Years">0-2 Years</option>
                                     <option value="3-5 Years">3-5 Years</option>
                                     <option value="5+ Years">5+ Years</option>
@@ -248,8 +253,8 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                             <PetSitterCard key={sitter.id} {...sitter} />
                         ))}
                     </div>
-
-                    <nav className="mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
+                </section>
+                <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
                         <button
                             type="button"
                             onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
@@ -281,7 +286,6 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                             <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
                         </button>
                     </nav>
-                </section>
                 </div>
             </div>
         </div>
