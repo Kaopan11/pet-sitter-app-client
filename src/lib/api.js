@@ -1,12 +1,12 @@
 // src/lib — คุยกับ backend / เก็บ session
-// เรียก API ตาม NEXT_PUBLIC_API_URL (local:4000 | prod: Render)
+// เรียก API ตาม NEXT_PUBLIC_API_URL จาก .env.example (local:4000 | prod: Render)
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function assertApiUrl() {
   if (!API_URL) {
     throw new Error(
-      "NEXT_PUBLIC_API_URL is not set. Add it to .env.local or Vercel env.",
+      "NEXT_PUBLIC_API_URL is not set. Add it to .env.example.",
     );
   }
 }
@@ -37,6 +37,34 @@ export async function checkHealth() {
 export async function getUsers() {
   const json = await apiFetch("/api/users");
   return json.data ?? [];
+}
+
+export async function getSitters({
+  q = "",
+  petTypes = [],
+  rating = null,
+  experience = "",
+  page = 1,
+  limit = 5,
+} = {}) {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (petTypes.length) params.set("petTypes", petTypes.join(","));
+  if (rating) params.set("rating", String(rating));
+  if (experience) params.set("experience", experience);
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+
+  const json = await apiFetch(`/api/sitters?${params.toString()}`);
+  return {
+    data: json.data ?? [],
+    pagination: json.pagination ?? {
+      page,
+      limit,
+      total: 0,
+      totalPages: 0,
+    },
+  };
 }
 
 // สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
