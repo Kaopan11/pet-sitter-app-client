@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "./Icon";
 import PetSitterCard from "./PetSitterCard";
 
 const PET_OPTIONS = [
@@ -54,20 +55,9 @@ const SAMPLE_SITTERS = [
 
 function RatingStars({ count }) {
     return (
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 text-green">
             {Array.from({ length: count }).map((_, i) => (
-                <svg
-                    key={i}
-                    className="h-[18px] w-[18px] fill-current text-green"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                >
-                    <path
-                        fillRule="evenodd"
-                        d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z"
-                        clipRule="evenodd"
-                    />
-                </svg>
+                <Icon key={i} src="/icon/star.svg" className="h-[18px] w-[18px]" />
             ))}
         </div>
     );
@@ -115,14 +105,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                     : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
                             }`}
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-                                />
-                            </svg>
+                            <Icon src="/icon/list.svg" className="h-5 w-5" />
                             List
                         </button>
                         <button
@@ -134,14 +117,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                     : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
                             }`}
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l5.447 2.724A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                                />
-                            </svg>
+                            <Icon src="/icon/map.svg" className="h-5 w-5" />
                             Map
                         </button>
                     </div>
@@ -160,20 +136,10 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                     className="input pr-11"
                                     aria-label="Search pet sitters"
                                 />
-                                <svg
+                                <Icon
+                                    src="/icon/search.svg"
                                     className="pointer-events-none absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-gray-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="m21 21-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0Z"
-                                    />
-                                </svg>
+                                />
                             </div>
                         </div>
 
@@ -196,19 +162,10 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                                 />
                                                 <div className="h-5 w-5 rounded-[4px] border border-gray-200 bg-white transition-all peer-checked:border-orange-500 peer-checked:bg-orange-500" />
                                                 {isChecked && (
-                                                    <svg
+                                                    <Icon
+                                                        src="/icon/check.svg"
                                                         className="pointer-events-none absolute h-3.5 w-3.5 text-white"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth="3"
-                                                            d="M5 13l4 4L19 7"
-                                                        />
-                                                    </svg>
+                                                    />
                                                 )}
                                             </div>
                                             <span className="text-[15px] font-medium text-gray-500 transition-colors group-hover:text-gray-900">
@@ -269,19 +226,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                                     <option value="5+ Years">5+ Years</option>
                                 </select>
                                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
-                                    <svg
-                                        className="h-4 w-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M19 9l-7 7-7-7"
-                                        />
-                                    </svg>
+                                    <Icon src="/icon/chevron-down.svg" className="h-4 w-4" />
                                 </div>
                             </div>
                         </div>
@@ -311,9 +256,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500"
                             aria-label="Previous page"
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                            </svg>
+                            <Icon src="/icon/chevron-left.svg" className="h-5 w-5" />
                         </button>
                         {PAGE_NUMBERS.map((page) => (
                             <button
@@ -335,9 +278,7 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500"
                             aria-label="Next page"
                         >
-                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                            </svg>
+                            <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
                         </button>
                     </nav>
                 </section>
