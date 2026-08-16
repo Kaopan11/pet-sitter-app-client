@@ -37,6 +37,7 @@ export default function PetSitterCard({
                         fill
                         sizes="(max-width: 640px) 100vw, 248px"
                         className="object-cover"
+                        unoptimized={String(imageUrl).startsWith("http")}
                     />
                 ) : (
                     <div className="h-full w-full bg-gray-100" />
@@ -53,6 +54,7 @@ export default function PetSitterCard({
                                 width={48}
                                 height={48}
                                 className="avatar h-12 w-12 shrink-0"
+                                unoptimized={String(avatarUrl).startsWith("http")}
                             />
                         )}
                         <h3 className="truncate text-h4 text-gray-900">{title}</h3>

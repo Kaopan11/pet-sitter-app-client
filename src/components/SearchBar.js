@@ -28,7 +28,14 @@ export default function SearchBar() {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        router.push("/find-sitter");
+        const params = new URLSearchParams();
+        if (selectedPets.length) params.set("petTypes", selectedPets.join(","));
+        if (selectedRating) params.set("rating", String(selectedRating));
+        if (experience) {
+            params.set("experience", experience.replace(/\s*Years$/i, ""));
+        }
+        const query = params.toString();
+        router.push(query ? `/find-sitter?${query}` : "/find-sitter");
     };
 
     return (

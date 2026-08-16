@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "./Icon";
 import PetSitterCard from "./PetSitterCard";
+import { getSitters } from "@/lib/api";
 
 const PET_OPTIONS = [
     { id: "dog", label: "Dog" },
@@ -12,46 +14,37 @@ const PET_OPTIONS = [
 ];
 
 const RATING_OPTIONS = [5, 4, 3, 2, 1];
-const PAGE_NUMBERS = [1, 2, 3, 4];
+const PAGE_SIZE = 5;
 
-const SAMPLE_SITTERS = [
-    {
-        id: 1,
-        title: "Happy House!",
-        sitterName: "Jane Maison",
-        avatarUrl: "/navbar/profile.png",
-        location: "Senanikom, Bangkok",
-        rating: 5,
-        petTypes: ["Dog", "Cat", "Bird", "Rabbit"],
-        imageUrl: "/image/section-dog.png",
-    },
-    {
-        id: 2,
-        title: "Happy House!",
-        sitterName: "John Malee",
-        avatarUrl: "/navbar/profile.png",
-        location: "Senanikom, Bangkok",
-        rating: 4,
-        petTypes: ["Dog", "Cat", "Bird"],
-        imageUrl: "/image/section-cat.png",
-    },
-    {
-        id: 3,
-        title: "Happy House!",
-        location: "Senanikom, Bangkok",
-        rating: 3,
-        petTypes: ["Cat", "Bird"],
-        imageUrl: "/image/middle-section.png",
-    },
-    {
-        id: 4,
-        title: "Happy House!",
-        location: "Senanikom, Bangkok",
-        rating: 2,
-        petTypes: ["Cat", "Bird"],
-        imageUrl: "/image/section-dog.png",
-    },
-];
+function parsePetTypes(value) {
+    return String(value ?? "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => PET_OPTIONS.some((pet) => pet.id === item));
+}
+
+function experienceToForm(value) {
+    if (!value) return "";
+    if (["0-2 Years", "3-5 Years", "5+ Years"].includes(value)) return value;
+    if (["0-2", "3-5", "5+"].includes(value)) return `${value} Years`;
+    return "";
+}
+
+function experienceToQuery(value) {
+    if (!value) return "";
+    return String(value).replace(/\s*Years$/i, "").trim();
+}
+
+function getPageNumbers(current, total) {
+    if (total <= 0) return [];
+    if (total <= 5) {
+        return Array.from({ length: total }, (_, index) => index + 1);
+    }
+
+    const start = Math.max(1, Math.min(current - 2, total - 4));
+    const end = Math.min(total, start + 4);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+}
 
 function RatingStars({ count }) {
     return (
@@ -63,13 +56,74 @@ function RatingStars({ count }) {
     );
 }
 
-export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
+export default function PetSitterList() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [query, setQuery] = useState("");
     const [selectedPets, setSelectedPets] = useState([]);
     const [selectedRating, setSelectedRating] = useState(null);
     const [experience, setExperience] = useState("");
     const [viewMode, setViewMode] = useState("list");
     const [currentPage, setCurrentPage] = useState(1);
+    const [sitters, setSitters] = useState([]);
+    const [totalPages, setTotalPages] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const syncFormFromUrl = useCallback(() => {
+        const rating = Number.parseInt(searchParams.get("rating") ?? "", 10);
+        const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
+
+        setQuery(searchParams.get("q") ?? "");
+        setSelectedPets(parsePetTypes(searchParams.get("petTypes")));
+        setSelectedRating(rating >= 1 && rating <= 5 ? rating : null);
+        setExperience(experienceToForm(searchParams.get("experience") ?? ""));
+        setCurrentPage(Number.isInteger(page) && page > 0 ? page : 1);
+    }, [searchParams]);
+
+    const fetchSitters = useCallback(async () => {
+        const rating = Number.parseInt(searchParams.get("rating") ?? "", 10);
+        const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const result = await getSitters({
+                q: searchParams.get("q") ?? "",
+                petTypes: parsePetTypes(searchParams.get("petTypes")),
+                rating: rating >= 1 && rating <= 5 ? rating : null,
+                experience: searchParams.get("experience") ?? "",
+                page: Number.isInteger(page) && page > 0 ? page : 1,
+                limit: PAGE_SIZE,
+            });
+            setSitters(result.data);
+            setTotalPages(result.pagination.totalPages);
+        } catch (err) {
+            setSitters([]);
+            setTotalPages(0);
+            setError(err instanceof Error ? err.message : "Failed to load pet sitters");
+        } finally {
+            setLoading(false);
+        }
+    }, [searchParams]);
+
+    useEffect(() => {
+        syncFormFromUrl();
+        fetchSitters();
+    }, [syncFormFromUrl, fetchSitters]);
+
+    const updateUrl = (next) => {
+        const params = new URLSearchParams();
+        if (next.q) params.set("q", next.q);
+        if (next.petTypes.length) params.set("petTypes", next.petTypes.join(","));
+        if (next.rating) params.set("rating", String(next.rating));
+        if (next.experience) params.set("experience", experienceToQuery(next.experience));
+        if (next.page > 1) params.set("page", String(next.page));
+
+        const queryString = params.toString();
+        router.push(queryString ? `/find-sitter?${queryString}` : "/find-sitter");
+    };
 
     const togglePet = (petId) => {
         setSelectedPets((prev) =>
@@ -82,11 +136,33 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
         setSelectedPets([]);
         setSelectedRating(null);
         setExperience("");
+        router.push("/find-sitter");
     };
 
     const handleSearch = (e) => {
         e.preventDefault();
+        updateUrl({
+            q: query.trim(),
+            petTypes: selectedPets,
+            rating: selectedRating,
+            experience,
+            page: 1,
+        });
     };
+
+    const goToPage = (page) => {
+        const nextPage = Math.min(Math.max(1, page), Math.max(1, totalPages));
+        const params = new URLSearchParams(searchParams.toString());
+        if (nextPage > 1) {
+            params.set("page", String(nextPage));
+        } else {
+            params.delete("page");
+        }
+        const queryString = params.toString();
+        router.push(queryString ? `/find-sitter?${queryString}` : "/find-sitter");
+    };
+
+    const pageNumbers = getPageNumbers(currentPage, totalPages);
 
     return (
         <div className="min-h-full bg-gray-100 px-4 py-8 sm:px-8">
@@ -249,25 +325,41 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
 
                 <section className="flex min-w-0 flex-col">
                     <div className="flex flex-col gap-4">
-                        {sitters.map((sitter) => (
-                            <PetSitterCard key={sitter.id} {...sitter} />
-                        ))}
+                        {loading ? (
+                            <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
+                                Loading pet sitters...
+                            </p>
+                        ) : error ? (
+                            <p className="rounded-xl bg-white p-6 text-body-2 text-red">
+                                {error}
+                            </p>
+                        ) : sitters.length === 0 ? (
+                            <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
+                                No pet sitters found
+                            </p>
+                        ) : (
+                            sitters.map((sitter) => (
+                                <PetSitterCard key={sitter.id} {...sitter} />
+                            ))
+                        )}
                     </div>
                 </section>
-                <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
+                {totalPages > 0 && (
+                    <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
                         <button
                             type="button"
-                            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage <= 1}
+                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label="Previous page"
                         >
                             <Icon src="/icon/chevron-left.svg" className="h-5 w-5" />
                         </button>
-                        {PAGE_NUMBERS.map((page) => (
+                        {pageNumbers.map((page) => (
                             <button
                                 key={page}
                                 type="button"
-                                onClick={() => setCurrentPage(page)}
+                                onClick={() => goToPage(page)}
                                 className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-body-2 font-bold transition-colors ${
                                     currentPage === page
                                         ? "bg-orange-100 text-orange-500"
@@ -279,13 +371,15 @@ export default function PetSitterList({ sitters = SAMPLE_SITTERS }) {
                         ))}
                         <button
                             type="button"
-                            onClick={() => setCurrentPage((page) => Math.min(PAGE_NUMBERS.length, page + 1))}
-                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage >= totalPages}
+                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label="Next page"
                         >
                             <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
                         </button>
                     </nav>
+                )}
                 </div>
             </div>
         </div>
