@@ -1,6 +1,7 @@
 /* Design tokens + คลาสร่วม (btn, input, card) ตาม Figma */
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
 :root {
   /* Orange — primary brand (600 → 100 left-to-right in design) */
@@ -178,6 +179,30 @@
     font-weight: var(--text-display--font-weight);
   }
 
+  .text-h1 {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1--line-height);
+    font-weight: var(--text-h1--font-weight);
+  }
+
+  .text-h2 {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2--line-height);
+    font-weight: var(--text-h2--font-weight);
+  }
+
+  .text-h3 {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3--line-height);
+    font-weight: var(--text-h3--font-weight);
+  }
+
+  .text-h4 {
+    font-size: var(--text-h4);
+    line-height: var(--text-h4--line-height);
+    font-weight: var(--text-h4--font-weight);
+  }
+
   .text-body-1 {
     font-size: var(--text-body-1);
     line-height: var(--text-body-1--line-height);
@@ -202,6 +227,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    min-height: 3rem;
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: var(--radius-full);
