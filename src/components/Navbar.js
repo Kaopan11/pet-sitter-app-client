@@ -1,93 +1,173 @@
-'use client';
+"use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+const MENU_ITEMS = [
+  { href: "/profile", label: "Profile", icon: "/navbar/menu-profile.svg" },
+  { href: "/pets", label: "Your Pet", icon: "/navbar/menu-paw.svg" },
+  { href: "/history", label: "History", icon: "/navbar/menu-history.svg" },
+];
+
+function Logo() {
+  return (
+    <Link
+      href="/"
+      className="relative block h-10 w-[132px] shrink-0"
+      aria-label="Sitter home"
+    >
+      <span className="absolute top-[9.68%] right-[17.58%] bottom-[11.15%] left-[1.96%]">
+        <img
+          src="/navbar/logo-sitter.svg"
+          alt=""
+          className="size-full object-contain object-left"
+        />
+      </span>
+      <span className="absolute top-[9.68%] right-[1.96%] bottom-[48.39%] left-[85.29%]">
+        <img
+          src="/navbar/logo-star.svg"
+          alt=""
+          className="size-full object-contain"
+        />
+      </span>
+    </Link>
+  );
+}
+
+function IconButton({ src, alt, hasDot }) {
+  return (
+    <button
+      type="button"
+      className="relative flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-100"
+      aria-label={alt}
+    >
+      <span className="relative block size-6 overflow-clip">
+        <img src={src} alt="" className="size-full object-contain" />
+      </span>
+      {hasDot ? (
+        <img
+          src="/navbar/icon-dot.svg"
+          alt=""
+          className="absolute top-1 right-1.5 size-1.5"
+        />
+      ) : null}
+    </button>
+  );
+}
+
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event) {
+      if (!menuRef.current?.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuOpen]);
 
   return (
-    <nav className="relative border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8">
-        <div className="flex-shrink-0">
-          <Link href="/" className="inline-block">
-            <Image
-              src="/image/logo.png"
-              alt="Pet Sitter Logo"
-              width={140}
-              height={48}
-              className="h-9 w-auto sm:h-10"
-              priority
-            />
-          </Link>
-        </div>
+    <header className="sticky top-0 z-50 h-20 bg-[#FFFFFF] shadow-[0_1px_0_0_var(--gray-200)]">
+      <nav className="mx-auto flex h-full w-full items-center justify-between px-5 md:px-20">
+        <Logo />
 
-        <div className="hidden items-center gap-6 md:flex lg:gap-8">
-          <Link
-            href="/become-sitter"
-            className="text-[16px] font-medium text-gray-800 transition-colors hover:text-[#FF7037]"
-          >
-            Become a Pet Sitter
-          </Link>
-          <Link
-            href="/login"
-            className="text-[16px] font-medium text-gray-800 transition-colors hover:text-[#FF7037]"
-          >
-            Login
-          </Link>
-          <Link
-            href="/find-sitter"
-            className="inline-flex items-center justify-center rounded-full bg-[#FF7037] px-7 py-3 text-[16px] font-bold text-white shadow-sm transition-colors hover:bg-[#E44A0C]"
-          >
-            Find A Pet Sitter
-          </Link>
-        </div>
+        {isLoggedIn ? (
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
+              <IconButton src="/navbar/icon-chat.svg" alt="Messages" hasDot />
 
-        <div className="flex items-center md:hidden">
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle navigation menu"
-            className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none"
-          >
-            {isOpen ? (
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </div>
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  className="relative size-12 overflow-clip rounded-full"
+                  aria-label="Open profile menu"
+                  aria-expanded={menuOpen}
+                  onClick={() => setMenuOpen((open) => !open)}
+                >
+                  <Image
+                    src="/navbar/profile.png"
+                    alt="Profile"
+                    width={48}
+                    height={48}
+                    className="size-12 rounded-full object-cover"
+                  />
+                </button>
 
-      {isOpen && (
-        <div className="animate-in slide-in-from-top-2 flex flex-col gap-4 border-t border-gray-100 bg-white px-6 py-5 shadow-lg duration-200 md:hidden">
-          <Link
-            href="/become-sitter"
-            onClick={() => setIsOpen(false)}
-            className="py-1 text-[16px] font-medium text-gray-800 transition-colors hover:text-[#FF7037]"
-          >
-            Become a Pet Sitter
-          </Link>
-          <Link
-            href="/login"
-            onClick={() => setIsOpen(false)}
-            className="py-1 text-[16px] font-medium text-gray-800 transition-colors hover:text-[#FF7037]"
-          >
-            Login
-          </Link>
-          <Link
-            href="/find-sitter"
-            onClick={() => setIsOpen(false)}
-            className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-[#FF7037] px-6 py-3 text-center text-[16px] font-bold text-white shadow-sm transition-colors hover:bg-[#E44A0C]"
-          >
-            Find A Pet Sitter
-          </Link>
-        </div>
-      )}
-    </nav>
+                {menuOpen ? (
+                  <div className="absolute top-[calc(100%+8px)] right-0 z-50 flex w-[186px] flex-col overflow-clip rounded-lg bg-[#FFFFFF] py-1 shadow-[4px_4px_24px_0px_rgba(0,0,0,0.04)]">
+                    <div className="flex flex-col py-2">
+                      {MENU_ITEMS.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="flex w-full items-center gap-3 px-6 py-2 text-body-2 text-black hover:bg-gray-100"
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <span className="relative block size-5 overflow-clip">
+                            <img
+                              src={item.icon}
+                              alt=""
+                              className="size-full object-contain"
+                            />
+                          </span>
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                    <div className="flex flex-col border-t border-gray-200 py-2">
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 px-6 py-2 text-left text-body-2 text-black hover:bg-gray-100"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setIsLoggedIn(false);
+                        }}
+                      >
+                        <span className="relative block size-5 overflow-clip">
+                          <img
+                            src="/navbar/menu-logout.svg"
+                            alt=""
+                            className="size-full object-contain"
+                          />
+                        </span>
+                        Log out
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <Link href="/search" className="btn btn-primary min-w-[120px] text-[#FFFFFF]">
+              Find A Pet Sitter
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <Link
+              href="/become-sitter"
+              className="hidden px-6 py-4 text-body-1 text-black md:inline-flex"
+            >
+              Become a Pet Sitter
+            </Link>
+            <Link href="/login" className="px-6 py-4 text-body-1 text-black">
+              Login
+            </Link>
+            <Link href="/search" className="btn btn-primary min-w-[120px] text-[#FFFFFF]">
+              Find A Pet Sitter
+            </Link>
+          </div>
+        )}
+      </nav>
+    </header>
   );
 }
