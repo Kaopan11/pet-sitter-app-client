@@ -3,6 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { clearAuth, getToken, getUser } from "@/lib/auth";
+
+const FALLBACK_AVATAR = "/navbar/profile.png";
+
+function getAvatarSrc(user) {
+  return (
+    user?.avatarUrl ||
+    user?.avatar ||
+    user?.profileImage ||
+    user?.image ||
+    FALLBACK_AVATAR
+  );
+}
 
 const MENU_ITEMS = [
   { href: "/profile", label: "Profile", icon: "/navbar/menu-profile.svg" },
@@ -57,9 +71,21 @@ function IconButton({ src, alt, hasDot }) {
 }
 
 export default function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const isLoggedIn = Boolean(user);
+  const avatarSrc = getAvatarSrc(user);
+  const isRemoteAvatar =
+    typeof avatarSrc === "string" && /^https?:\/\//.test(avatarSrc);
+
+  useEffect(() => {
+    const token = getToken();
+    setUser(token ? getUser() : null);
+    setReady(true);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -79,7 +105,9 @@ export default function Navbar() {
       <nav className="mx-auto flex h-full w-full items-center justify-between px-5 md:px-20">
         <Logo />
 
-        {isLoggedIn ? (
+        {!ready ? (
+          <div className="h-12 w-40" aria-hidden />
+        ) : isLoggedIn ? (
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
@@ -93,13 +121,21 @@ export default function Navbar() {
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
                 >
-                  <Image
-                    src="/navbar/profile.png"
-                    alt="Profile"
-                    width={48}
-                    height={48}
-                    className="size-12 rounded-full object-cover"
-                  />
+                  {isRemoteAvatar ? (
+                    <img
+                      src={avatarSrc}
+                      alt={user?.name || "Profile"}
+                      className="size-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <Image
+                      src={avatarSrc}
+                      alt={user?.name || "Profile"}
+                      width={48}
+                      height={48}
+                      className="size-12 rounded-full object-cover"
+                    />
+                  )}
                 </button>
 
                 {menuOpen ? (
@@ -129,7 +165,9 @@ export default function Navbar() {
                         className="flex w-full items-center gap-3 px-6 py-2 text-left text-body-2 text-black hover:bg-gray-100"
                         onClick={() => {
                           setMenuOpen(false);
-                          setIsLoggedIn(false);
+                          clearAuth();
+                          setUser(null);
+                          router.push("/");
                         }}
                       >
                         <span className="relative block size-5 overflow-clip">
