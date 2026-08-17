@@ -48,11 +48,11 @@ export async function login({ email, password }) {
   return json.data;
 }
 
-// role ที่ backend รับ: "pet_owner" | "pet_sitter"
-export async function register({ email, name, phone, password, role }) {
+// asSitter true = สร้าง sitter_profiles (pending) | false = owner
+export async function register({ name, email, phone, password, asSitter }) {
   const json = await apiFetch("/api/auth/register", {
     method: "POST",
-    body: { email, name, phone, password, role },
+    body: { name, email, phone, password, asSitter },
   });
   return json.data;
 }

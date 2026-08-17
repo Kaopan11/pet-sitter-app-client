@@ -12,7 +12,7 @@ export default function SitterLoginPage() {
       <LoginForm
         title="Welcome Back!"
         subtitle="Become the best Pet Sitter with us"
-        registerHref="/register/sitter"
+        registerHref="/register"
         registerPrompt="Don't have Pet Sitter account?"
         showForgotPassword
       />

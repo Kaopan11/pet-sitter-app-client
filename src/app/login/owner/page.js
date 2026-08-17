@@ -12,7 +12,7 @@ export default function OwnerLoginPage() {
       <LoginForm
         title="Welcome back!"
         subtitle="Find your perfect pet sitter with us"
-        registerHref="/register/owner"
+        registerHref="/register"
         registerPrompt="Don't have any account?"
         showRemember
         showForgotPassword

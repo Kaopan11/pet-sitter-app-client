@@ -1,4 +1,4 @@
-// เก็บ token/user ในเบราว์เซอร์หลัง login
+// เก็บ token/user ในเบราว์เซอร์หลัง login/register (รวม user.isSitter)
 // persist true = localStorage (Remember) | false = sessionStorage (ปิดแท็บแล้วหาย)
 
 const TOKEN_KEY = "pet-sitter-token";
