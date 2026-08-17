@@ -11,45 +11,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getToken } from "@/lib/auth";
+import axios from "axios";
+import jwtInterceptor from "@/utils/jwtInterceptor";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+jwtInterceptor();
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
-const PROVINCES = [
-  "Bangkok",
-  "Chiang Mai",
-  "Chonburi",
-  "Phuket",
-  "Nonthaburi",
-  "Pathum Thani",
-  "Samut Prakan",
-  "Khon Kaen",
-  "Nakhon Ratchasima",
-  "Songkhla",
-];
-const DISTRICTS = [
-  "Pathum Wan",
-  "Watthana",
-  "Chatuchak",
-  "Bang Rak",
-  "Mueang Chiang Mai",
-  "Bang Lamung",
-  "Mueang Phuket",
-  "Kathu",
-  "Mueang Nonthaburi",
-  "Mueang Samut Prakan",
-];
-const SUB_DISTRICTS = [
-  "Lumphini",
-  "Si Lom",
-  "Khlong Toei",
-  "Chang Khlan",
-  "Patong",
-  "Si Sunthon",
-  "Nong Prue",
-  "Bang Sao Thong",
-];
+const EMPTY_SELECT = "__empty__";
 
 const initialForm = {
   fullName: "",
@@ -97,24 +68,33 @@ export default function PetSitterProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [errors, setErrors] = useState(initialErrors);
+  const [provinces, setProvinces] = useState([]);
+  const [subDistricts, setSubDistricts] = useState([]);
+
+  const districts =
+    provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
+
+  async function loadSubDistricts(districtId) {
+    if (!districtId) {
+      setSubDistricts([]);
+      return;
+    }
+
+    const { data } = await axios.get(
+      `https://geoth.thiti.dev/api/districts-with-subdistricts/${districtId}`,
+    );
+    setSubDistricts(data.subdistricts ?? []);
+  }
 
   async function loadProfile() {
     const token = getToken();
     if (!token) {
-      return;
+      return null;
     }
 
-    const response = await fetch(`${API_URL}/api/sitters/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await response.json();
-
-    if (!response.ok) {
-      throw new Error(json.message || json.error || "Failed to load profile");
-    }
-
+    const { data: json } = await axios.get(`${API_BASE_URL}/api/sitters/me`);
     const profile = json.data;
-    setForm({
+    const nextForm = {
       fullName: profile.name ?? "",
       experience: profile.experience_years ?? "",
       phone: profile.phone ?? "",
@@ -130,15 +110,39 @@ export default function PetSitterProfilePage() {
       subDistrict: profile.sub_district ?? "",
       province: profile.province ?? "",
       postCode: profile.post_code ?? "",
-    });
+    };
+
+    setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
     setPhotos(profile.sitter_photos ?? []);
+    return nextForm;
   }
 
   useEffect(() => {
-    loadProfile().catch((err) => {
-      setError(err instanceof Error ? err.message : "Failed to load profile");
-    });
+    async function load() {
+      try {
+        const profile = await loadProfile();
+        const { data } = await axios.get(
+          "https://geoth.thiti.dev/api/provinces-with-districts/all",
+        );
+        setProvinces(data);
+
+        const district = data
+          .find((item) => item.nameEn === profile?.province)
+          ?.districts.find((item) => item.nameEn === profile?.district);
+        if (district) {
+          await loadSubDistricts(district.id);
+        }
+      } catch (err) {
+        setError(
+          err.response?.data?.message ||
+            err.response?.data?.error ||
+            "Failed to load profile",
+        );
+      }
+    }
+
+    load();
   }, []);
 
   function handleChange(event) {
@@ -148,8 +152,67 @@ export default function PetSitterProfilePage() {
   }
 
   function handleSelectChange(name, value) {
-    setForm((current) => ({ ...current, [name]: value }));
+    if (value === EMPTY_SELECT) {
+      return;
+    }
+
     setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    if (name === "province") {
+      let changed = false;
+      setForm((current) => {
+        if (value === current.province) {
+          return current;
+        }
+        changed = true;
+        return {
+          ...current,
+          province: value,
+          district: "",
+          subDistrict: "",
+          postCode: "",
+        };
+      });
+      if (changed) {
+        setSubDistricts([]);
+      }
+      return;
+    }
+
+    if (name === "district") {
+      let changed = false;
+      setForm((current) => {
+        if (value === current.district) {
+          return current;
+        }
+        changed = true;
+        return {
+          ...current,
+          district: value,
+          subDistrict: "",
+          postCode: "",
+        };
+      });
+      if (changed) {
+        const district = districts.find(
+          (item) => item.nameEn === value || item.nameTh === value,
+        );
+        loadSubDistricts(district?.id);
+      }
+      return;
+    }
+
+    if (name === "subDistrict") {
+      const zip = subDistricts.find((item) => item.nameEn === value)?.zipCode;
+      setForm((current) => ({
+        ...current,
+        subDistrict: value,
+        postCode: zip ? String(zip) : current.postCode,
+      }));
+      return;
+    }
+
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   function handleAvatarChange(event) {
@@ -202,18 +265,16 @@ export default function PetSitterProfilePage() {
       return;
     }
 
-    const response = await fetch(`${API_URL}/api/sitters/me/photos/${photoId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await response.json();
-
-    if (!response.ok) {
-      setError(json.message || "Failed to delete photo");
-      return;
+    try {
+      await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${photoId}`);
+      setPhotos((current) => current.filter((photo) => photo.id !== photoId));
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to delete photo",
+      );
     }
-
-    setPhotos((current) => current.filter((photo) => photo.id !== photoId));
   }
 
   function handleRemoveGalleryFile(index) {
@@ -339,16 +400,10 @@ export default function PetSitterProfilePage() {
         formData.append("galleryFiles", file);
       });
 
-      const response = await fetch(`${API_URL}/api/sitters/me`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const json = await response.json();
-
-      if (!response.ok) {
-        throw new Error(json.message || json.error || "Failed to update profile");
-      }
+      const { data: json } = await axios.put(
+        `${API_BASE_URL}/api/sitters/me`,
+        formData,
+      );
 
       setImageFile(null);
       setGalleryFiles([]);
@@ -357,7 +412,9 @@ export default function PetSitterProfilePage() {
       setSuccess(json.message || "Profile updated successfully");
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to update profile";
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to update profile";
       if (message.includes("Phone number is already in use")) {
         setErrors((prev) => ({ ...prev, phone: message }));
       }
@@ -677,9 +734,12 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select district" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DISTRICTS.map((district) => (
-                    <SelectItem key={district} value={district}>
-                      {district}
+                  <SelectItem value={EMPTY_SELECT} disabled>
+                    Select district
+                  </SelectItem>
+                  {districts.map((district) => (
+                    <SelectItem key={district.id} value={district.nameEn}>
+                      {district.nameEn}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -699,9 +759,12 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select sub-district" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUB_DISTRICTS.map((subDistrict) => (
-                    <SelectItem key={subDistrict} value={subDistrict}>
-                      {subDistrict}
+                  <SelectItem value={EMPTY_SELECT} disabled>
+                    Select sub-district
+                  </SelectItem>
+                  {subDistricts.map((subDistrict) => (
+                    <SelectItem key={subDistrict.id} value={subDistrict.nameEn}>
+                      {subDistrict.nameEn}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -712,7 +775,7 @@ export default function PetSitterProfilePage() {
           <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
             <FormField label="Province" required error={errors.province}>
               <Select
-                value={form.province || undefined}
+                value={form.province || EMPTY_SELECT}
                 onValueChange={(value) => handleSelectChange("province", value)}
               >
                 <SelectTrigger
@@ -721,9 +784,12 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select province" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PROVINCES.map((province) => (
-                    <SelectItem key={province} value={province}>
-                      {province}
+                  <SelectItem value={EMPTY_SELECT} disabled>
+                    Select province
+                  </SelectItem>
+                  {provinces.map((province) => (
+                    <SelectItem key={province.id} value={province.nameEn}>
+                      {province.nameEn}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -756,13 +822,13 @@ export default function PetSitterProfilePage() {
 
 function FormField({ label, required, error, children }) {
   return (
-    <label className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
       <span className="text-body-2 text-black">
         {label}
         {required ? <span className="text-red">*</span> : null}
       </span>
       {children}
       {error && <p className="text-body-3 text-red">{error}</p>}
-    </label>
+    </div>
   );
 }

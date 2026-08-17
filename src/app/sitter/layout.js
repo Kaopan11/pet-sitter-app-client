@@ -5,9 +5,13 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare } from "lucide-react";
+import axios from "axios";
 import { getToken } from "@/lib/auth";
+import jwtInterceptor from "@/utils/jwtInterceptor";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+jwtInterceptor();
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const menuItems = [
   {
@@ -44,13 +48,7 @@ export default function SitterLayout({ children }) {
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/sitters/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const json = await response.json();
-        if (!response.ok) {
-          return;
-        }
+        const { data: json } = await axios.get(`${API_BASE_URL}/api/sitters/me`);
 
         setHeaderUser({
           name: json.data?.name ?? "",
