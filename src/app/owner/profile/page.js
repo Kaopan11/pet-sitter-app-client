@@ -1,6 +1,25 @@
+"use client";
+
+import { useState } from "react";
 import AccountSidebar from "../../../components/AccountSidebar";
+import { validateProfile } from "../../../utils/validateProfile";
 
 export default function OwnerProfilePage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [errors, setErrors] = useState({});
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const nextErrors = validateProfile({ name, email, phone, idNumber });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+    console.log({ name, email, phone, idNumber, dateOfBirth });
+  }
+
   return (
     <div className="flex h-full bg-gray-100">
       <div className="mx-10 mt-6 flex w-full flex-row justify-center">
@@ -19,7 +38,10 @@ export default function OwnerProfilePage() {
             </button>
           </div>
 
-          <form className="flex flex-1 flex-col gap-6">
+          <form
+            onSubmit={handleSubmit} noValidate
+className="flex flex-1 flex-col gap-6"
+          >
             <label className="flex flex-col gap-1">
               <span className="text-body-3 font-bold text-black">
                 Your Name*
@@ -27,10 +49,12 @@ export default function OwnerProfilePage() {
               <input
                 type="text"
                 name="name"
-                className="input"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className={`input ${errors.name ? "border-red-500" : ""}`}
                 placeholder="Please enter your name"
-                required
               />
+              {errors.name && <p className="text-red-500 text-body-3">{errors.name}</p>}
             </label>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -41,10 +65,12 @@ export default function OwnerProfilePage() {
                 <input
                   type="email"
                   name="email"
-                  className="input"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className={`input ${errors.email ? "border-red-500" : ""}`}
                   placeholder="example@email.com"
-                  required
                 />
+                {errors.email && <p className="text-red-500 text-body-3">{errors.email}</p>}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -54,10 +80,12 @@ export default function OwnerProfilePage() {
                 <input
                   type="tel"
                   name="phone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
                   className="input"
                   placeholder="Please enter your phone number"
-                  required
                 />
+                {errors.phone && <p className="text-red-500 text-body-3">{errors.phone}</p>}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -67,9 +95,12 @@ export default function OwnerProfilePage() {
                 <input
                   type="text"
                   name="idNumber"
-                  className="input"
+                  value={idNumber}
+                  onChange={(event) => setIdNumber(event.target.value)}
+                  className={`input ${errors.idNumber ? "border-red-500" : ""}`}
                   placeholder="Your ID number"
                 />
+                {errors.idNumber && <p className="text-red-500 text-body-3">{errors.idNumber}</p>}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -79,9 +110,11 @@ export default function OwnerProfilePage() {
                 <input
                   type="date"
                   name="dateOfBirth"
-                  className="input"
-                  required
+                  value={dateOfBirth}
+                  onChange={(event) => setDateOfBirth(event.target.value)}
+                  className={`input ${errors.dateOfBirth ? "border-red-500" : ""}`}
                 />
+                {errors.dateOfBirth && <p className="text-red-500 text-body-3">{errors.dateOfBirth}</p>}
               </label>
             </div>
 
