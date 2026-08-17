@@ -376,7 +376,6 @@
     border: 2px solid var(--white);
     border-radius: var(--radius-full);
   }
-}
 
   /* Status — colored bullet + label */
   .status {
@@ -535,3 +534,4 @@
     border-radius: var(--radius-xl);
     background-color: var(--white);
   }
+}
