@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, UserRound, CirclePlus, Calendar } from "lucide-react";
+import { Plus, UserRound, CirclePlus, Calendar, X } from "lucide-react";
 import PetTypeSelect from "@/components/PetTypeSelect";
 import {
   Select,
@@ -122,9 +122,7 @@ export default function PetSitterProfilePage() {
       email: profile.email ?? "",
       introduction: profile.introduction ?? "",
       tradeName: profile.display_name ?? "",
-      petTypes: (profile.sitter_pet_types ?? [])
-        .map((item) => item.pet_types?.name?.toLowerCase())
-        .filter(Boolean),
+      petTypes: (profile.pet_types ?? []).map((item) => item.name.toLowerCase()),
       services: profile.services ?? "",
       myPlace: profile.my_place ?? "",
       addressDetail: profile.address_detail ?? "",
@@ -196,6 +194,30 @@ export default function PetSitterProfilePage() {
     if (validFiles.length > 0) {
       setGalleryFiles((current) => [...current, ...validFiles]);
     }
+  }
+
+  async function handleDeletePhoto(photoId) {
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/sitters/me/photos/${photoId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await response.json();
+
+    if (!response.ok) {
+      setError(json.message || "Failed to delete photo");
+      return;
+    }
+
+    setPhotos((current) => current.filter((photo) => photo.id !== photoId));
+  }
+
+  function handleRemoveGalleryFile(index) {
+    setGalleryFiles((current) => current.filter((_, fileIndex) => fileIndex !== index));
   }
 
   function validateForm() {
@@ -304,6 +326,10 @@ export default function PetSitterProfilePage() {
       if (form.experience) {
         formData.append("experience_years", form.experience);
       }
+
+      form.petTypes.forEach((petType) => {
+        formData.append("pet_types", petType);
+      });
 
       if (imageFile) {
         formData.append("imageFile", imageFile);
@@ -558,24 +584,40 @@ export default function PetSitterProfilePage() {
           </p>
           <div className="flex flex-wrap gap-4">
             {photos.map((photo) => (
-              <div key={photo.id} className="size-42 overflow-hidden rounded-xl">
+              <div key={photo.id} className="relative size-42 overflow-hidden rounded-xl">
                 <img
                   src={photo.photo_url}
                   alt="Gallery photo"
                   className="size-full object-cover"
                 />
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-gray-400"
+                  aria-label="Delete photo"
+                  onClick={() => handleDeletePhoto(photo.id)}
+                >
+                  <X className="size-3.5 text-white" strokeWidth={2.5} aria-hidden="true" />
+                </button>
               </div>
             ))}
-            {galleryFiles.map((file) => (
+            {galleryFiles.map((file, index) => (
               <div
                 key={file.name + file.lastModified}
-                className="size-42 overflow-hidden rounded-xl"
+                className="relative size-42 overflow-hidden rounded-xl"
               >
                 <img
                   src={URL.createObjectURL(file)}
                   alt="New gallery photo"
                   className="size-full object-cover"
                 />
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-gray-400"
+                  aria-label="Remove photo"
+                  onClick={() => handleRemoveGalleryFile(index)}
+                >
+                  <X className="size-3.5 text-white" strokeWidth={2.5} aria-hidden="true" />
+                </button>
               </div>
             ))}
             {photos.length + galleryFiles.length < 10 ? (
