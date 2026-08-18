@@ -48,6 +48,7 @@ export default function PasswordInput({
   onChange,
   minLength,
   required,
+  error,
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -55,7 +56,7 @@ export default function PasswordInput({
     <div className="relative">
       <input
         id={id}
-        className="input pr-12"
+        className={`input pr-12 ${error ? "input-error" : ""}`}
         type={visible ? "text" : "password"}
         name={name}
         autoComplete={autoComplete}

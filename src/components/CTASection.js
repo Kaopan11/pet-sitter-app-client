@@ -44,7 +44,7 @@ export default function CTASection() {
 
                 {/* Become a Sitter Link */}
                 <Link
-                    href="/become-sitter"
+                    href="/register?type=sitter"
                     className="mt-10 sm:mt-12 text-base sm:text-lg font-bold text-[#FF7037] hover:text-[#E44A0C] transition-colors underline-offset-4 hover:underline"
                 >
                     Become A Pet Sitter
