@@ -49,15 +49,18 @@ export default function Sidebar({ isOpen, onClose }) {
         }`}
       >
         <div className="flex flex-col gap-6 w-full">
-          {/* Logo Section - Exact Figma Colors: Orange "Si", White "tter", Green "*" */}
+          {/* Logo Section */}
           <div className="flex items-center justify-between px-6 pt-6 pb-2">
-            <Link href="/admin/pet-owner" className="flex flex-col">
-              <div className="flex items-baseline font-black tracking-tight text-3xl">
-                <span className="text-[#FF7037]">Si</span>
-                <span className="text-white">tter</span>
-                <span className="text-[#1CCD83] ml-0.5">*</span>
-              </div>
-              <span className="text-xs italic text-gray-400 font-light tracking-wide -mt-1">
+            <Link href="/admin/pet-owner" className="flex flex-col gap-1">
+              <Image
+                src="/image/Sitter-logo-white.svg"
+                alt="Pet Sitter Logo"
+                width={134}
+                height={40}
+                className="h-8 w-auto object-contain"
+                priority
+              />
+              <span className="text-xs italic text-gray-400 font-light tracking-wide">
                 Admin Panel
               </span>
             </Link>

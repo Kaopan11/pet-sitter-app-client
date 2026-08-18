@@ -7,17 +7,48 @@ export default function AdminPetSitterPage() {
   const [search, setSearch] = useState("");
 
   const petSitters = [
-    { id: 1, name: "Jane Cooper", phone: "081 234 5678", email: "jane@petsitter.com", experience: "3 years", status: "Approved" },
-    { id: 2, name: "Wade Warren", phone: "082 345 6789", email: "wade@petsitter.com", experience: "5 years", status: "Pending" },
-    { id: 3, name: "Esther Howard", phone: "083 456 7890", email: "esther@petsitter.com", experience: "2 years", status: "Approved" },
-    { id: 4, name: "Cameron Williamson", phone: "084 567 8901", email: "cameron@petsitter.com", experience: "1 year", status: "Rejected" },
+    {
+      id: 1,
+      fullName: "Jane Maison",
+      petSitterName: "Happy House!",
+      email: "janemaison@gmail.com",
+      status: "Waiting for approve",
+    },
+    {
+      id: 2,
+      fullName: "Jane Cooper",
+      petSitterName: "Pet Paradise",
+      email: "jane@petsitter.com",
+      status: "Approved",
+    },
+    {
+      id: 3,
+      fullName: "Wade Warren",
+      petSitterName: "Cozy Pet Home",
+      email: "wade@petsitter.com",
+      status: "Waiting for approve",
+    },
+    {
+      id: 4,
+      fullName: "Esther Howard",
+      petSitterName: "Dog & Cat Haven",
+      email: "esther@petsitter.com",
+      status: "Approved",
+    },
+    {
+      id: 5,
+      fullName: "Cameron Williamson",
+      petSitterName: "Little Paws Care",
+      email: "cameron@petsitter.com",
+      status: "Rejected",
+    },
   ];
 
   const filteredSitters = petSitters.filter(
     (sitter) =>
-      sitter.name.toLowerCase().includes(search.toLowerCase()) ||
-      sitter.email.toLowerCase().includes(search.toLowerCase()) ||
-      sitter.phone.includes(search)
+      sitter.fullName.toLowerCase().includes(search.toLowerCase()) ||
+      sitter.petSitterName.toLowerCase().includes(search.toLowerCase()) ||
+      sitter.email.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -49,10 +80,9 @@ export default function AdminPetSitterPage() {
         <table className="w-full border-collapse text-left text-xs sm:text-sm">
           <thead>
             <tr className="bg-[#000000] text-white">
-              <th className="py-3.5 px-6 font-medium rounded-tl-xl">Pet Sitter</th>
-              <th className="py-3.5 px-6 font-medium">Phone</th>
+              <th className="py-3.5 px-6 font-medium rounded-tl-xl">Full Name</th>
+              <th className="py-3.5 px-6 font-medium">Pet Sitter Name</th>
               <th className="py-3.5 px-6 font-medium">Email</th>
-              <th className="py-3.5 px-6 font-medium">Experience</th>
               <th className="py-3.5 px-6 font-medium rounded-tr-xl">Status</th>
             </tr>
           </thead>
@@ -63,16 +93,15 @@ export default function AdminPetSitterPage() {
                   <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                     <Image
                       src="/image/content2.png"
-                      alt={sitter.name}
+                      alt={sitter.fullName}
                       fill
                       className="object-cover"
                     />
                   </div>
-                  <span className="font-semibold text-gray-900">{sitter.name}</span>
+                  <span className="font-semibold text-gray-900">{sitter.fullName}</span>
                 </td>
-                <td className="py-3.5 px-6 text-gray-700 font-medium">{sitter.phone}</td>
+                <td className="py-3.5 px-6 text-gray-700 font-medium">{sitter.petSitterName}</td>
                 <td className="py-3.5 px-6 text-gray-700">{sitter.email}</td>
-                <td className="py-3.5 px-6 text-gray-900 font-medium">{sitter.experience}</td>
                 <td className="py-3.5 px-6 font-medium">
                   {sitter.status === "Approved" && (
                     <span className="inline-flex items-center gap-1.5 text-[#1CCD83] font-semibold">
@@ -80,10 +109,10 @@ export default function AdminPetSitterPage() {
                       Approved
                     </span>
                   )}
-                  {sitter.status === "Pending" && (
-                    <span className="inline-flex items-center gap-1.5 text-amber-500 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                      Pending
+                  {(sitter.status === "Waiting for approve" || sitter.status === "Pending") && (
+                    <span className="inline-flex items-center gap-1.5 text-[#FA8AC0] font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FA8AC0]"></span>
+                      Waiting for approve
                     </span>
                   )}
                   {sitter.status === "Rejected" && (
@@ -110,3 +139,4 @@ export default function AdminPetSitterPage() {
     </div>
   );
 }
+
