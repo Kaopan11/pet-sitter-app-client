@@ -39,8 +39,8 @@ export default function OwnerProfilePage() {
           </div>
 
           <form
-            onSubmit={handleSubmit} noValidate
-className="flex flex-1 flex-col gap-6"
+            onSubmit={handleSubmit} noValidate 
+            className="flex flex-1 flex-col gap-6"
           >
             <label className="flex flex-col gap-1">
               <span className="text-body-3 font-bold text-black">
@@ -82,7 +82,7 @@ className="flex flex-1 flex-col gap-6"
                   name="phone"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="input"
+                  className={`input ${errors.phone ? "border-red-500" : ""}`}
                   placeholder="Please enter your phone number"
                 />
                 {errors.phone && <p className="text-red-500 text-body-3">{errors.phone}</p>}
