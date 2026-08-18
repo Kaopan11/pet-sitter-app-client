@@ -84,3 +84,20 @@ export async function register({ name, email, phone, password, asSitter }) {
   });
   return json.data;
 }
+
+//ยิง api บน owner profile
+export async function getProfile({ token }) {
+  const json = await apiFetch("/api/users/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return json.data;
+}
+
+// บันทึกโปรไฟล์
+export async function updateProfile({ name, email, phone, id_number, date_of_birth }) {
+  const json = await apiFetch("/api/users/me", {
+  method: "PUT",
+    body: { name, email, phone, id_number, date_of_birth },
+  });
+  return json.data;
+}

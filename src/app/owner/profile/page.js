@@ -14,7 +14,7 @@ export default function OwnerProfilePage() {
 
   function handleSubmit(event) {
     event.preventDefault();
-    const nextErrors = validateProfile({ name, email, phone, idNumber });
+    const nextErrors = validateProfile({ name, email, phone, idNumber, dateOfBirth });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     console.log({ name, email, phone, idNumber, dateOfBirth });
