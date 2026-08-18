@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare } from "lucide-react";
 import axios from "axios";
-import { getToken } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
@@ -42,11 +41,6 @@ export default function SitterLayout({ children }) {
 
   useEffect(() => {
     async function loadHeaderUser() {
-      const token = getToken();
-      if (!token) {
-        return;
-      }
-
       try {
         const { data: json } = await axios.get(`${API_BASE_URL}/api/sitters/me`);
 
