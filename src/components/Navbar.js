@@ -85,9 +85,15 @@ export default function Navbar() {
     typeof avatarSrc === "string" && /^https?:\/\//.test(avatarSrc);
 
   useEffect(() => {
-    const token = getToken();
-    setUser(token ? getUser() : null);
-    setReady(true);
+    function syncUser() {
+      const token = getToken();
+      setUser(token ? getUser() : null);
+      setReady(true);
+    }
+
+    syncUser();
+    window.addEventListener("owner-profile-updated", syncUser);
+    return () => window.removeEventListener("owner-profile-updated", syncUser);
   }, []);
 
   useEffect(() => {
