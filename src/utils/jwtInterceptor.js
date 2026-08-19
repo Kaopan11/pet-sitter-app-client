@@ -27,7 +27,8 @@ function jwtInterceptor() {
       return response;
     },
     (error) => {
-      const errorMessage = error.response?.data?.error;
+      const errorMessage =
+        error.response?.data?.message || error.response?.data?.error;
       if (
         error.response?.status === 401 &&
         typeof errorMessage === "string" &&

@@ -10,17 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getToken } from "@/lib/auth";
 import axios from "axios";
-import jwtInterceptor from "@/utils/jwtInterceptor";
-
-jwtInterceptor();
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
-const EMPTY_SELECT = "__empty__";
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.com$/i;
 
 const initialForm = {
   fullName: "",
@@ -59,6 +55,7 @@ const initialErrors = {
 export default function PetSitterProfilePage() {
   const avatarInputRef = useRef(null);
   const galleryInputRef = useRef(null);
+  const skipAddressSelect = useRef(true);
   const [form, setForm] = useState(initialForm);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -87,11 +84,6 @@ export default function PetSitterProfilePage() {
   }
 
   async function loadProfile() {
-    const token = getToken();
-    if (!token) {
-      return null;
-    }
-
     const { data: json } = await axios.get(`${API_BASE_URL}/api/sitters/me`);
     const profile = json.data;
     const nextForm = {
@@ -118,30 +110,40 @@ export default function PetSitterProfilePage() {
     return nextForm;
   }
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const profile = await loadProfile();
-        const { data } = await axios.get(
-          "https://geoth.thiti.dev/api/provinces-with-districts/all",
-        );
-        setProvinces(data);
+  async function load() {
+    skipAddressSelect.current = true;
 
-        const district = data
-          .find((item) => item.nameEn === profile?.province)
-          ?.districts.find((item) => item.nameEn === profile?.district);
-        if (district) {
-          await loadSubDistricts(district.id);
-        }
-      } catch (err) {
-        setError(
-          err.response?.data?.message ||
-            err.response?.data?.error ||
-            "Failed to load profile",
-        );
+    try {
+      const profile = await loadProfile();
+      const { data } = await axios.get(
+        "https://geoth.thiti.dev/api/provinces-with-districts/all",
+      );
+      setProvinces(data);
+
+      const district = data
+        .find((item) => item.nameEn === profile?.province)
+        ?.districts.find((item) => item.nameEn === profile?.district);
+      if (district) {
+        await loadSubDistricts(district.id);
       }
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Failed to load profile",
+      );
+    } finally {
+      // ยังไม่เปิดรับ onValueChange ทันทีที่ API กลับมา
+      // รอให้ React วาด dropdown และให้ Radix ยิง event ปลอมจบก่อน แล้วค่อย skipAddressSelect = false
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          skipAddressSelect.current = false;
+        });
+      });
     }
+  }
 
+  useEffect(() => {
     load();
   }, []);
 
@@ -152,53 +154,41 @@ export default function PetSitterProfilePage() {
   }
 
   function handleSelectChange(name, value) {
-    if (value === EMPTY_SELECT) {
+    if (skipAddressSelect.current) {
       return;
     }
 
     setErrors((prev) => ({ ...prev, [name]: "" }));
 
     if (name === "province") {
-      let changed = false;
-      setForm((current) => {
-        if (value === current.province) {
-          return current;
-        }
-        changed = true;
-        return {
-          ...current,
-          province: value,
-          district: "",
-          subDistrict: "",
-          postCode: "",
-        };
-      });
-      if (changed) {
-        setSubDistricts([]);
+      if (value === form.province) {
+        return;
       }
+      setForm((current) => ({
+        ...current,
+        province: value,
+        district: "",
+        subDistrict: "",
+        postCode: "",
+      }));
+      setSubDistricts([]);
       return;
     }
 
     if (name === "district") {
-      let changed = false;
-      setForm((current) => {
-        if (value === current.district) {
-          return current;
-        }
-        changed = true;
-        return {
-          ...current,
-          district: value,
-          subDistrict: "",
-          postCode: "",
-        };
-      });
-      if (changed) {
-        const district = districts.find(
-          (item) => item.nameEn === value || item.nameTh === value,
-        );
-        loadSubDistricts(district?.id);
+      if (value === form.district) {
+        return;
       }
+      setForm((current) => ({
+        ...current,
+        district: value,
+        subDistrict: "",
+        postCode: "",
+      }));
+      const district = districts.find(
+        (item) => item.nameEn === value || item.nameTh === value,
+      );
+      loadSubDistricts(district?.id);
       return;
     }
 
@@ -260,11 +250,6 @@ export default function PetSitterProfilePage() {
   }
 
   async function handleDeletePhoto(photoId) {
-    const token = getToken();
-    if (!token) {
-      return;
-    }
-
     try {
       await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${photoId}`);
       setPhotos((current) => current.filter((photo) => photo.id !== photoId));
@@ -304,11 +289,8 @@ export default function PetSitterProfilePage() {
 
     if (!form.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (
-      !form.email.includes("@") ||
-      !form.email.toLowerCase().includes(".com")
-    ) {
-      newErrors.email = "Email must contain @ and .com";
+    } else if (!EMAIL_PATTERN.test(form.email.trim())) {
+      newErrors.email = "Email must include @ and end with .com";
     }
 
     if (!form.tradeName.trim()) {
@@ -360,11 +342,6 @@ export default function PetSitterProfilePage() {
       return;
     }
 
-    const token = getToken();
-    if (!token) {
-      return;
-    }
-
     try {
       setIsSaving(true);
 
@@ -383,10 +360,8 @@ export default function PetSitterProfilePage() {
       formData.append("sub_district", form.subDistrict);
       formData.append("province", form.province);
       formData.append("post_code", form.postCode);
-
-      if (form.experience) {
-        formData.append("experience_years", form.experience);
-      }
+      formData.append("experience_years", form.experience);
+      formData.append("email", form.email.trim())
 
       form.petTypes.forEach((petType) => {
         formData.append("pet_types", petType);
@@ -400,10 +375,7 @@ export default function PetSitterProfilePage() {
         formData.append("galleryFiles", file);
       });
 
-      const { data: json } = await axios.put(
-        `${API_BASE_URL}/api/sitters/me`,
-        formData,
-      );
+      const { data: json } = await axios.put(`${API_BASE_URL}/api/sitters/me`, formData);
 
       setImageFile(null);
       setGalleryFiles([]);
@@ -417,6 +389,9 @@ export default function PetSitterProfilePage() {
         "Failed to update profile";
       if (message.includes("Phone number is already in use")) {
         setErrors((prev) => ({ ...prev, phone: message }));
+      }
+      if (message.includes("Email is already in use")) {
+        setErrors((prev) => ({ ...prev, email: message }));
       }
       setError(message);
     } finally {
@@ -542,7 +517,7 @@ export default function PetSitterProfilePage() {
                 type="email"
                 name="email"
                 value={form.email}
-                readOnly
+                onChange={handleChange}
               />
             </FormField>
           </div>
@@ -734,9 +709,6 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select district" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_SELECT} disabled>
-                    Select district
-                  </SelectItem>
                   {districts.map((district) => (
                     <SelectItem key={district.id} value={district.nameEn}>
                       {district.nameEn}
@@ -759,9 +731,6 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select sub-district" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_SELECT} disabled>
-                    Select sub-district
-                  </SelectItem>
                   {subDistricts.map((subDistrict) => (
                     <SelectItem key={subDistrict.id} value={subDistrict.nameEn}>
                       {subDistrict.nameEn}
@@ -775,7 +744,7 @@ export default function PetSitterProfilePage() {
           <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
             <FormField label="Province" required error={errors.province}>
               <Select
-                value={form.province || EMPTY_SELECT}
+                value={form.province || undefined}
                 onValueChange={(value) => handleSelectChange("province", value)}
               >
                 <SelectTrigger
@@ -784,9 +753,6 @@ export default function PetSitterProfilePage() {
                   <SelectValue placeholder="Select province" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={EMPTY_SELECT} disabled>
-                    Select province
-                  </SelectItem>
                   {provinces.map((province) => (
                     <SelectItem key={province.id} value={province.nameEn}>
                       {province.nameEn}
