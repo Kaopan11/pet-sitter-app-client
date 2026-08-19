@@ -69,7 +69,6 @@ export default function CTASection() {
                     >
                         Find A Pet Sitter
                     </Link>
-                </div>
             </div>
         </section>
     );
