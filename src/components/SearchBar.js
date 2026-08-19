@@ -7,7 +7,7 @@ export default function SearchBar() {
     const router = useRouter();
     const [selectedPets, setSelectedPets] = useState([]);
     const [selectedRating, setSelectedRating] = useState(null);
-    const [experience, setExperience] = useState("0-2 Years");
+    const [experience, setExperience] = useState("");
 
     const petOptions = [
         { id: "dog", label: "Dog" },
@@ -139,8 +139,11 @@ export default function SearchBar() {
                             <select
                                 value={experience}
                                 onChange={(e) => setExperience(e.target.value)}
-                                className="appearance-none bg-white border border-gray-200 rounded-lg pl-4 pr-10 py-2 text-[14px] text-gray-500 font-medium focus:outline-none focus:border-gray-300 cursor-pointer w-full lg:min-w-[120px]"
+                                className={`appearance-none bg-white border border-gray-200 rounded-lg pl-4 pr-10 py-2 text-[14px] font-medium focus:outline-none focus:border-gray-300 cursor-pointer w-full lg:min-w-[120px] ${
+                                    experience ? "text-gray-500" : "text-gray-400"
+                                }`}
                             >
+                                <option value="">Select</option>
                                 <option value="0-2 Years">0-2 Years</option>
                                 <option value="3-5 Years">3-5 Years</option>
                                 <option value="5+ Years">5+ Years</option>
