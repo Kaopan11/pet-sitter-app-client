@@ -6,10 +6,14 @@ export const metadata = {
 };
 
 // /register — หน้าสมัครเดียว มี toggle Owner / Sitter
-export default function RegisterPage() {
+// ?type=sitter (จากปุ่ม Become a Pet Sitter) → เปิดมาพร้อม tab Sitter
+export default async function RegisterPage({ searchParams }) {
+  const { type } = await searchParams;
+  const initialMode = type === "sitter" ? "sitter" : "owner";
+
   return (
     <AuthShell variant="light">
-      <RegisterForm />
+      <RegisterForm initialMode={initialMode} />
     </AuthShell>
   );
 }

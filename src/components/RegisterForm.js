@@ -15,21 +15,61 @@ export default function RegisterForm({
   loginHref = "/login/owner",
   loginPrompt = "Already have an account?",
   loginLabel = "Login",
+  initialMode = "owner",
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState("owner");
+  const [mode, setMode] = useState(initialMode);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const asSitter = mode === "sitter";
 
+  function getInputClassName(field) {
+    return `input ${errors[field] ? "input-error" : ""}`;
+  }
+
+  function validateForm() {
+    const newErrors = {};
+
+    if (!name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!email.includes("@") || !email.toLowerCase().includes(".com")) {
+      newErrors.email = "Email must be a valid format and contain @ and .com";
+    }
+
+    if (!phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^0\d{9}$/.test(phone.trim())) {
+      newErrors.phone = "Phone number must be 10 digits and start with 0";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length <= 8) {
+      newErrors.password = "Password must be more than 8 characters";
+    }
+
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(Boolean);
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -43,7 +83,16 @@ export default function RegisterForm({
       saveAuth(data, true);
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Register failed");
+      const message = err instanceof Error ? err.message : "Register failed";
+      const lower = message.toLowerCase();
+
+      if (lower.includes("email")) {
+        setErrors((prev) => ({ ...prev, email: message }));
+      } else if (lower.includes("phone")) {
+        setErrors((prev) => ({ ...prev, phone: message }));
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -92,15 +141,54 @@ export default function RegisterForm({
       <label className="flex flex-col gap-2">
         <span className="text-body-3 font-bold text-black">Name</span>
         <input
-          className="input"
+          className={getInputClassName("name")}
           type="text"
           name="name"
           autoComplete="name"
           placeholder="Your name"
           value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
+          onChange={(event) => {
+            setName(event.target.value);
+            setErrors((prev) => ({ ...prev, name: "" }));
+          }}
         />
+        {errors.name ? <p className="text-body-3 text-red">{errors.name}</p> : null}
+      </label>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-body-3 font-bold text-black">Email</span>
+        <input
+          className={getInputClassName("email")}
+          type="email"
+          name="email"
+          autoComplete="email"
+          placeholder="email@company.com"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setErrors((prev) => ({ ...prev, email: "" }));
+          }}
+        />
+        {errors.email ? <p className="text-body-3 text-red">{errors.email}</p> : null}
+      </label>
+
+      <label className="flex flex-col gap-2">
+        <span className="text-body-3 font-bold text-black">Phone</span>
+        <input
+          className={getInputClassName("phone")}
+          type="tel"
+          name="phone"
+          inputMode="numeric"
+          autoComplete="tel"
+          placeholder="Your phone number"
+          maxLength={10}
+          value={phone}
+          onChange={(event) => {
+            setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
+            setErrors((prev) => ({ ...prev, phone: "" }));
+          }}
+        />
+        {errors.phone ? <p className="text-body-3 text-red">{errors.phone}</p> : null}
       </label>
 
       <div className="flex flex-col gap-2">
@@ -111,46 +199,17 @@ export default function RegisterForm({
           id="register-password"
           autoComplete="new-password"
           placeholder="Create your password"
-          minLength={6}
+          error={Boolean(errors.password)}
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
+          onChange={(event) => {
+            setPassword(event.target.value);
+            setErrors((prev) => ({ ...prev, password: "" }));
+          }}
         />
+        {errors.password ? (
+          <p className="text-body-3 text-red">{errors.password}</p>
+        ) : null}
       </div>
-
-      <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-bold text-black">Email</span>
-        <input
-          className="input"
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder="email@company.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          required
-        />
-      </label>
-
-      <label className="flex flex-col gap-2">
-        <span className="text-body-3 font-bold text-black">Phone</span>
-        <input
-          className="input"
-          type="tel"
-          name="phone"
-          inputMode="numeric"
-          autoComplete="tel"
-          placeholder="Your phone number"
-          maxLength={10}
-          pattern="[0-9]{10}"
-          title="Phone must be 10 digits"
-          value={phone}
-          onChange={(event) =>
-            setPhone(event.target.value.replace(/\D/g, "").slice(0, 10))
-          }
-          required
-        />
-      </label>
 
       {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
 

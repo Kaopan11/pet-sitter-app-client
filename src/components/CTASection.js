@@ -54,15 +54,13 @@ export default function CTASection() {
                     For Your Pet
                 </h2>
 
-                {/* CTA Buttons — side by side */}
-                <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
-                    {/* Become a Sitter Link */}
-                    <Link
-                        href="/become-sitter"
-                        className="text-sm sm:text-base font-bold text-[#FF7037] hover:text-[#E44A0C] transition-colors underline-offset-4 hover:underline"
-                    >
-                        Become A Pet Sitter
-                    </Link>
+                {/* Become a Sitter Link */}
+                <Link
+                    href="/register?type=sitter"
+                    className="mt-10 sm:mt-12 text-base sm:text-lg font-bold text-[#FF7037] hover:text-[#E44A0C] transition-colors underline-offset-4 hover:underline"
+                >
+                    Become A Pet Sitter
+                </Link>
 
                     {/* Find a Sitter Button */}
                     <Link
@@ -71,7 +69,6 @@ export default function CTASection() {
                     >
                         Find A Pet Sitter
                     </Link>
-                </div>
             </div>
         </section>
     );
