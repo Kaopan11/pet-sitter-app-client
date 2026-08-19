@@ -343,7 +343,7 @@ export default function PetSitterList() {
                         )}
                     </div>
                 </section>
-                {totalPages > 0 && (
+                {pageNumbers.length > 1 && (
                     <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
                         <button
                             type="button"
