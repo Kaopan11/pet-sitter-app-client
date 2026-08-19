@@ -133,12 +133,14 @@ export default function SitterLayout({ children }) {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-18 shrink-0 items-center justify-between bg-white px-16">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+            <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {headerUser.avatarUrl ? (
-                <img
+                <Image
                   src={headerUser.avatarUrl}
                   alt={`${headerUser.name || "Pet sitter"} profile`}
-                  className="h-full w-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               ) : (
                 <UserRound className="h-6 w-6 text-white" aria-hidden="true" />
