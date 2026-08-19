@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
-import { getToken } from "@/lib/auth";
+import { getToken, getUser, saveAuth } from "@/lib/auth";
 import { validateProfile } from "../../../utils/validateProfile";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -16,7 +16,7 @@ function toDateInputValue(value) {
   return String(value).slice(0, 10);
 }
 
-async function fetchOwnerProfile(method = "GET", body) {
+async function ownerProfileRequest(method, body) {
   const token = getToken();
   if (!token) {
     throw new Error("NO_TOKEN");
@@ -28,13 +28,12 @@ async function fetchOwnerProfile(method = "GET", body) {
   const headers = {
     Authorization: `Bearer ${token}`,
   };
-  if (body) headers["Content-Type"] = "application/json";
 
   const res = await fetch(`${API_URL}/api/users/me`, {
     method,
     cache: "no-store",
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body,
   });
 
   const json = await res.json().catch(() => ({}));
@@ -44,6 +43,36 @@ async function fetchOwnerProfile(method = "GET", body) {
     );
   }
   return json.data;
+}
+
+function fetchOwnerProfile() {
+  return ownerProfileRequest("GET");
+}
+
+function updateOwnerProfile(formData) {
+  return ownerProfileRequest("PUT", formData);
+}
+
+function persistUpdatedUser(profile) {
+  const token = getToken();
+  const currentUser = getUser();
+  if (!token || !currentUser) return;
+
+  const persist = Boolean(localStorage.getItem("pet-sitter-token"));
+  saveAuth(
+    {
+      token,
+      user: {
+        ...currentUser,
+        name: profile.name ?? currentUser.name,
+        email: profile.email ?? currentUser.email,
+        phone: profile.phone ?? currentUser.phone,
+        avatarUrl: profile.avatar_url ?? currentUser.avatarUrl,
+      },
+    },
+    persist,
+  );
+  window.dispatchEvent(new Event("owner-profile-updated"));
 }
 
 export default function OwnerProfilePage() {
@@ -84,15 +113,6 @@ export default function OwnerProfilePage() {
     });
   }
 
-  //mock pet owner user
-  useEffect(() => {
-    setName("Jane Owner");
-    setEmail("owner@example.com");
-    setPhone("0812345678");
-    setIdNumber("1234567890123");
-    setDateOfBirth("1990-01-15");
-    setIsLoading(false);
-  }, []);
 
   // โหลดข้อมูลโปรไฟล์
   useEffect(() => {
@@ -140,10 +160,10 @@ export default function OwnerProfilePage() {
     setSuccess("");
     setSubmitError("");
 
-    // if (!getToken()) {
-    //   router.replace("/login/owner");
-    //   return;
-    // }
+    if (!getToken()) {
+      router.replace("/login/owner");
+      return;
+    }
 
     const nextErrors = validateProfile({
       name,
@@ -157,23 +177,28 @@ export default function OwnerProfilePage() {
 
     setIsSaving(true);
     try {
-      const payload = {
-        name,
-        email,
-        phone,
-        id_number: idNumber,
-        date_of_birth: dateOfBirth,
-      };
-      // Preview only — do not upload/save new avatar until backend is ready
-      if (
-        !imageFile &&
-        avatarUrl &&
-        !avatarUrl.startsWith("blob:")
-      ) {
-        payload.avatar_url = avatarUrl;
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("email", email.trim());
+      formData.append("phone", phone.trim());
+      formData.append("id_number", idNumber.trim());
+      formData.append("date_of_birth", dateOfBirth);
+
+      if (imageFile) {
+        formData.append("avatar", imageFile);
+      } else if (avatarUrl && !avatarUrl.startsWith("blob:")) {
+        formData.append("avatar_url", avatarUrl);
       }
 
-      await fetchOwnerProfile("PUT", payload);
+      const profile = await updateOwnerProfile(formData);
+
+      if (avatarUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+
+      setAvatarUrl(profile.avatar_url ?? "");
+      setImageFile(null);
+      persistUpdatedUser(profile);
       setSuccess("Profile updated successfully");
     } catch (error) {
       if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
