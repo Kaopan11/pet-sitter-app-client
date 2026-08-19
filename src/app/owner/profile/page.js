@@ -1,23 +1,189 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
+import { getToken } from "@/lib/auth";
 import { validateProfile } from "../../../utils/validateProfile";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
+
+function toDateInputValue(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+async function fetchOwnerProfile(method = "GET", body) {
+  const token = getToken();
+  if (!token) {
+    throw new Error("NO_TOKEN");
+  }
+  if (!API_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL is not set");
+  }
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+  if (body) headers["Content-Type"] = "application/json";
+
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    method,
+    cache: "no-store",
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      json.message || json.error || `Request failed (${res.status})`,
+    );
+  }
+  return json.data;
+}
+
 export default function OwnerProfilePage() {
+  const router = useRouter();
+  const avatarInputRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [idNumber, setIdNumber] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  function handleSubmit(event) {
+  function handleAvatarChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
+      setErrors((prev) => ({
+        ...prev,
+        avatar: "Profile image must be .jpg, .jpeg, or .png and 2MB or smaller",
+      }));
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, avatar: "" }));
+    setImageFile(file);
+    setAvatarUrl((current) => {
+      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  //mock pet owner user
+  useEffect(() => {
+    setName("Jane Owner");
+    setEmail("owner@example.com");
+    setPhone("0812345678");
+    setIdNumber("1234567890123");
+    setDateOfBirth("1990-01-15");
+    setIsLoading(false);
+  }, []);
+
+  // โหลดข้อมูลโปรไฟล์
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProfile() {
+      if (!getToken()) {
+        router.replace("/login/owner");
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError("");
+
+      try {
+        const profile = await fetchOwnerProfile();
+        if (cancelled || !profile) return;
+
+        setName(profile.name ?? "");
+        setEmail(profile.email ?? "");
+        setPhone(profile.phone ?? "");
+        setIdNumber(profile.id_number ?? "");
+        setDateOfBirth(toDateInputValue(profile.date_of_birth));
+        setAvatarUrl(profile.avatar_url ?? "");
+      } catch (error) {
+        if (cancelled) return;
+        if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
+          router.replace("/login/owner");
+          return;
+        }
+        setLoadError(error.message || "Failed to load profile");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  async function handleSubmit(event) {
     event.preventDefault();
-    const nextErrors = validateProfile({ name, email, phone, idNumber });
+    setSuccess("");
+    setSubmitError("");
+
+    // if (!getToken()) {
+    //   router.replace("/login/owner");
+    //   return;
+    // }
+
+    const nextErrors = validateProfile({
+      name,
+      email,
+      phone,
+      idNumber,
+      dateOfBirth,
+    });
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    console.log({ name, email, phone, idNumber, dateOfBirth });
+
+    setIsSaving(true);
+    try {
+      const payload = {
+        name,
+        email,
+        phone,
+        id_number: idNumber,
+        date_of_birth: dateOfBirth,
+      };
+      // Preview only — do not upload/save new avatar until backend is ready
+      if (
+        !imageFile &&
+        avatarUrl &&
+        !avatarUrl.startsWith("blob:")
+      ) {
+        payload.avatar_url = avatarUrl;
+      }
+
+      await fetchOwnerProfile("PUT", payload);
+      setSuccess("Profile updated successfully");
+    } catch (error) {
+      if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
+        router.replace("/login/owner");
+        return;
+      }
+      setSubmitError(error.message || "Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -28,19 +194,53 @@ export default function OwnerProfilePage() {
         <div className="card m-4 ml-6 flex min-h-[888px] w-2/3 flex-col p-10">
           <h3 className="text-h3">Profile</h3>
 
-          <div className="relative mx-4 my-8 size-50">
-            <div className="size-50 rounded-full bg-gray-100" />
+          {loadError && (
+            <p className="mt-4 text-body-3 text-red-500">{loadError}</p>
+          )}
+          {submitError && (
+            <p className="mt-4 text-body-3 text-red-500">{submitError}</p>
+          )}
+          {success && (
+            <p className="mt-4 text-body-3 text-green">{success}</p>
+          )}
+
+          <div className="relative mx-4 my-8 w-fit">
+            <div className="flex size-50 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Owner profile"
+                  className="size-full object-cover"
+                />
+              ) : (
+                <UserRound className="size-24 text-white" aria-hidden="true" />
+              )}
+            </div>
             <button
               type="button"
               className="btn-secondary absolute right-1 bottom-1 flex size-10 items-center justify-center rounded-full"
+              aria-label="Upload profile photo"
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={isLoading || isSaving}
             >
-              +
+              <Plus className="size-5" strokeWidth={2.5} aria-hidden="true" />
             </button>
+            <input
+              ref={avatarInputRef}
+              className="hidden"
+              type="file"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+              onChange={handleAvatarChange}
+            />
+            {errors.avatar && (
+              <p className="mt-2 text-body-3 text-red-500">{errors.avatar}</p>
+            )}
           </div>
 
           <form
-            onSubmit={handleSubmit} noValidate
-className="flex flex-1 flex-col gap-6"
+            onSubmit={handleSubmit}
+            noValidate
+            className="flex flex-1 flex-col gap-6"
           >
             <label className="flex flex-col gap-1">
               <span className="text-body-3 font-bold text-black">
@@ -53,8 +253,11 @@ className="flex flex-1 flex-col gap-6"
                 onChange={(event) => setName(event.target.value)}
                 className={`input ${errors.name ? "border-red-500" : ""}`}
                 placeholder="Please enter your name"
+                disabled={isLoading || isSaving}
               />
-              {errors.name && <p className="text-red-500 text-body-3">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-body-3 text-red-500">{errors.name}</p>
+              )}
             </label>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -69,8 +272,11 @@ className="flex flex-1 flex-col gap-6"
                   onChange={(event) => setEmail(event.target.value)}
                   className={`input ${errors.email ? "border-red-500" : ""}`}
                   placeholder="example@email.com"
+                  disabled={isLoading || isSaving}
                 />
-                {errors.email && <p className="text-red-500 text-body-3">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-body-3 text-red-500">{errors.email}</p>
+                )}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -82,10 +288,13 @@ className="flex flex-1 flex-col gap-6"
                   name="phone"
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
-                  className="input"
+                  className={`input ${errors.phone ? "border-red-500" : ""}`}
                   placeholder="Please enter your phone number"
+                  disabled={isLoading || isSaving}
                 />
-                {errors.phone && <p className="text-red-500 text-body-3">{errors.phone}</p>}
+                {errors.phone && (
+                  <p className="text-body-3 text-red-500">{errors.phone}</p>
+                )}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -99,8 +308,11 @@ className="flex flex-1 flex-col gap-6"
                   onChange={(event) => setIdNumber(event.target.value)}
                   className={`input ${errors.idNumber ? "border-red-500" : ""}`}
                   placeholder="Your ID number"
+                  disabled={isLoading || isSaving}
                 />
-                {errors.idNumber && <p className="text-red-500 text-body-3">{errors.idNumber}</p>}
+                {errors.idNumber && (
+                  <p className="text-body-3 text-red-500">{errors.idNumber}</p>
+                )}
               </label>
 
               <label className="flex flex-col gap-1">
@@ -113,14 +325,23 @@ className="flex flex-1 flex-col gap-6"
                   value={dateOfBirth}
                   onChange={(event) => setDateOfBirth(event.target.value)}
                   className={`input ${errors.dateOfBirth ? "border-red-500" : ""}`}
+                  disabled={isLoading || isSaving}
                 />
-                {errors.dateOfBirth && <p className="text-red-500 text-body-3">{errors.dateOfBirth}</p>}
+                {errors.dateOfBirth && (
+                  <p className="text-body-3 text-red-500">
+                    {errors.dateOfBirth}
+                  </p>
+                )}
               </label>
             </div>
 
             <div className="flex justify-end">
-              <button type="submit" className="btn btn-primary">
-                Update Profile
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isLoading || isSaving}
+              >
+                {isSaving ? "Updating..." : "Update Profile"}
               </button>
             </div>
           </form>

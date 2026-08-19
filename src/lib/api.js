@@ -1,23 +1,27 @@
 // src/lib — คุยกับ backend / เก็บ session
 // เรียก API ตาม NEXT_PUBLIC_API_URL จาก .env.example (local:4000 | prod: Render)
+import { getToken } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function assertApiUrl() {
   if (!API_URL) {
-    throw new Error(
-      "NEXT_PUBLIC_API_URL is not set. Add it to .env.example.",
-    );
+    throw new Error("NEXT_PUBLIC_API_URL is not set. Add it to .env.example.");
   }
 }
 
 async function apiFetch(path, { method = "GET", body } = {}) {
   assertApiUrl();
 
+  const token = getToken();
+  const headers = {};
+  if (body) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_URL}${path}`, {
     method,
     cache: "no-store",
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -81,6 +85,27 @@ export async function register({ name, email, phone, password, asSitter }) {
   const json = await apiFetch("/api/auth/register", {
     method: "POST",
     body: { name, email, phone, password, asSitter },
+  });
+  return json.data;
+}
+
+//ยิง api บน owner profile
+export async function getProfile() {
+  const json = await apiFetch("/api/users/me", {});
+  return json.data;
+}
+
+// บันทึกโปรไฟล์
+export async function updateProfile({
+  name,
+  email,
+  phone,
+  id_number,
+  date_of_birth,
+}) {
+  const json = await apiFetch("/api/users/me", {
+    method: "PUT",
+    body: { name, email, phone, id_number, date_of_birth },
   });
   return json.data;
 }
