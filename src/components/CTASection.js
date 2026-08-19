@@ -1,37 +1,49 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function CTASection() {
     return (
-        <section className="relative w-full overflow-hidden bg-orange-100 py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8">
+        <section className="relative w-full overflow-hidden bg-[#FFF1E5] py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8">
             {/* === Decorative Shapes === */}
 
             {/* Yellow circle — top right */}
             <div
-                className="absolute -top-16 -right-16 sm:-top-20 sm:-right-20 w-40 h-40 sm:w-56 sm:h-56 lg:w-72 lg:h-72 rounded-full bg-[#FFCA62] pointer-events-none"
-                aria-hidden="true"
-            />
-
-            {/* Green starburst — top center */}
-            <svg
-                className="absolute top-6 left-1/2 -translate-x-1/2 w-20 h-20 sm:w-28 sm:h-28 lg:w-32 lg:h-32 pointer-events-none"
-                viewBox="0 0 120 120"
-                fill="#1CCD83"
+                className="absolute -top-10 -right-10 sm:-top-14 sm:-right-14 lg:-top-16 lg:-right-16 w-36 h-36 sm:w-48 sm:h-48 lg:w-56 lg:h-56 pointer-events-none"
                 aria-hidden="true"
             >
-                <polygon points="60,0 72,38 110,28 82,55 110,82 72,72 60,110 48,72 10,82 38,55 10,28 48,38" />
-            </svg>
+                <Image
+                    src="/image/dot-yellow.svg"
+                    alt=""
+                    fill
+                    className="object-contain"
+                />
+            </div>
 
-            {/* Blue circle — bottom left */}
+            {/* Green starburst — overlapping yellow circle, top right area */}
             <div
-                className="absolute -bottom-24 -left-24 sm:-bottom-32 sm:-left-32 lg:-bottom-40 lg:-left-40 w-56 h-56 sm:w-72 sm:h-72 lg:w-96 lg:h-96 rounded-full border-[16px] sm:border-[20px] lg:border-[24px] border-[#76D0FC] bg-transparent pointer-events-none"
+                className="absolute top-8 right-12 sm:top-10 sm:right-16 lg:top-12 lg:right-20 w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36 pointer-events-none"
                 aria-hidden="true"
-            />
+            >
+                <Image
+                    src="/image/star-green.svg"
+                    alt=""
+                    fill
+                    className="object-contain"
+                />
+            </div>
 
-            {/* Orange half-circle — bottom left (overlapping with blue ring) */}
+            {/* Blue arc — bottom left */}
             <div
-                className="absolute -bottom-10 -left-6 sm:-bottom-14 sm:-left-8 w-28 h-14 sm:w-36 sm:h-18 lg:w-44 lg:h-22 rounded-t-full bg-[#FF7037] pointer-events-none"
+                className="absolute -bottom-4 -left-8 sm:-bottom-4 sm:-left-10 lg:-bottom-4 lg:-left-12 w-40 h-28 sm:w-52 sm:h-36 lg:w-64 lg:h-40 pointer-events-none"
                 aria-hidden="true"
-            />
+            >
+                <Image
+                    src="/image/arc-blue.svg"
+                    alt=""
+                    fill
+                    className="object-contain object-bottom"
+                />
+            </div>
 
             {/* === Content === */}
             <div className="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
@@ -50,13 +62,14 @@ export default function CTASection() {
                     Become A Pet Sitter
                 </Link>
 
-                {/* Find a Sitter Button */}
-                <Link
-                    href="/find-sitter"
-                    className="mt-5 sm:mt-6 inline-flex items-center justify-center w-full max-w-sm sm:max-w-md rounded-full bg-[#FF7037] px-10 py-4 text-base sm:text-lg font-bold text-white shadow-md transition-all hover:bg-[#E44A0C] hover:shadow-lg active:scale-[0.98]"
-                >
-                    Find A Pet Sitter
-                </Link>
+                    {/* Find a Sitter Button */}
+                    <Link
+                        href="/find-sitter"
+                        className="inline-flex items-center justify-center rounded-full bg-[#FF7037] px-8 py-3 sm:px-10 sm:py-3.5 text-sm sm:text-base font-bold text-white shadow-md transition-all hover:bg-[#E44A0C] hover:shadow-lg active:scale-[0.98]"
+                    >
+                        Find A Pet Sitter
+                    </Link>
+                </div>
             </div>
         </section>
     );
