@@ -136,7 +136,6 @@ export default function PetSitterList() {
         setSelectedPets([]);
         setSelectedRating(null);
         setExperience("");
-        router.push("/find-sitter");
     };
 
     const handleSearch = (e) => {
@@ -202,8 +201,8 @@ export default function PetSitterList() {
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] lg:items-start">
                 <aside className="lg:sticky lg:top-6 lg:self-start">
                     <form onSubmit={handleSearch} className="flex flex-col gap-6 rounded-xl bg-white p-6 shadow-[var(--shadow-card)]">
-                        <div className="flex flex-col gap-3">
-                            <h2 className="text-h4 text-gray-900">Search</h2>
+                        <div className="flex flex-col">
+                            <h2 className="text-[15px] font-bold text-gray-900">Search:</h2>
                             <div className="relative">
                                 <input
                                     type="text"
@@ -299,7 +298,7 @@ export default function PetSitterList() {
                                         experience ? "text-black" : "text-gray-400"
                                     }`}
                                 >
-                                    <option value="" disabled>
+                                    <option value="">
                                         Select experience
                                     </option>
                                     <option value="0-2 Years">0-2 Years</option>
@@ -344,7 +343,7 @@ export default function PetSitterList() {
                         )}
                     </div>
                 </section>
-                {totalPages > 0 && (
+                {pageNumbers.length > 1 && (
                     <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
                         <button
                             type="button"
