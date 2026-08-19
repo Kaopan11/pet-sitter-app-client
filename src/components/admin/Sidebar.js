@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 className="h-8 w-auto object-contain"
                 priority
               />
-              <span className="text-xs italic text-gray-400 font-light tracking-wide">
+              <span className="text-xs italic text-gray-400 font-semi-bold tracking-wide">
                 Admin Panel
               </span>
             </Link>

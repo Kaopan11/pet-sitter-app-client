@@ -37,19 +37,19 @@ export default function AdminPetOwnerPage() {
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
-      {/* Title & Search Bar (directly on gray background) */}
+      {/* Title & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-xl font-bold text-[#323640]">Pet Owner</h1>
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full sm:w-64">
           <input
             type="text"
-            placeholder="Search name, phone, email..."
+            placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-4 pr-10 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF7037] placeholder-gray-400 text-gray-700 shadow-xs"
           />
           <svg
-            className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            className="w-4 h-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -128,15 +128,31 @@ export default function AdminPetOwnerPage() {
         </table>
       </div>
 
-      {/* Pagination Footer - Directly on gray background */}
-      <div className="flex items-center justify-center gap-3 text-xs font-medium text-gray-400 pt-2">
-        <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">&lt;</button>
-        <button className="w-8 h-8 rounded-full bg-[#FFF1EC] text-[#FF7037] font-bold flex items-center justify-center">1</button>
-        <button className="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-200/60 flex items-center justify-center">2</button>
-        <span className="px-1 text-gray-400">...</span>
-        <button className="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-200/60 flex items-center justify-center">44</button>
-        <button className="w-8 h-8 rounded-full text-gray-500 hover:bg-gray-200/60 flex items-center justify-center">45</button>
-        <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">&gt;</button>
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-center gap-3 text-sm font-semibold pt-2">
+        <button className="w-9 h-9 flex items-center justify-center text-[#A0A7B5] hover:text-gray-700 transition-colors cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button className="w-9 h-9 rounded-full bg-[#FFF1EC] text-[#FF7037] font-bold flex items-center justify-center cursor-pointer">
+          1
+        </button>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          2
+        </button>
+        <span className="px-1 text-[#A0A7B5]">...</span>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          44
+        </button>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          45
+        </button>
+        <button className="w-9 h-9 flex items-center justify-center text-[#A0A7B5] hover:text-gray-700 transition-colors cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   );

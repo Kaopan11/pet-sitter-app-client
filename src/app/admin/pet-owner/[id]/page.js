@@ -173,9 +173,9 @@ const MOCK_PET_OWNERS = {
   },
 };
 
-export default function AdminPetOwnerDetailPage({ params }) {
+export default function AdminPetOwnerDetailPage() {
   const routerParams = useParams();
-  const ownerId = params?.id || routerParams?.id || "1";
+  const ownerId = routerParams?.id || "1";
   const owner = MOCK_PET_OWNERS[ownerId] || MOCK_PET_OWNERS["1"];
 
   const [activeTab, setActiveTab] = useState("Profile");
@@ -238,43 +238,45 @@ export default function AdminPetOwnerDetailPage({ params }) {
         </Link>
       </div>
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setActiveTab("Profile")}
-          className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
-            activeTab === "Profile"
-              ? "bg-white text-[#FF7037]"
-              : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
-          }`}
-        >
-          Profile
-        </button>
-        <button
-          onClick={() => setActiveTab("Pets")}
-          className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
-            activeTab === "Pets"
-              ? "bg-white text-[#FF7037]"
-              : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
-          }`}
-        >
-          Pets
-        </button>
-        <button
-          onClick={() => setActiveTab("Reviews")}
-          className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
-            activeTab === "Reviews"
-              ? "bg-white text-[#FF7037]"
-              : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
-          }`}
-        >
-          Reviews
-        </button>
-      </div>
+      {/* Tabs & Content Section (Attached together) */}
+      <div className="flex flex-col">
+        {/* Tabs Navigation Bar */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("Profile")}
+            className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === "Profile"
+                ? "bg-white text-[#FF7037]"
+                : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
+            }`}
+          >
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveTab("Pets")}
+            className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === "Pets"
+                ? "bg-white text-[#FF7037]"
+                : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
+            }`}
+          >
+            Pets
+          </button>
+          <button
+            onClick={() => setActiveTab("Reviews")}
+            className={`px-8 py-3 rounded-t-2xl font-bold text-sm transition-all cursor-pointer ${
+              activeTab === "Reviews"
+                ? "bg-white text-[#FF7037]"
+                : "bg-[#E5E7EE] text-[#7B7E8C] hover:bg-[#DCDFE9] hover:text-[#525665]"
+            }`}
+          >
+            Reviews
+          </button>
+        </div>
 
-      {/* Profile Tab Content */}
-      {activeTab === "Profile" && (
-        <div className="bg-white rounded-2xl rounded-tl-none p-8 sm:p-10 border border-gray-100/60 shadow-xs flex flex-col justify-between min-h-[440px]">
+        {/* Profile Tab Content */}
+        {activeTab === "Profile" && (
+          <div className="bg-white rounded-2xl rounded-tl-none p-8 sm:p-10 border border-gray-100/60 shadow-xs flex flex-col justify-between min-h-[440px]">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8 lg:gap-12 w-full">
             {/* Left Avatar */}
             <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full overflow-hidden shrink-0 bg-gray-100 border border-gray-100 shadow-xs">
@@ -443,6 +445,7 @@ export default function AdminPetOwnerDetailPage({ params }) {
           )}
         </div>
       )}
+      </div>
 
       {/* Confirmation Modal (Ban / Unban User) */}
       {isBanModalOpen && (

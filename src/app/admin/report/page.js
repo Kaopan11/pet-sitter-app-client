@@ -79,10 +79,30 @@ export default function AdminReportPage() {
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex items-center justify-center gap-3 text-xs font-medium text-gray-400 pt-2">
-        <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">&lt;</button>
-        <button className="w-8 h-8 rounded-full bg-[#FFF1EC] text-[#FF7037] font-bold flex items-center justify-center">1</button>
-        <button className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">&gt;</button>
+      <div className="flex items-center justify-center gap-3 text-sm font-semibold pt-2">
+        <button className="w-9 h-9 flex items-center justify-center text-[#A0A7B5] hover:text-gray-700 transition-colors cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <button className="w-9 h-9 rounded-full bg-[#FFF1EC] text-[#FF7037] font-bold flex items-center justify-center cursor-pointer">
+          1
+        </button>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          2
+        </button>
+        <span className="px-1 text-[#A0A7B5]">...</span>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          44
+        </button>
+        <button className="w-9 h-9 rounded-full bg-white text-[#7B7E8C] hover:bg-gray-50 font-semibold flex items-center justify-center cursor-pointer shadow-2xs">
+          45
+        </button>
+        <button className="w-9 h-9 flex items-center justify-center text-[#A0A7B5] hover:text-gray-700 transition-colors cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
     </div>
   );
