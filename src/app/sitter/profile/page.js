@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
+import { updateStoredUser } from "@/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -108,6 +109,12 @@ export default function PetSitterProfilePage() {
     setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
     setPhotos(profile.sitter_photos ?? []);
+    updateStoredUser({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      avatarUrl: profile.avatar_url,
+    });
     return nextForm;
   }
 

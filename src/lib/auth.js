@@ -14,21 +14,50 @@ export function saveAuth({ token, user }, persist = true) {
   other.removeItem(USER_KEY);
 }
 
-export function getToken() {
+function getAuthStorage() {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
+  if (localStorage.getItem(TOKEN_KEY)) return localStorage;
+  if (sessionStorage.getItem(TOKEN_KEY)) return sessionStorage;
+  return null;
+}
+
+export function getToken() {
+  return getAuthStorage()?.getItem(TOKEN_KEY) ?? null;
 }
 
 export function getUser() {
-  if (typeof window === "undefined") return null;
-  const raw =
-    localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
+  const raw = getAuthStorage()?.getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw);
   } catch {
     return null;
   }
+}
+
+export function updateStoredUser(partialUser = {}) {
+  const token = getToken();
+  const currentUser = getUser();
+  if (!token || !currentUser) return null;
+
+  const persist = Boolean(localStorage.getItem(TOKEN_KEY));
+  const user = {
+    ...currentUser,
+    ...partialUser,
+    avatarUrl:
+      partialUser.avatarUrl ||
+      partialUser.avatar_url ||
+      currentUser.avatarUrl ||
+      currentUser.avatar_url ||
+      null,
+  };
+  delete user.avatar_url;
+
+  saveAuth({ token, user }, persist);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-changed"));
+  }
+  return user;
 }
 
 export function clearAuth() {

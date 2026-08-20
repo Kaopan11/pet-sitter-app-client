@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
-import { getToken, getUser, saveAuth } from "@/lib/auth";
+import { getToken, updateStoredUser } from "@/lib/auth";
 import { validateProfile } from "../../../utils/validateProfile";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -54,24 +54,12 @@ function updateOwnerProfile(formData) {
 }
 
 function persistUpdatedUser(profile) {
-  const token = getToken();
-  const currentUser = getUser();
-  if (!token || !currentUser) return;
-
-  const persist = Boolean(localStorage.getItem("pet-sitter-token"));
-  saveAuth(
-    {
-      token,
-      user: {
-        ...currentUser,
-        name: profile.name ?? currentUser.name,
-        email: profile.email ?? currentUser.email,
-        phone: profile.phone ?? currentUser.phone,
-        avatarUrl: profile.avatar_url ?? currentUser.avatarUrl,
-      },
-    },
-    persist,
-  );
+  updateStoredUser({
+    name: profile.name,
+    email: profile.email,
+    phone: profile.phone,
+    avatarUrl: profile.avatar_url ?? profile.avatarUrl,
+  });
   window.dispatchEvent(new Event("owner-profile-updated"));
 }
 
