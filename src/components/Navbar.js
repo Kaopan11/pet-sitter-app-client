@@ -20,9 +20,10 @@ function getAvatarSrc(user) {
 }
 
 const MENU_ITEMS = [
-  { href: "/profile", label: "Profile", icon: "/navbar/menu-profile.svg" },
+  { href: "/owner/profile", label: "Profile", icon: "/navbar/menu-profile.svg" },
   { href: "/pets", label: "Your Pet", icon: "/navbar/menu-paw.svg" },
   { href: "/history", label: "History", icon: "/navbar/menu-history.svg" },
+  { href: "/sitter/profile", label: "Sitter Profile", icon: "/navbar/menu-profile.svg" },
 ];
 
 function Logo() {
@@ -226,7 +227,7 @@ export default function Navbar() {
                     <div className="flex flex-col border-t border-gray-200 py-2">
                       <button
                         type="button"
-                        className="flex w-full items-center gap-3 px-6 py-2 text-left text-body-2 text-black hover:bg-gray-100"
+                        className="flex w-full cursor-pointer items-center gap-3 px-6 py-2 text-left text-body-2 text-black hover:bg-gray-100"
                         onClick={handleLogout}
                       >
                         <span className="relative block size-5 overflow-clip">
