@@ -127,7 +127,7 @@ export default function Navbar() {
     setMobileMenuOpen(false);
     clearAuth();
     setUser(null);
-    router.push("/");
+    window.location.href = "/";
   }
 
   return (
