@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare } from "lucide-react";
+import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare, ArrowLeftRight } from "lucide-react";
 import axios from "axios";
+import { getUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
@@ -37,9 +38,19 @@ const menuItems = [
 
 export default function SitterLayout({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isSitter, setIsSitter] = useState(false);
   const [headerUser, setHeaderUser] = useState({ name: "", avatarUrl: "" });
 
   useEffect(() => {
+    const user = getUser();
+    if (!user?.isSitter) {
+      router.replace("/");
+      return;
+    }
+
+    setIsSitter(true);
+
     async function loadHeaderUser() {
       try {
         const { data: json } = await axios.get(`${API_BASE_URL}/api/sitters/me`);
@@ -58,10 +69,14 @@ export default function SitterLayout({ children }) {
     return () => {
       window.removeEventListener("sitter-profile-updated", loadHeaderUser);
     };
-  }, []);
+  }, [router]);
+
+  if (!isSitter) {
+    return null;
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
+    <div className="fixed inset-0 flex overflow-hidden bg-gray-100">
       <aside className="flex h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-[#FAFAFB]">
         <div className="px-6 py-10">
           <Link href="/">
@@ -91,16 +106,25 @@ export default function SitterLayout({ children }) {
           })}
         </nav>
 
-        <button
-          type="button"
-          className="mt-auto mb-4 flex items-center gap-3 border-t border-gray-200 px-6 py-6 text-body-2 text-gray-400 transition-colors hover:text-gray-600"
-        >
-          <LogOut className="h-6 w-6" />
-          Log Out
-        </button>
+        <div className="mt-auto mb-4 border-t border-gray-200">
+          <Link
+            href="/owner/profile"
+            className="flex items-center gap-3 px-6 py-4 text-body-2 text-gray-400 transition-colors hover:text-gray-600"
+          >
+            <ArrowLeftRight className="h-6 w-6" />
+            Switch to Pet Owner
+          </Link>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 px-6 py-6 text-body-2 text-gray-400 transition-colors hover:text-gray-600"
+          >
+            <LogOut className="h-6 w-6" />
+            Log Out
+          </button>
+        </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-18 shrink-0 items-center justify-between bg-white px-16">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
@@ -120,7 +144,7 @@ export default function SitterLayout({ children }) {
           </div>
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:text-orange-500"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:text-orange-500"
             aria-label="Open messages"
           >
             <MessagesSquare className="h-6 w-6" />
