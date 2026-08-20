@@ -1,7 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import { getUser } from "@/lib/auth";
 
 export default function CTASection() {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    useEffect(() => {
+        const user = getUser();
+        setIsLoggedIn(!!user);
+    }, []);
+
     return (
         <section className="relative w-full overflow-hidden bg-[#FFF1E5] py-20 sm:py-28 lg:py-32 px-4 sm:px-6 lg:px-8">
             {/* === Decorative Shapes === */}
@@ -56,13 +67,15 @@ export default function CTASection() {
 
                 {/* CTA Buttons */}
                 <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-center">
-                    {/* Become a Sitter Button */}
-                    <Link
-                        href="/register?type=sitter"
-                        className="inline-flex items-center justify-center rounded-full   px-8 py-3 sm:px-10 sm:py-3.5 text-sm sm:text-base font-bold text-[#FF7037] transition-all active:scale-[0.98]"
-                    >
-                        Become A Pet Sitter
-                    </Link>
+                    {/* Become a Sitter Button — hidden when logged in */}
+                    {!isLoggedIn && (
+                        <Link
+                            href="/register?type=sitter"
+                            className="inline-flex items-center justify-center rounded-full px-8 py-3 sm:px-10 sm:py-3.5 text-sm sm:text-base font-bold text-[#FF7037] transition-all active:scale-[0.98]"
+                        >
+                            Become A Pet Sitter
+                        </Link>
+                    )}
 
                     {/* Find a Sitter Button */}
                     <Link
