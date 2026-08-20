@@ -448,7 +448,7 @@ export default function PetSitterProfilePage() {
             </div>
             <button
               type="button"
-              className="absolute right-0 bottom-0 flex h-15 w-15 items-center justify-center rounded-full bg-orange-100 text-orange-500"
+              className="btn-secondary absolute right-0 bottom-0 flex h-15 w-15 items-center justify-center rounded-full cursor-pointer"
               aria-label="Upload profile photo"
               onClick={() => avatarInputRef.current?.click()}
             >
@@ -655,7 +655,7 @@ export default function PetSitterProfilePage() {
             {photos.length + galleryFiles.length < 10 ? (
               <button
                 type="button"
-                className="flex size-42 flex-col items-center justify-center gap-2 rounded-xl bg-orange-100 text-orange-500"
+                className="btn-secondary flex size-42 flex-col items-center justify-center gap-2 rounded-xl cursor-pointer"
                 aria-label="Upload Image"
                 onClick={() => galleryInputRef.current?.click()}
               >
@@ -698,6 +698,26 @@ export default function PetSitterProfilePage() {
           </FormField>
 
           <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
+            <FormField label="Province" required error={errors.province}>
+              <Select
+                value={form.province || undefined}
+                onValueChange={(value) => handleSelectChange("province", value)}
+              >
+                <SelectTrigger
+                  className={errors.province ? "input-error" : ""}
+                >
+                  <SelectValue placeholder="Select province" />
+                </SelectTrigger>
+                <SelectContent>
+                  {provinces.map((province) => (
+                    <SelectItem key={province.id} value={province.nameEn}>
+                      {province.nameEn}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
             <FormField label="District" required error={errors.district}>
               <Select
                 value={form.district || undefined}
@@ -734,28 +754,6 @@ export default function PetSitterProfilePage() {
                   {subDistricts.map((subDistrict) => (
                     <SelectItem key={subDistrict.id} value={subDistrict.nameEn}>
                       {subDistrict.nameEn}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormField>
-          </div>
-
-          <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
-            <FormField label="Province" required error={errors.province}>
-              <Select
-                value={form.province || undefined}
-                onValueChange={(value) => handleSelectChange("province", value)}
-              >
-                <SelectTrigger
-                  className={errors.province ? "input-error" : ""}
-                >
-                  <SelectValue placeholder="Select province" />
-                </SelectTrigger>
-                <SelectContent>
-                  {provinces.map((province) => (
-                    <SelectItem key={province.id} value={province.nameEn}>
-                      {province.nameEn}
                     </SelectItem>
                   ))}
                 </SelectContent>

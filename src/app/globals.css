@@ -260,15 +260,14 @@
   .btn-secondary {
     background-color: var(--orange-100);
     color: var(--orange-500);
+    transition: color 0.15s ease;
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background-color: var(--orange-200);
     color: var(--orange-400);
   }
 
   .btn-secondary:active:not(:disabled) {
-    background-color: var(--orange-300);
     color: var(--orange-600);
   }
 
