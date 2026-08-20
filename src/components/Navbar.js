@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { clearAuth, getToken, getUser } from "@/lib/auth";
 
-const FALLBACK_AVATAR = "/navbar/profile.png";
+const FALLBACK_AVATAR = "/icon/user.svg";
 
 function getAvatarSrc(user) {
   return (
     user?.avatarUrl ||
+    user?.avatar_url ||
     user?.avatar ||
     user?.profileImage ||
     user?.image ||
@@ -146,7 +146,7 @@ export default function Navbar() {
               <div className="relative" ref={menuRef}>
                 <button
                   type="button"
-                  className="relative size-12 overflow-clip rounded-full"
+                  className="relative flex size-12 items-center justify-center overflow-clip rounded-full bg-gray-200"
                   aria-label="Open profile menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
@@ -158,12 +158,10 @@ export default function Navbar() {
                       className="size-12 rounded-full object-cover"
                     />
                   ) : (
-                    <Image
-                      src={avatarSrc}
+                    <img
+                      src={FALLBACK_AVATAR}
                       alt={user?.name || "Profile"}
-                      width={48}
-                      height={48}
-                      className="size-12 rounded-full object-cover"
+                      className="size-6"
                     />
                   )}
                 </button>
