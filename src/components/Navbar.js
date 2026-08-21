@@ -384,7 +384,7 @@ export default function Navbar() {
               href="/register?type=sitter"
               className="px-6 py-4 text-body-1 text-black"
             >
-              Become a Pet Sitter
+              Register
             </Link>
             <Link href="/login" className="px-6 py-4 text-body-1 text-black">
               Login
@@ -470,7 +470,7 @@ export default function Navbar() {
                 className="px-2 py-3 text-body-1 text-black"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Become a Pet Sitter
+                Register
               </Link>
               <Link
                 href="/login"
