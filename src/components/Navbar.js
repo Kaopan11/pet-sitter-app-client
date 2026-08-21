@@ -120,7 +120,7 @@ function IconButton({ src, alt, hasDot }) {
   return (
     <button
       type="button"
-      className="relative flex size-12 shrink-0 items-center justify-center rounded-full bg-gray-100"
+      className="relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100"
       aria-label={alt}
     >
       <span className="relative block size-6 overflow-clip">
@@ -304,7 +304,7 @@ export default function Navbar() {
               <div className="relative" ref={menuRef}>
                 <button
                   type="button"
-                  className="relative flex size-12 items-center justify-center overflow-clip rounded-full bg-gray-200"
+                  className="relative flex size-12 cursor-pointer items-center justify-center overflow-clip rounded-full bg-gray-200"
                   aria-label="Open profile menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
