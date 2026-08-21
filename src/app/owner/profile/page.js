@@ -217,7 +217,8 @@ export default function OwnerProfilePage() {
             <p className="mt-4 text-body-3 text-green">{success}</p>
           )}
 
-          <div className="relative mx-4 my-8 w-fit">
+          <div className="mx-4 my-8">
+          <div className="relative mx-auto my-8 w-fit">
             <div className="flex size-50 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
                 <img
@@ -231,7 +232,7 @@ export default function OwnerProfilePage() {
             </div>
             <button
               type="button"
-              className="btn-secondary absolute right-1 bottom-1 flex size-10 items-center justify-center rounded-full"
+              className="btn-secondary absolute right-1 bottom-1 flex size-10 cursor-pointer items-center justify-center rounded-full disabled:cursor-not-allowed"
               aria-label="Upload profile photo"
               onClick={() => avatarInputRef.current?.click()}
               disabled={isLoading || isSaving}
@@ -245,6 +246,7 @@ export default function OwnerProfilePage() {
               accept=".jpg,.jpeg,.png,image/jpeg,image/png"
               onChange={handleAvatarChange}
             />
+            </div>
             {errors.avatar && (
               <p className="mt-2 text-body-3 text-red-500">{errors.avatar}</p>
             )}
@@ -257,7 +259,7 @@ export default function OwnerProfilePage() {
           >
             <label className="flex flex-col gap-1">
               <span className="text-body-3 font-bold text-black">
-                Your Name*
+                Your Name <span className="text-red-500">*</span>
               </span>
               <input
                 type="text"
@@ -276,7 +278,7 @@ export default function OwnerProfilePage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  Email*
+                  Email <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="email"
@@ -294,7 +296,7 @@ export default function OwnerProfilePage() {
 
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  Phone*
+                  Phone <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="tel"
@@ -312,7 +314,7 @@ export default function OwnerProfilePage() {
 
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  ID Number
+                  ID Number <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="text"
@@ -330,7 +332,7 @@ export default function OwnerProfilePage() {
 
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  Date of Birth
+                  Date of Birth <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="date"
