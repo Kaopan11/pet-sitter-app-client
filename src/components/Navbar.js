@@ -141,7 +141,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [becomeSitterOpen, setBecomeSitterOpen] = useState(false);
@@ -161,7 +160,6 @@ export default function Navbar() {
     function syncFromStorage() {
       const token = getToken();
       setUser(token ? getUser() : null);
-      setReady(true);
     }
 
     async function refreshFromApi() {
@@ -297,9 +295,7 @@ export default function Navbar() {
       <nav className="mx-auto flex h-20 w-full items-center justify-between px-5 md:px-20">
         <Logo />
 
-        {!ready ? (
-          <div className="h-12 w-40" aria-hidden />
-        ) : isLoggedIn ? (
+        {isLoggedIn ? (
           <div className="hidden items-center gap-6 md:flex">
             <div className="flex items-center gap-3">
               <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
@@ -388,7 +384,7 @@ export default function Navbar() {
               href="/register?type=sitter"
               className="px-6 py-4 text-body-1 text-black"
             >
-              Become a Pet Sitter
+              Register
             </Link>
             <Link href="/login" className="px-6 py-4 text-body-1 text-black">
               Login
@@ -399,20 +395,18 @@ export default function Navbar() {
           </div>
         )}
 
-        {ready ? (
-          <button
-            type="button"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full text-black md:hidden"
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((open) => !open)}
-          >
-            {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full text-black md:hidden"
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+        </button>
       </nav>
 
-      {ready && mobileMenuOpen ? (
+      {mobileMenuOpen ? (
         <div
           ref={mobileNavRef}
           className="flex flex-col gap-1 border-t border-gray-200 bg-[#FFFFFF] px-5 py-4 md:hidden"
@@ -476,7 +470,7 @@ export default function Navbar() {
                 className="px-2 py-3 text-body-1 text-black"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Become a Pet Sitter
+                Register
               </Link>
               <Link
                 href="/login"
