@@ -228,7 +228,7 @@ export default function OwnerProfilePage() {
 
           <div className="mx-4 my-8">
           <div className="relative my-8 w-fit self-start">
-            <div className="flex size-50 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+          <div className="relative size-60 overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
