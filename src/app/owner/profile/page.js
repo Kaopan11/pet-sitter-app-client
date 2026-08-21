@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
-import { getToken, updateStoredUser } from "@/lib/auth";
-import { validateProfile } from "../../../utils/validateProfile";
-
+import { validateProfile } from "../../../utils/validateProfile"; 
+import { toast } from "sonner";
+import { getToken, getUser, updateStoredUser } from "@/lib/auth"; //ดึงฟังก์ชันที่เกี่ยวกับ login จากไฟล์ src/lib/auth.js มาใช้ในหน้าโปรไฟล์
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
@@ -112,7 +112,17 @@ export default function OwnerProfilePage() {
         return;
       }
 
-      setIsLoading(true);
+      const cached = getUser(); //อ่าน user จาก localStorage / sessionStorage ไม่ยิงเซิร์ฟเวอร์
+      if (cached) {
+        setName(cached.name ?? "");
+        setEmail(cached.email ?? "");
+        setPhone(cached.phone ?? "");
+        setAvatarUrl(cached.avatarUrl ?? cached.avatar_url ?? "");
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
+
       setLoadError("");
 
       try {
@@ -145,8 +155,7 @@ export default function OwnerProfilePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setSuccess("");
-    setSubmitError("");
+    setSubmitError(""); 
 
     if (!getToken()) {
       router.replace("/login/owner");
@@ -187,13 +196,13 @@ export default function OwnerProfilePage() {
       setAvatarUrl(profile.avatar_url ?? "");
       setImageFile(null);
       persistUpdatedUser(profile);
-      setSuccess("Profile updated successfully");
+      toast.success("Profile updated successfully");
     } catch (error) {
       if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
         router.replace("/login/owner");
         return;
       }
-      setSubmitError(error.message || "Failed to update profile");
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
@@ -218,7 +227,7 @@ export default function OwnerProfilePage() {
           )}
 
           <div className="mx-4 my-8">
-          <div className="relative mx-auto my-8 w-fit">
+          <div className="relative my-8 w-fit self-start">
             <div className="flex size-50 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
                 <img
