@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getToken, getUser, updateStoredUser, saveAuth } from "@/lib/auth";
 import { becomeSitter } from "@/lib/api";
 
@@ -139,6 +139,7 @@ function IconButton({ src, alt, hasDot }) {
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
