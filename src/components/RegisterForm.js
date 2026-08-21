@@ -50,15 +50,24 @@ export default function RegisterForm({
       return;
     }
 
+    if (lower.includes("name")) {
+      setErrors((prev) => ({ ...prev, name: message }));
+      return;
+    }
+
     // error ทั่วไป — แสดงใต้ฟอร์ม
     setError(message);
   }
 
   function validateForm() {
     const newErrors = {};
+    const trimmedName = name.trim();
 
-    if (!name.trim()) {
+    // Name: บังคับ + ความยาว 6–20 ตัว (นับหลัง trim)
+    if (!trimmedName) {
       newErrors.name = "Name is required";
+    } else if (trimmedName.length < 6 || trimmedName.length > 20) {
+      newErrors.name = "Name must be between 6 and 20 characters";
     }
 
     if (!email.trim()) {
@@ -95,14 +104,15 @@ export default function RegisterForm({
 
     try {
       const data = await register({
-        name,
+        name: name.trim(),
         email,
         phone,
         password,
         asSitter,
       });
       saveAuth(data, true);
-      router.push("/");
+      // Sitter → หน้า profile | Owner → homepage
+      router.push(asSitter ? "/sitter/profile" : "/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Register failed";
       applyRegisterApiError(message);
@@ -159,6 +169,7 @@ export default function RegisterForm({
           name="name"
           autoComplete="name"
           placeholder="Your name"
+          maxLength={20}
           value={name}
           onChange={(event) => {
             setName(event.target.value);

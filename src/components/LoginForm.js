@@ -3,12 +3,26 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { login } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
+import { errorToastClassNames } from "@/lib/toastStyles";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
 
-// src/components — UI ใช้ซ้ำได้
+/** แปลง message จาก BE → ข้อความ toast (แยกอีเมล / รหัส) */
+function getLoginToastMessage(message) {
+  const lower = String(message).toLowerCase();
+
+  if (lower.includes("email")) {
+    return "Incorrect email";
+  }
+  if (lower.includes("password")) {
+    return "Incorrect password";
+  }
+  return message || "Login failed";
+}
+
 // ฟอร์ม login ร่วม owner/sitter — หน้า page เป็นคนเปิด Remember / social
 export default function LoginForm({
   title,
@@ -24,21 +38,26 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
     setLoading(true);
 
     try {
       const data = await login({ email, password });
       // ถ้าหน้าไม่มี Remember ให้ persist เสมอ
       saveAuth(data, showRemember ? remember : true);
-      router.push("/");
+
+      // Sitter → profile | Owner → homepage (อ่าน isSitter จาก API)
+      const isSitter = Boolean(data?.user?.isSitter);
+      router.push(isSitter ? "/sitter/profile" : "/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const message = err instanceof Error ? err.message : "Login failed";
+      // Toast มุมขวาล่าง — แยกอีเมลผิด / รหัสผิด ตาม message จาก BE
+      toast(getLoginToastMessage(message), {
+        classNames: errorToastClassNames,
+      });
     } finally {
       setLoading(false);
     }
@@ -103,8 +122,6 @@ export default function LoginForm({
           </button>
         </p>
       ) : null}
-
-      {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
 
       <button className="btn btn-primary w-full" type="submit" disabled={loading}>
         {loading ? "Logging in..." : "Login"}
