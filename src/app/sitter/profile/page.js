@@ -11,7 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
+import { toast } from "sonner";
 import { updateStoredUser } from "@/lib/auth";
+import {
+  errorToastClassNames,
+  successToastClassNames,
+} from "@/lib/toastStyles";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -19,11 +24,18 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.com$/i;
 
+const APPROVAL_STYLES = {
+  Approved: { text: "text-green", dot: "bg-green" },
+  Rejected: { text: "text-red", dot: "bg-red" },
+  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
+};
+
 const initialForm = {
   fullName: "",
   experience: "",
   phone: "",
   dateOfBirth: "",
+  idNumber: "",
   email: "",
   introduction: "",
   tradeName: "",
@@ -43,6 +55,8 @@ const initialErrors = {
   experience: "",
   phone: "",
   email: "",
+  dateOfBirth: "",
+  idNumber: "",
   tradeName: "",
   petTypes: "",
   gallery: "",
@@ -65,13 +79,14 @@ export default function PetSitterProfilePage() {
   const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
+  const [approvalStatus, setApprovalStatus] = useState("");
 
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
+  const approvalStyle = APPROVAL_STYLES[approvalStatus] ?? APPROVAL_STYLES["Waiting for approve"];
 
   async function loadSubDistricts(districtId) {
     if (!districtId) {
@@ -93,6 +108,7 @@ export default function PetSitterProfilePage() {
       experience: profile.experience_years ?? "",
       phone: profile.phone ?? "",
       dateOfBirth: profile.date_of_birth ?? "",
+      idNumber: profile.id_number ?? "",
       email: profile.email ?? "",
       introduction: profile.introduction ?? "",
       tradeName: profile.display_name ?? "",
@@ -115,6 +131,7 @@ export default function PetSitterProfilePage() {
       phone: profile.phone,
       avatarUrl: profile.avatar_url,
     });
+    setApprovalStatus(profile.approval_status ?? "");
     return nextForm;
   }
 
@@ -293,6 +310,27 @@ export default function PetSitterProfilePage() {
       newErrors.email = "Email must include @ and end with .com";
     }
 
+    if (!form.idNumber.trim()) {
+      newErrors.idNumber = "ID number is required";
+    } else if (!/^\d{13}$/.test(form.idNumber.trim())) {
+      newErrors.idNumber = "ID number must be 13 digits";
+    }
+
+    if (!form.dateOfBirth) {
+      newErrors.dateOfBirth = "Date of birth is required";
+    } else {
+      const today = new Date();
+      const minBirthDate = new Date(
+        today.getFullYear() - 18,
+        today.getMonth(),
+        today.getDate(),
+      );
+      const birthDate = new Date(`${form.dateOfBirth}T00:00:00`);
+      if (birthDate > minBirthDate) {
+        newErrors.dateOfBirth = "Pet sitter must be at least 18 years old";
+      }
+    }
+
     if (!form.tradeName.trim()) {
       newErrors.tradeName = "Pet sitter name is required";
     }
@@ -336,7 +374,6 @@ export default function PetSitterProfilePage() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
-    setSuccess("");
 
     if (!validateForm()) {
       return;
@@ -348,9 +385,7 @@ export default function PetSitterProfilePage() {
       const formData = new FormData();
       formData.append("name", form.fullName.trim());
       formData.append("phone", form.phone.trim());
-      if (form.dateOfBirth) {
-        formData.append("date_of_birth", form.dateOfBirth);
-      }
+      formData.append("date_of_birth", form.dateOfBirth);
       formData.append("display_name", form.tradeName);
       formData.append("introduction", form.introduction);
       formData.append("my_place", form.myPlace);
@@ -361,7 +396,8 @@ export default function PetSitterProfilePage() {
       formData.append("province", form.province);
       formData.append("post_code", form.postCode);
       formData.append("experience_years", form.experience);
-      formData.append("email", form.email.trim())
+      formData.append("email", form.email.trim());
+      formData.append("id_number", form.idNumber.trim());
 
       form.petTypes.forEach((petType) => {
         formData.append("pet_types", petType);
@@ -386,7 +422,9 @@ export default function PetSitterProfilePage() {
       setDeletedPhotoIds([]);
       await loadProfile();
       window.dispatchEvent(new Event("sitter-profile-updated"));
-      setSuccess(json.message || "Profile updated successfully");
+      toast(json.message || "Profile updated successfully", {
+        classNames: successToastClassNames,
+      });
     } catch (err) {
       const message =
         err.response?.data?.message ||
@@ -398,7 +436,9 @@ export default function PetSitterProfilePage() {
       if (message.includes("Email is already in use")) {
         setErrors((prev) => ({ ...prev, email: message }));
       }
-      setError(message);
+      toast(message, {
+        classNames: errorToastClassNames,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -409,13 +449,15 @@ export default function PetSitterProfilePage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
           <h1 className="text-h3 font-bold text-gray-900">Pet Sitter Profile</h1>
-          <p className="flex items-center gap-2 text-body-2 text-green">
-            <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full bg-green"
-              aria-hidden="true"
-            />
-            Approved
-          </p>
+          {approvalStatus ? (
+            <p className={`flex items-center gap-2 text-body-2 ${approvalStyle.text}`}>
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${approvalStyle.dot}`}
+                aria-hidden="true"
+              />
+              {approvalStatus}
+            </p>
+          ) : null}
         </div>
         <button
           type="submit"
@@ -427,7 +469,6 @@ export default function PetSitterProfilePage() {
       </header>
 
       {error ? <p className="text-body-2 text-red">{error}</p> : null}
-      {success ? <p className="text-body-2 text-green">{success}</p> : null}
 
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
@@ -527,28 +568,41 @@ export default function PetSitterProfilePage() {
             </FormField>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <p className="text-body-2 text-black">Date of Birth</p>
-            <div className="relative">
-              {form.dateOfBirth ? null : (
-                <span className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2 text-body-2 text-gray-400">
-                  Select your date of birth
-                </span>
-              )}
+          <div className="grid gap-x-10 gap-y-4 md:grid-cols-2">
+            <FormField label="Date of Birth" required error={errors.dateOfBirth}>
+              <div className="relative">
+                {form.dateOfBirth ? null : (
+                  <span className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2 text-body-2 text-gray-400">
+                    Select your date of birth
+                  </span>
+                )}
+                <input
+                  className={`${getInputClassName("dateOfBirth")} pr-12 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
+                    form.dateOfBirth ? "" : "text-transparent"
+                  }`}
+                  type="date"
+                  name="dateOfBirth"
+                  value={form.dateOfBirth}
+                  onChange={handleChange}
+                />
+                <Calendar
+                  className="pointer-events-none absolute top-1/2 right-3 h-6 w-6 -translate-y-1/2 text-gray-400"
+                  aria-hidden="true"
+                />
+              </div>
+            </FormField>
+
+            <FormField label="ID Number" required error={errors.idNumber}>
               <input
-                className={`input pr-12 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
-                  form.dateOfBirth ? "" : "text-transparent"
-                }`}
-                type="date"
-                name="dateOfBirth"
-                value={form.dateOfBirth}
+                className={getInputClassName("idNumber")}
+                type="text"
+                name="idNumber"
+                value={form.idNumber}
                 onChange={handleChange}
+                maxLength={13}
+                inputMode="numeric"
               />
-              <Calendar
-                className="pointer-events-none absolute top-1/2 right-3 h-6 w-6 -translate-y-1/2 text-gray-400"
-                aria-hidden="true"
-              />
-            </div>
+            </FormField>
           </div>
 
           <FormField label="Introduction (Describe about yourself as pet sitter)">

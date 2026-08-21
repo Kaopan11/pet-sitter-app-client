@@ -1,7 +1,7 @@
 // src/app — หน้าเว็บตามโฟลเดอร์ (App Router)
 // ไฟล์นี้ครอบทุกหน้า: ใส่ CSS รวม + title ของแอป
 import "./globals.css";
-import { Toaster } from "sonner";
+import Toaster from "@/components/Toaster";
 
 export const metadata = {
   title: "Pet Sitter App",
@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans bg-white">
         <main className="flex-1">{children}</main>
-        <Toaster richColors position="bottom-right" />
+        <Toaster />
       </body>
     </html>
   );
