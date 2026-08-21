@@ -33,6 +33,27 @@ export default function RegisterForm({
     return `input ${errors[field] ? "input-error" : ""}`;
   }
 
+  /** แยก error จาก API ไปที่ฟิลด์ที่ถูกต้อง (email / phone) */
+  function applyRegisterApiError(message) {
+    const lower = message.toLowerCase();
+
+    if (
+      lower.includes("phone") ||
+      message.includes("Phone number is already in use")
+    ) {
+      setErrors((prev) => ({ ...prev, phone: message }));
+      return;
+    }
+
+    if (lower.includes("email")) {
+      setErrors((prev) => ({ ...prev, email: message }));
+      return;
+    }
+
+    // error ทั่วไป — แสดงใต้ฟอร์ม
+    setError(message);
+  }
+
   function validateForm() {
     const newErrors = {};
 
@@ -84,15 +105,7 @@ export default function RegisterForm({
       router.push("/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Register failed";
-      const lower = message.toLowerCase();
-
-      if (lower.includes("email")) {
-        setErrors((prev) => ({ ...prev, email: message }));
-      } else if (lower.includes("phone")) {
-        setErrors((prev) => ({ ...prev, phone: message }));
-      }
-
-      setError(message);
+      applyRegisterApiError(message);
     } finally {
       setLoading(false);
     }
@@ -186,6 +199,7 @@ export default function RegisterForm({
           onChange={(event) => {
             setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
             setErrors((prev) => ({ ...prev, phone: "" }));
+            setError("");
           }}
         />
         {errors.phone ? <p className="text-body-3 text-red">{errors.phone}</p> : null}
@@ -211,7 +225,9 @@ export default function RegisterForm({
         ) : null}
       </div>
 
-      {error ? <p className="text-center text-body-3 text-red">{error}</p> : null}
+      {error && !errors.email && !errors.phone ? (
+        <p className="text-center text-body-3 text-red">{error}</p>
+      ) : null}
 
       <button className="btn btn-primary w-full" type="submit" disabled={loading}>
         {loading

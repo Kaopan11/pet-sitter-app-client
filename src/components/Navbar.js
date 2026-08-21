@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { clearAuth, getToken, getUser } from "@/lib/auth";
+import { usePathname } from "next/navigation";
+import { clearAuth, getToken, getUser, updateStoredUser } from "@/lib/auth";
 
-const FALLBACK_AVATAR = "/navbar/profile.png";
+const FALLBACK_AVATAR = "/icon/user.svg";
 
 function getAvatarSrc(user) {
   return (
     user?.avatarUrl ||
+    user?.avatar_url ||
     user?.avatar ||
     user?.profileImage ||
     user?.image ||
@@ -72,7 +72,7 @@ function IconButton({ src, alt, hasDot }) {
 }
 
 export default function Navbar() {
-  const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [ready, setReady] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,16 +85,51 @@ export default function Navbar() {
     typeof avatarSrc === "string" && /^https?:\/\//.test(avatarSrc);
 
   useEffect(() => {
-    function syncUser() {
+    let cancelled = false;
+
+    function syncFromStorage() {
       const token = getToken();
       setUser(token ? getUser() : null);
       setReady(true);
     }
 
-    syncUser();
-    window.addEventListener("owner-profile-updated", syncUser);
-    return () => window.removeEventListener("owner-profile-updated", syncUser);
-  }, []);
+    async function refreshFromApi() {
+      syncFromStorage();
+      const token = getToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!token || !apiUrl) return;
+
+      try {
+        const res = await fetch(`${apiUrl}/api/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || cancelled || !json.data) return;
+
+        const nextUser = updateStoredUser({
+          name: json.data.name,
+          email: json.data.email,
+          phone: json.data.phone,
+          avatarUrl: json.data.avatar_url ?? json.data.avatarUrl,
+        });
+        if (!cancelled && nextUser) setUser(nextUser);
+      } catch {
+        // keep the user already loaded from storage
+      }
+    }
+
+    refreshFromApi();
+    window.addEventListener("auth-changed", syncFromStorage);
+    window.addEventListener("owner-profile-updated", refreshFromApi);
+    window.addEventListener("sitter-profile-updated", refreshFromApi);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("auth-changed", syncFromStorage);
+      window.removeEventListener("owner-profile-updated", refreshFromApi);
+      window.removeEventListener("sitter-profile-updated", refreshFromApi);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -146,24 +181,23 @@ export default function Navbar() {
               <div className="relative" ref={menuRef}>
                 <button
                   type="button"
-                  className="relative size-12 overflow-clip rounded-full"
+                  className="relative flex size-12 items-center justify-center overflow-clip rounded-full bg-gray-200"
                   aria-label="Open profile menu"
                   aria-expanded={menuOpen}
                   onClick={() => setMenuOpen((open) => !open)}
                 >
                   {isRemoteAvatar ? (
                     <img
+                      key={avatarSrc}
                       src={avatarSrc}
                       alt={user?.name || "Profile"}
                       className="size-12 rounded-full object-cover"
                     />
                   ) : (
-                    <Image
-                      src={avatarSrc}
+                    <img
+                      src={FALLBACK_AVATAR}
                       alt={user?.name || "Profile"}
-                      width={48}
-                      height={48}
-                      className="size-12 rounded-full object-cover"
+                      className="size-6"
                     />
                   )}
                 </button>

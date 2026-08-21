@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import axios from "axios";
+import { updateStoredUser } from "@/lib/auth";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -61,6 +62,7 @@ export default function PetSitterProfilePage() {
   const [imageFile, setImageFile] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [galleryFiles, setGalleryFiles] = useState([]);
+  const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -107,6 +109,12 @@ export default function PetSitterProfilePage() {
     setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
     setPhotos(profile.sitter_photos ?? []);
+    updateStoredUser({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      avatarUrl: profile.avatar_url,
+    });
     return nextForm;
   }
 
@@ -249,17 +257,9 @@ export default function PetSitterProfilePage() {
     }
   }
 
-  async function handleDeletePhoto(photoId) {
-    try {
-      await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${photoId}`);
-      setPhotos((current) => current.filter((photo) => photo.id !== photoId));
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Failed to delete photo",
-      );
-    }
+  function handleDeletePhoto(photoId) {
+    setPhotos((current) => current.filter((photo) => photo.id !== photoId));
+    setDeletedPhotoIds((current) => [...current, photoId]);
   }
 
   function handleRemoveGalleryFile(index) {
@@ -377,8 +377,13 @@ export default function PetSitterProfilePage() {
 
       const { data: json } = await axios.put(`${API_BASE_URL}/api/sitters/me`, formData);
 
+      for (const id of deletedPhotoIds) {
+        await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${id}`);
+      }
+
       setImageFile(null);
       setGalleryFiles([]);
+      setDeletedPhotoIds([]);
       await loadProfile();
       window.dispatchEvent(new Event("sitter-profile-updated"));
       setSuccess(json.message || "Profile updated successfully");
@@ -624,7 +629,7 @@ export default function PetSitterProfilePage() {
                 />
                 <button
                   type="button"
-                  className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-gray-400"
+                  className="absolute top-2 right-2 flex size-6 cursor-pointer items-center justify-center rounded-full bg-gray-400 transition-colors hover:bg-gray-600"
                   aria-label="Delete photo"
                   onClick={() => handleDeletePhoto(photo.id)}
                 >
@@ -644,7 +649,7 @@ export default function PetSitterProfilePage() {
                 />
                 <button
                   type="button"
-                  className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-gray-400"
+                  className="absolute top-2 right-2 flex size-6 cursor-pointer items-center justify-center rounded-full bg-gray-400 transition-colors hover:bg-gray-600"
                   aria-label="Remove photo"
                   onClick={() => handleRemoveGalleryFile(index)}
                 >
