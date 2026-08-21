@@ -19,6 +19,12 @@ const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.com$/i;
 
+const APPROVAL_STYLES = {
+  Approved: { text: "text-green", dot: "bg-green" },
+  Rejected: { text: "text-red", dot: "bg-red" },
+  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
+};
+
 const initialForm = {
   fullName: "",
   experience: "",
@@ -69,9 +75,11 @@ export default function PetSitterProfilePage() {
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
+  const [approvalStatus, setApprovalStatus] = useState("");
 
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
+  const approvalStyle = APPROVAL_STYLES[approvalStatus] ?? APPROVAL_STYLES["Waiting for approve"];
 
   async function loadSubDistricts(districtId) {
     if (!districtId) {
@@ -115,6 +123,7 @@ export default function PetSitterProfilePage() {
       phone: profile.phone,
       avatarUrl: profile.avatar_url,
     });
+    setApprovalStatus(profile.approval_status ?? "");
     return nextForm;
   }
 
@@ -409,13 +418,15 @@ export default function PetSitterProfilePage() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
           <h1 className="text-h3 font-bold text-gray-900">Pet Sitter Profile</h1>
-          <p className="flex items-center gap-2 text-body-2 text-green">
-            <span
-              className="h-1.5 w-1.5 shrink-0 rounded-full bg-green"
-              aria-hidden="true"
-            />
-            Approved
-          </p>
+          {approvalStatus ? (
+            <p className={`flex items-center gap-2 text-body-2 ${approvalStyle.text}`}>
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${approvalStyle.dot}`}
+                aria-hidden="true"
+              />
+              {approvalStatus}
+            </p>
+          ) : null}
         </div>
         <button
           type="submit"

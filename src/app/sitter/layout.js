@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare, ArrowLeftRight } from "lucide-react";
 import axios from "axios";
-import { getUser } from "@/lib/auth";
+import { clearAuth, getUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
@@ -71,6 +71,11 @@ export default function SitterLayout({ children }) {
     };
   }, [router]);
 
+  function handleLogout() {
+    clearAuth();
+    window.location.href = "/";
+  }
+
   if (!isSitter) {
     return null;
   }
@@ -116,7 +121,8 @@ export default function SitterLayout({ children }) {
           </Link>
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-6 py-6 text-body-2 text-gray-400 transition-colors hover:text-gray-600"
+            onClick={handleLogout}
+            className="flex w-full cursor-pointer items-center gap-3 px-6 py-6 text-body-2 text-gray-400 transition-colors hover:text-gray-600"
           >
             <LogOut className="h-6 w-6" />
             Log Out

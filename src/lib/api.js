@@ -89,6 +89,14 @@ export async function register({ name, email, phone, password, asSitter }) {
   return json.data;
 }
 
+// owner ที่ login แล้วกด Become a Pet Sitter → ใช้ logic เดียวกับ register asSitter
+export async function becomeSitter() {
+  const json = await apiFetch("/api/auth/become-sitter", {
+    method: "POST",
+  });
+  return json.data;
+}
+
 //ยิง api บน owner profile
 export async function getProfile() {
   const json = await apiFetch("/api/users/me", {});
