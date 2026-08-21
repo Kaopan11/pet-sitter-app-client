@@ -71,7 +71,7 @@ export default function CTASection() {
                     {!isLoggedIn && (
                         <Link
                             href="/register?type=sitter"
-                            className="inline-flex items-center justify-center rounded-full px-8 py-3 sm:px-10 sm:py-3.5 text-sm sm:text-base font-bold text-[#FF7037] transition-all active:scale-[0.98]"
+                            className="inline-flex items-center justify-center rounded-full bg-[#FFF1EC] px-8 py-3 sm:px-10 sm:py-3.5 text-sm sm:text-base font-bold text-[#FF7037] transition-all active:scale-[0.98]"
                         >
                             Become A Pet Sitter
                         </Link>
