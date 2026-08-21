@@ -236,7 +236,9 @@ export default function OwnerProfilePage() {
                   className="size-full object-cover"
                 />
               ) : (
+                <div className="flex size-full items-center justify-center">
                 <UserRound className="size-24 text-white" aria-hidden="true" />
+              </div>
               )}
             </div>
             <button
