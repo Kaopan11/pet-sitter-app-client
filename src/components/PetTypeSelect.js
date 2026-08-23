@@ -10,25 +10,11 @@ const PET_TYPES = [
   { id: "rabbit", label: "Rabbit" },
 ];
 
-export default function PetTypeSelect({
-  value,
-  defaultValue = ["cat", "dog"],
-  onChange,
-  error,
-}) {
+export default function PetTypeSelect({ value = [], onChange, error }) {
   const listId = useId();
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [uncontrolled, setUncontrolled] = useState(defaultValue);
-  const isControlled = value != null;
-  const selected = isControlled ? value : uncontrolled;
-
-  function commit(next) {
-    if (!isControlled) {
-      setUncontrolled(next);
-    }
-    onChange?.(next);
-  }
+  const selectedPets = PET_TYPES.filter((pet) => value.includes(pet.id));
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -52,18 +38,16 @@ export default function PetTypeSelect({
   }, []);
 
   function toggle(id) {
-    commit(
-      selected.includes(id)
-        ? selected.filter((item) => item !== id)
-        : [...selected, id],
+    onChange?.(
+      value.includes(id)
+        ? value.filter((item) => item !== id)
+        : [...value, id],
     );
   }
 
   function remove(id) {
-    commit(selected.filter((item) => item !== id));
+    onChange?.(value.filter((item) => item !== id));
   }
-
-  const selectedPets = PET_TYPES.filter((pet) => selected.includes(pet.id));
 
   return (
     <div className="relative" ref={rootRef}>
@@ -117,7 +101,7 @@ export default function PetTypeSelect({
           className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 bg-white py-1 shadow-dropdown"
         >
           {PET_TYPES.map((pet) => {
-            const isSelected = selected.includes(pet.id);
+            const isSelected = value.includes(pet.id);
 
             return (
               <li key={pet.id} role="none">

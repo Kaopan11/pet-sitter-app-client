@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import axios from "axios";
 import { toast } from "sonner";
-import { updateStoredUser } from "@/lib/auth";
 import {
   errorToastClassNames,
   successToastClassNames,
@@ -70,22 +69,20 @@ const initialErrors = {
 export default function PetSitterProfilePage() {
   const avatarInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  const skipAddressSelect = useRef(true);
+  const skipAddressSelect = useRef(true); // ถ้าเราเข้าหน้ามาแล้ว province โหลดข้อมูลมาใส่ onValueChange จะทำงานเองทำให้ district, subDistrict ถูกล้าง จึงต้องมีตัวนี้ไว้ skip แค่ตอนเข้า page
   const [form, setForm] = useState(initialForm);
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [photos, setPhotos] = useState([]);
-  const [galleryFiles, setGalleryFiles] = useState([]);
-  const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(""); // เอาไว้โชว์บนจอ (avatar)
+  const [imageFile, setImageFile] = useState(null); // เอาไว้ส่งตอนกด update (avatar)
+  const [photos, setPhotos] = useState([]); // รุปจาก database ที่จะเอามา map แสดงบนจอ
+  const [galleryFiles, setGalleryFiles] = useState([]); // รูปใหม่ที่เลือกแล้วแต่ยังไม่กด Update
+  const [deletedPhotoIds, setDeletedPhotoIds] = useState([]); // รูปที่จะถูกลบเมื่อกด update
+  const [isSaving, setIsSaving] = useState(false); // สำหรับการบอกว่ากำลังบันทึกข้อมูลอยู่ผ่านทางปุ่ม update
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [approvalStatus, setApprovalStatus] = useState("");
 
-  const districts =
-    provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
+  const districts = provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
   const approvalStyle = APPROVAL_STYLES[approvalStatus] ?? APPROVAL_STYLES["Waiting for approve"];
 
   async function loadSubDistricts(districtId) {
@@ -93,7 +90,6 @@ export default function PetSitterProfilePage() {
       setSubDistricts([]);
       return;
     }
-
     const { data } = await axios.get(
       `https://geoth.thiti.dev/api/districts-with-subdistricts/${districtId}`,
     );
@@ -125,19 +121,12 @@ export default function PetSitterProfilePage() {
     setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
     setPhotos(profile.sitter_photos ?? []);
-    updateStoredUser({
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone,
-      avatarUrl: profile.avatar_url,
-    });
     setApprovalStatus(profile.approval_status ?? "");
     return nextForm;
   }
 
   async function load() {
     skipAddressSelect.current = true;
-
     try {
       const profile = await loadProfile();
       const { data } = await axios.get(
@@ -152,10 +141,11 @@ export default function PetSitterProfilePage() {
         await loadSubDistricts(district.id);
       }
     } catch (err) {
-      setError(
+      toast(
         err.response?.data?.message ||
           err.response?.data?.error ||
           "Failed to load profile",
+        { classNames: errorToastClassNames },
       );
     } finally {
       // ยังไม่เปิดรับ onValueChange ทันทีที่ API กลับมา
@@ -227,12 +217,13 @@ export default function PetSitterProfilePage() {
       return;
     }
 
+    // สำหรับตอนเลือก experience
     setForm((current) => ({ ...current, [name]: value }));
   }
 
   function handleAvatarChange(event) {
     const file = event.target.files?.[0];
-    event.target.value = "";
+    event.target.value = ""; // ทำให้ input ว่างเหมือนยังไม่เคยเลือก เพื่อให้รอบหน้าเลือกไฟล์เดิมได้
     if (!file) return;
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
@@ -373,7 +364,6 @@ export default function PetSitterProfilePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
 
     if (!validateForm()) {
       return;
@@ -467,8 +457,6 @@ export default function PetSitterProfilePage() {
           {isSaving ? "Saving..." : "Update"}
         </button>
       </header>
-
-      {error ? <p className="text-body-2 text-red">{error}</p> : null}
 
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
@@ -848,7 +836,7 @@ function FormField({ label, required, error, children }) {
     <div className="flex flex-col gap-1">
       <span className="text-body-2 text-black">
         {label}
-        {required ? <span className="text-red">*</span> : null}
+        {required && <span className="text-red">*</span>}
       </span>
       {children}
       {error && <p className="text-body-3 text-red">{error}</p>}
