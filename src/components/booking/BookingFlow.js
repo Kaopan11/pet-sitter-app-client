@@ -1,12 +1,15 @@
 "use client";
 
 /**
- * ตัวควบคุมหลักของ Owner Booking (Day 1 = mock ยังไม่ยิง API)
+ * ตัวควบคุมหลักของ Owner Booking
+ * Day 2: ดึง sitter + pets จาก API จริง (ยังไม่ POST booking)
  * Step: 1 Your Pet → 2 Information → 3 Payment → Confirm → Thank You
  */
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import BookingStepper from "@/components/booking/BookingStepper";
 import BookingDetailSidebar from "@/components/booking/BookingDetailSidebar";
 import YourPetStep from "@/components/booking/YourPetStep";
@@ -14,11 +17,13 @@ import InformationStep from "@/components/booking/InformationStep";
 import PaymentStep from "@/components/booking/PaymentStep";
 import ConfirmBookingModal from "@/components/booking/ConfirmBookingModal";
 import ThankYouView from "@/components/booking/ThankYouView";
+import { MOCK_GUEST } from "@/components/booking/mockBookingData";
+import { getMyPets, getSitter } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import {
-  MOCK_GUEST,
-  MOCK_PETS,
-  MOCK_SITTER,
-} from "@/components/booking/mockBookingData";
+  normalizeBookingPet,
+  normalizeBookingSitter,
+} from "@/lib/booking";
 
 const TOTAL_STEPS = 3;
 
@@ -29,6 +34,7 @@ export default function BookingFlow({
   endTime,
   hours,
 }) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedPetIds, setSelectedPetIds] = useState([]);
   const [guest, setGuest] = useState(MOCK_GUEST);
@@ -37,27 +43,76 @@ export default function BookingFlow({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  // ใช้ mock sitter แต่ผูก id จาก URL
-  const sitter = useMemo(
-    () => ({ ...MOCK_SITTER, id: sitterId || MOCK_SITTER.id }),
-    [sitterId],
-  );
+  const [sitter, setSitter] = useState(null);
+  const [pets, setPets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBookingData() {
+      if (!getToken()) {
+        router.replace("/login/owner");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const [sitterRaw, petsRaw] = await Promise.all([
+          getSitter(sitterId),
+          getMyPets(),
+        ]);
+
+        if (cancelled) return;
+
+        const nextSitter = normalizeBookingSitter(sitterRaw);
+        if (!nextSitter?.id) {
+          throw new Error("Pet sitter not found");
+        }
+
+        const nextPets = (Array.isArray(petsRaw) ? petsRaw : [])
+          .map(normalizeBookingPet)
+          .filter((pet) => pet?.id);
+
+        setSitter(nextSitter);
+        setPets(nextPets);
+        setSelectedPetIds([]);
+      } catch (err) {
+        if (!cancelled) {
+          setSitter(null);
+          setPets([]);
+          setError(err instanceof Error ? err.message : "Failed to load booking data");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadBookingData();
+    return () => {
+      cancelled = true;
+    };
+  }, [sitterId, router]);
 
   const selectedPets = useMemo(
-    () => MOCK_PETS.filter((pet) => selectedPetIds.includes(pet.id)),
-    [selectedPetIds],
+    () => pets.filter((pet) => selectedPetIds.includes(pet.id)),
+    [pets, selectedPetIds],
   );
+
+  const sitterPetTypes = sitter?.petTypes ?? [];
 
   // ต้องมีอย่างน้อย 1 ตัวที่ sitter รับได้ ถึง Next/Confirm ได้
   const hasEligibleSelection = selectedPets.some((pet) =>
-    sitter.petTypes.includes(String(pet.petType).toLowerCase()),
+    sitterPetTypes.includes(String(pet.petType).toLowerCase()),
   );
 
   function togglePet(petId) {
+    const id = String(petId);
     setSelectedPetIds((current) =>
-      current.includes(petId)
-        ? current.filter((id) => id !== petId)
-        : [...current, petId],
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
     );
   }
 
@@ -74,13 +129,42 @@ export default function BookingFlow({
     setConfirmOpen(true);
   }
 
-  // ยังไม่ POST booking — แค่ไปหน้า Thank You (mock)
+  // ยังไม่ POST booking — แค่ไปหน้า Thank You (mock) จน Day 4
   function handleConfirmYes() {
     setConfirmOpen(false);
     setIsCompleted(true);
   }
 
   const canGoNext = step === 1 ? hasEligibleSelection : true;
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-300 px-4 py-16 sm:px-8">
+        <p className="text-body-2 text-gray-400">Loading booking details...</p>
+      </div>
+    );
+  }
+
+  if (error || !sitter) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-8">
+        <div className="card space-y-4 p-8 text-center">
+          <h1 className="text-h3 text-gray-900">Could not load booking</h1>
+          <p className="text-body-2 text-gray-500">
+            {error || "Pet sitter not found"}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/find-sitter" className="btn btn-secondary">
+              Back to search
+            </Link>
+            <Link href="/login/owner" className="btn btn-primary">
+              Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isCompleted) {
     return (
@@ -118,8 +202,8 @@ export default function BookingFlow({
               <div className="flex-1 px-6 pt-8 sm:px-10">
                 {step === 1 && (
                   <YourPetStep
-                    pets={MOCK_PETS}
-                    sitterPetTypes={sitter.petTypes}
+                    pets={pets}
+                    sitterPetTypes={sitterPetTypes}
                     selectedPetIds={selectedPetIds}
                     onTogglePet={togglePet}
                   />
@@ -182,7 +266,7 @@ export default function BookingFlow({
             </div>
           </div>
 
-          {/* คอลัมน์ขวา: สรุปการจอง + ยอดรวม */}
+          {/* คอลัมน์ขวา: สรุปการจอง + ยอดรวม preview */}
           <BookingDetailSidebar
             sitter={sitter}
             date={date}

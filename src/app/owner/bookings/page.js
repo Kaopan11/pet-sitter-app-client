@@ -331,7 +331,7 @@ export default function BookingHistoryPage() {
                       </div>
                       <div className="min-w-0">
                         <h3
-                          className="text-h3 break-words"
+                          className="text-h3 wrap-break-word"
                           style={{ color: "#000000", fontSize: "clamp(1.125rem, 4vw, 1.5rem)" }}
                         >
                           {booking.sitter?.name || "Unknown"}

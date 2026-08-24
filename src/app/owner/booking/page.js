@@ -7,7 +7,8 @@ export const metadata = {
 
 /**
  * หน้าจองของ Owner
- * URL ตัวอย่าง: /owner/booking?sitter=abc-123&date=2023-08-25&from=07:00&to=10:00
+ * URL ตัวอย่าง:
+ * /owner/booking?sitterId=abc-123&date=2023-08-25&startTime=07:00&endTime=10:00
  * query ไม่ครบ / เวลาไม่ถูก → แสดง Invalid booking link
  */
 export default async function OwnerBookingPage({ searchParams }) {

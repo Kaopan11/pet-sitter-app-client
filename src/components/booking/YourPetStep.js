@@ -10,9 +10,13 @@ const PET_BADGE = {
   rabbit: "badge-rabbit",
 };
 
+function isRemoteSrc(src) {
+  return String(src ?? "").startsWith("http");
+}
+
 function PetTypeBadge({ petType }) {
   const key = String(petType).toLowerCase();
-  const label = key.charAt(0).toUpperCase() + key.slice(1);
+  const label = key ? key.charAt(0).toUpperCase() + key.slice(1) : "Pet";
 
   return <span className={`badge ${PET_BADGE[key] ?? ""}`}>{label}</span>;
 }
@@ -47,14 +51,23 @@ export default function YourPetStep({
     return sitterPetTypes.includes(String(pet.petType).toLowerCase());
   }
 
+  const hasPets = pets.length > 0;
+
   return (
     <section>
       <h2 className="text-body-1 font-medium text-gray-900">Choose your pet</h2>
+
+      {!hasPets ? (
+        <p className="mt-3 text-body-2 text-gray-400">
+          You don&apos;t have any pets yet. Create one to continue booking.
+        </p>
+      ) : null}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
         {pets.map((pet) => {
           const eligible = isEligible(pet);
           const selected = selectedPetIds.includes(pet.id);
+          const remote = isRemoteSrc(pet.avatarUrl);
 
           return (
             <label
@@ -85,6 +98,7 @@ export default function YourPetStep({
                   alt={pet.name}
                   fill
                   sizes="88px"
+                  unoptimized={remote}
                   className="object-cover"
                 />
               </div>

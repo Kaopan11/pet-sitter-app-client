@@ -1,4 +1,4 @@
-/** Stepper 3 ขั้น — active/completed = ส้ม */
+/** Stepper 3 ขั้น — active = ส้ม, completed = ดำ, upcoming = เทา */
 const STEPS = [
   { id: 1, label: "Your Pet" },
   { id: 2, label: "Information" },
@@ -19,11 +19,12 @@ export default function BookingStepper({ currentStep }) {
           let circleClass = "bg-gray-200 text-white";
           let labelClass = "font-medium text-gray-300";
 
-          if (isActive || isCompleted) {
+          if (isCompleted) {
+            circleClass = "bg-black text-white";
+            labelClass = "font-medium text-black";
+          } else if (isActive) {
             circleClass = "bg-orange-500 text-white";
-            labelClass = isActive
-              ? "font-bold text-orange-500"
-              : "font-medium text-orange-500";
+            labelClass = "font-bold text-orange-500";
           }
 
           return (
