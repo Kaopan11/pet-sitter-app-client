@@ -122,14 +122,14 @@ export default function RegisterForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <header className="flex flex-col items-center gap-2 text-center">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
+      <header className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
         <h1 className="text-h2">{title}</h1>
         <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
 
       <div
-        className="mx-auto flex w-full max-w-70 rounded-full bg-gray-100 p-1"
+        className="mx-auto flex w-full max-w-none rounded-full bg-gray-100 p-1 sm:max-w-70"
         role="tablist"
         aria-label="Register as"
       >
@@ -137,7 +137,7 @@ export default function RegisterForm({
           type="button"
           role="tab"
           aria-selected={mode === "owner"}
-          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+          className={`min-h-11 flex-1 rounded-full py-2 text-body-3 font-bold transition ${
             mode === "owner"
               ? "bg-white text-orange-500 ring-1 ring-orange-500"
               : "text-gray-400"
@@ -150,7 +150,7 @@ export default function RegisterForm({
           type="button"
           role="tab"
           aria-selected={mode === "sitter"}
-          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+          className={`min-h-11 flex-1 rounded-full py-2 text-body-3 font-bold transition ${
             mode === "sitter"
               ? "bg-white text-orange-500 ring-1 ring-orange-500"
               : "text-gray-400"
