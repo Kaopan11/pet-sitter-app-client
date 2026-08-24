@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, AlertCircle, CheckCircle, Clock, MapPin, Calendar, Clock3 } from "lucide-react";
+import { Phone, SquarePen, X, MapPin } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken } from "@/lib/auth";
 import { toast } from "sonner";
@@ -21,6 +21,9 @@ const MOCK_BOOKINGS = [
     pet: { name: "Bubba, Daisy" },
     booking_date: "2025-08-25",
     transaction_date: "Tue, 16 Aug 2023",
+    date_label: "Transaction date",
+    transaction_no: "122312",
+    total: 900,
     start_time: "07:00",
     end_time: "10:00",
     duration: 3,
@@ -37,6 +40,9 @@ const MOCK_BOOKINGS = [
     pet: { name: "Mr.Ham, Bingsu" },
     booking_date: "2025-08-25",
     transaction_date: "Tue, 14 Aug 2023",
+    date_label: "Booking date",
+    transaction_no: "122313",
+    total: 900,
     start_time: "07:00",
     end_time: "10:00",
     duration: 3,
@@ -53,6 +59,9 @@ const MOCK_BOOKINGS = [
     pet: { name: "Mr.Ham, Bingsu" },
     booking_date: "2025-08-25",
     transaction_date: "Tue, 24 Apr 2023",
+    date_label: "Booking date",
+    transaction_no: "122314",
+    total: 900,
     start_time: "07:00",
     end_time: "10:00",
     duration: 3,
@@ -71,6 +80,9 @@ const MOCK_BOOKINGS = [
     pet: { name: "Mr.Ham, Bingsu" },
     booking_date: "2025-08-25",
     transaction_date: "Tue, 16 Aug 2023",
+    date_label: "Transaction date",
+    transaction_no: "122315",
+    total: 900,
     start_time: "07:00",
     end_time: "10:00",
     duration: 3,
@@ -86,6 +98,7 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,16 +156,23 @@ export default function BookingHistoryPage() {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { bg: "bg-yellow-100", text: "text-yellow-700", label: "Waiting for confirmation" },
-      confirmed: { bg: "bg-blue-100", text: "text-blue-700", label: "Confirmed" },
-      ongoing: { bg: "bg-green-100", text: "text-green-700", label: "In Progress" },
-      completed: { bg: "bg-green-100", text: "text-green-700", label: "Successful" },
-      cancelled: { bg: "bg-red-100", text: "text-red-700", label: "Cancelled" },
+      pending: { color: "#FA8AC0", label: "Waiting for confirm" },
+      confirmed: { color: "#76D0FC", label: "Confirmed" },
+      ongoing: { color: "#76D0FC", label: "In service" },
+      completed: { color: "#1CCD83", label: "Success" },
+      cancelled: { color: "#EA1010", label: "Cancelled" },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
     return (
-      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${config.bg} ${config.text}`}>
+      <span
+        className="inline-flex items-center gap-2 text-body-2"
+        style={{ color: config.color }}
+      >
+        <span
+          className="inline-block rounded-full"
+          style={{ width: "6px", height: "6px", backgroundColor: config.color }}
+        />
         {config.label}
       </span>
     );
@@ -176,12 +196,14 @@ export default function BookingHistoryPage() {
   };
 
   return (
-    <div className="flex h-full bg-gray-100">
-      <div className="mx-10 mt-6 flex w-full flex-row justify-center">
+    <div className="flex min-h-full bg-gray-100">
+      <div className="mx-4 mt-6 flex w-full flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
         <AccountSidebar />
 
-        <div className="card m-4 ml-6 flex flex-col w-2/3 p-6 sm:p-8">
-          <h2 className="text-h2 mb-8">Booking History</h2>
+        <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:w-2/3 lg:p-8">
+          <h2 className="mb-6 text-h2 lg:mb-8" style={{ fontSize: "clamp(1.5rem, 5vw, 2.25rem)" }}>
+            Booking History
+          </h2>
 
           {loadError && (
             <div className="rounded-lg bg-red-50 p-4 text-red-700">
@@ -202,12 +224,26 @@ export default function BookingHistoryPage() {
               {bookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedBooking(booking)}
+                  className="w-full bg-white hover:shadow-md transition-shadow flex flex-col p-4 sm:p-6 cursor-pointer"
+                  style={{
+                    borderRadius: "16px",
+                    border: `1px solid ${
+                      booking.status === "ongoing"
+                        ? "#76D0FC"
+                        : booking.status === "completed"
+                        ? "#1CCD83"
+                        : "#DCDFED"
+                    }`
+                  }}
                 >
                   {/* Header: Sitter info + Transaction date + Status badge */}
-                  <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className="relative size-16 overflow-hidden rounded-full bg-gray-200 shrink-0">
+                  <div
+                    className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                    style={{ borderBottom: "1px solid #DCDFED", paddingBottom: "16px", marginBottom: "16px" }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative size-14 sm:size-16 overflow-hidden rounded-full bg-gray-200 shrink-0">
                         {booking.sitter?.avatar_url ? (
                           <img
                             src={booking.sitter.avatar_url}
@@ -218,113 +254,265 @@ export default function BookingHistoryPage() {
                           <div className="size-full bg-gray-300" />
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 text-base">{booking.sitter?.name || "Unknown"}</h3>
-                        <p className="text-sm text-gray-600">By {booking.owner_name}</p>
+                      <div className="min-w-0">
+                        <h3
+                          className="text-h3 break-words"
+                          style={{ color: "#000000", fontSize: "clamp(1.125rem, 4vw, 1.5rem)" }}
+                        >
+                          {booking.sitter?.name || "Unknown"}
+                        </h3>
+                        <p
+                          className="text-body-1"
+                          style={{ color: "#000000", fontSize: "clamp(0.9375rem, 3vw, 1.125rem)" }}
+                        >
+                          By {booking.owner_name}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400 mb-2">{booking.transaction_date}</p>
+                    <div className="text-left sm:text-right shrink-0">
+                      <p className="mb-2 text-body-3" style={{ color: "#AEB1C3" }}>
+                        {booking.date_label || "Booking date"}: {booking.transaction_date}
+                      </p>
                       {getStatusBadge(booking.status)}
                     </div>
                   </div>
 
                   {/* Booking Details Row */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4 pb-4 border-b border-gray-200">
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold mb-1">Date & Time:</p>
-                      <p className="text-sm text-gray-900 font-medium">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-0" style={{ marginBottom: "24px" }}>
+                    <div className="flex flex-col sm:pr-6 sm:border-r" style={{ borderColor: "#DCDFED" }}>
+                      <span className="text-body-3 mb-1" style={{ color: "#7B7E8F" }}>
+                        Date & Time:
+                      </span>
+                      <span className="flex flex-wrap items-center gap-2 text-body-2" style={{ color: "#3A3B46" }}>
                         {formatDate(booking.booking_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
-                      </p>
-                      {booking.status === "pending" && (
-                        <button className="text-orange-500 text-xs font-semibold mt-1 hover:text-orange-600">
-                          ✎ Change
-                        </button>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold mb-1">Duration:</p>
-                      <p className="text-sm text-gray-900 font-medium">{booking.duration} hours</p>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-gray-500 font-semibold mb-1">Pet:</p>
-                      <p className="text-sm text-gray-900 font-medium">{booking.pet?.name}</p>
-                    </div>
-                  </div>
-
-                  {/* Status Message Box */}
-                  <div className="mb-6">
-                    {booking.status === "pending" && (
-                      <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
-                        Waiting Pet Sitter for confirm booking
-                      </div>
-                    )}
-                    {booking.status === "ongoing" && (
-                      <div className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
-                        Your pet is already in Pet Sitter care!
-                      </div>
-                    )}
-                    {booking.status === "completed" && (
-                      <div className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
-                        <p className="font-semibold">Success date:</p>
-                        <p className="text-green-600">{formatDate(booking.completed_date)} | {booking.completed_time} AM</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-wrap items-center gap-3">
-                    {booking.status === "pending" && (
-                      <button
-                        onClick={() => toast.info("Messaging feature coming soon")}
-                        className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-                      >
-                        <MessageCircle className="size-4" />
-                        Send Message
-                      </button>
-                    )}
-                    {booking.status === "ongoing" && (
-                      <button
-                        onClick={() => toast.info("Messaging feature coming soon")}
-                        className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-                      >
-                        Send Message
-                      </button>
-                    )}
-                    {booking.status === "completed" && (
-                      <>
-                        <button
-                          onClick={() => toast.info("Report feature coming soon")}
-                          className="text-orange-500 text-sm font-semibold hover:text-orange-600 transition-colors"
-                        >
-                          Report
-                        </button>
-                        {booking.has_review ? (
+                        {booking.status === "pending" && (
                           <button
-                            onClick={() => toast.info("Your review feature coming soon")}
-                            className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity text-body-2"
+                            style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                           >
-                            Your Review
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => toast.info("Review feature coming soon")}
-                            className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-                          >
-                            Review
+                            <SquarePen style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
+                            Change
                           </button>
                         )}
-                      </>
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:px-6 sm:border-r" style={{ borderColor: "#DCDFED" }}>
+                      <span className="text-body-3 mb-1" style={{ color: "#7B7E8F" }}>
+                        Duration:
+                      </span>
+                      <span className="text-body-2" style={{ color: "#3A3B46" }}>
+                        {booking.duration} hours
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col sm:pl-6">
+                      <span className="text-body-3 mb-1" style={{ color: "#7B7E8F" }}>
+                        Pet:
+                      </span>
+                      <span className="text-body-2" style={{ color: "#3A3B46" }}>
+                        {booking.pet?.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status Message Box with Actions */}
+                  <div>
+                    {booking.status === "pending" && (
+                      <div
+                        className="w-full flex items-center"
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", borderRadius: "8px", gap: "16px", minHeight: "80px", boxSizing: "border-box" }}
+                      >
+                        <span className="text-body-3" style={{ color: "#7B7E8F" }}>
+                          Waiting Pet Sitter for confirm booking
+                        </span>
+                      </div>
+                    )}
+                    {booking.status === "ongoing" && (
+                      <div
+                        className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", gap: "16px", borderRadius: "8px", boxSizing: "border-box" }}
+                      >
+                        <span className="text-body-3" style={{ color: "#7B7E8F" }}>
+                          Your pet is already in Pet Sitter care!
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
+                            className="btn btn-primary flex-1 sm:flex-none"
+                            style={{ minWidth: "120px" }}
+                          >
+                            Send Message
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
+                            className="btn btn-icon shrink-0"
+                            style={{ width: "48px", height: "48px" }}
+                            title="Call"
+                          >
+                            <Phone className="size-6" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {booking.status === "completed" && (
+                      <div
+                        className="w-full flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between"
+                        style={{ backgroundColor: "#E7FDF4", padding: "16px", borderRadius: "8px", minHeight: "80px", boxSizing: "border-box" }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-body-3" style={{ color: "#1CCD83" }}>
+                            Success date:
+                          </span>
+                          <span className="text-body-3" style={{ color: "#1CCD83" }}>
+                            {formatDate(booking.completed_date)} | {booking.completed_time} AM
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Report feature coming soon"); }}
+                            className="btn btn-ghost shrink-0"
+                          >
+                            Report
+                          </button>
+                          {booking.has_review ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toast.info("Your review feature coming soon"); }}
+                              className="btn btn-primary flex-1 sm:flex-none"
+                              style={{ minWidth: "120px" }}
+                            >
+                              Your Review
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toast.info("Review feature coming soon"); }}
+                              className="btn btn-primary flex-1 sm:flex-none"
+                              style={{ minWidth: "120px" }}
+                            >
+                              Review
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
+
                 </div>
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {selectedBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSelectedBooking(null)}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "632px",
+              height: "auto",
+              borderRadius: "16px",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>
+                Booking Detail
+              </h3>
+              <button onClick={() => setSelectedBooking(null)} aria-label="Close" className="hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex flex-col gap-4 px-6 py-5">
+              {getStatusBadge(selectedBooking.status)}
+
+              <div className="flex flex-col gap-1">
+                <p className="text-body-3" style={{ color: "#AEB1C3" }}>
+                  {selectedBooking.date_label || "Booking date"}: {selectedBooking.transaction_date}
+                </p>
+                {selectedBooking.transaction_no && (
+                  <p className="text-body-3" style={{ color: "#AEB1C3" }}>
+                    Transaction No. : {selectedBooking.transaction_no}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-body-3" style={{ color: "#7B7E8F" }}>Pet Sitter:</span>
+                  <span className="text-body-2" style={{ color: "#3A3B46" }}>
+                    {selectedBooking.sitter?.name} By {selectedBooking.owner_name}
+                  </span>
+                </div>
+                <button
+                  onClick={() => toast.info("Map feature coming soon")}
+                  className="inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity text-body-2"
+                  style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
+                >
+                  <MapPin style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
+                  View Map
+                </button>
+              </div>
+
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-body-3" style={{ color: "#7B7E8F" }}>Date & Time:</span>
+                  <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>
+                    {formatDate(selectedBooking.booking_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                  </span>
+                </div>
+                {selectedBooking.status === "pending" && (
+                  <button
+                    onClick={() => toast.info("Change booking feature coming soon")}
+                    className="inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity text-body-2"
+                    style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
+                  >
+                    <SquarePen style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
+                    Change
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-body-3" style={{ color: "#7B7E8F" }}>Duration:</span>
+                <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>{selectedBooking.duration} hours</span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-body-3" style={{ color: "#7B7E8F" }}>Pet:</span>
+                <span className="text-body-2" style={{ color: "#3A3B46" }}>{selectedBooking.pet?.name}</span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              className="flex items-center justify-between"
+              style={{
+                marginLeft: "24px",
+                marginRight: "24px",
+                marginBottom: "24px",
+                borderTop: "1px solid #DCDFED",
+                paddingTop: "16px",
+                gap: "16px",
+                minHeight: "44px"
+              }}
+            >
+              <span className="text-body-2" style={{ color: "#000000" }}>Total</span>
+              <span className="text-body-1" style={{ color: "#000000", textAlign: "right" }}>
+                {selectedBooking.total ? `${selectedBooking.total} THB` : "-"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ export default function AccountSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="card m-4 mr-6 flex h-[289px] w-[292px] shrink-0 flex-col overflow-hidden py-6">
+    <aside className="card m-4 flex h-auto w-full shrink-0 flex-col overflow-hidden py-6 lg:mr-6 lg:h-[289px] lg:w-[292px]">
       <h4 className="px-6 text-black">Account</h4>
 
       <nav aria-label="Account" className="mt-4 flex flex-col">
