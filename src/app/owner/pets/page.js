@@ -51,27 +51,24 @@ export default function OwnerPetsPage() {
           <AccountSidebar />
 
           <section className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-3">
               <h3 className="text-h3">Your Pet</h3>
               <Link
                 href="/owner/pets/create"
-                className="btn btn-primary w-full sm:w-auto"
+                className="btn btn-primary w-auto shrink-0"
               >
                 Create Pet
               </Link>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
               {PETS.map((pet) => (
-                <article
-                  key={pet.id}
-                  className="flex min-w-0 flex-col items-center rounded-2xl border border-gray-200 bg-white px-3 py-5 sm:px-6 sm:py-8"
-                >
-                  <img
-                    src={pet.image}
-                    alt={pet.name}
-                    className="size-20 rounded-full object-cover sm:size-28"
-                  />
+               <article className="flex min-w-0 flex-col items-center rounded-2xl border border-gray-200 bg-white px-6 py-8">
+               <img
+                 src={pet.image}
+                 alt={pet.name}
+                 className="size-28 rounded-full object-cover"
+               />
                   <h4 className="mt-3 truncate text-h4 text-black sm:mt-4">
                     {pet.name}
                   </h4>

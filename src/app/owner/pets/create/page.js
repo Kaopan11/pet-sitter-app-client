@@ -1,158 +1,325 @@
-import AccountSidebar from "../../../components/AccountSidebar";
+"use client";
+
+import { useRef, useState } from "react";
+import Link from "next/link";
+import { Plus, PawPrint } from "lucide-react";
+import AccountSidebar from "@/components/AccountSidebar";
+import { toast } from "sonner";
+
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
+const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
+
+function validatePet({ name, petType, breed, sex, age, color, weight }) {
+  const errors = {};
+
+  if (!name.trim()) {
+    errors.name = "Pet name is required";
+  }
+  if (!petType) {
+    errors.petType = "Pet type is required";
+  }
+  if (!breed.trim()) {
+    errors.breed = "Breed is required";
+  }
+  if (!sex) {
+    errors.sex = "Sex is required";
+  }
+  if (!age.trim()) {
+    errors.age = "Age is required";
+  } else if (!/^\d+(\.\d+)?$/.test(age.trim()) || Number(age) < 0) {
+    errors.age = "Age must be a number";
+  }
+  if (!color.trim()) {
+    errors.color = "Color is required";
+  }
+  if (!weight.trim()) {
+    errors.weight = "Weight is required";
+  } else if (!/^\d+(\.\d+)?$/.test(weight.trim()) || Number(weight) <= 0) {
+    errors.weight = "Weight must be a number";
+  }
+
+  return errors;
+}
 
 export default function OwnerPetsCreatePage() {
+  const imageInputRef = useRef(null);
+  const [name, setName] = useState("");
+  const [petType, setPetType] = useState("");
+  const [breed, setBreed] = useState("");
+  const [sex, setSex] = useState("");
+  const [age, setAge] = useState("");
+  const [color, setColor] = useState("");
+  const [weight, setWeight] = useState("");
+  const [about, setAbout] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [errors, setErrors] = useState({});
+
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
+      setErrors((prev) => ({
+        ...prev,
+        image: "Pet image must be .jpg, .jpeg, or .png and 2MB or smaller",
+      }));
+      return;
+    }
+
+    setErrors((prev) => ({ ...prev, image: "" }));
+    setImageFile(file);
+    setImageUrl((current) => {
+      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const nextErrors = validatePet({
+      name,
+      petType,
+      breed,
+      sex,
+      age,
+      color,
+      weight,
+    });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    if (imageUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(imageUrl);
+    }
+
+    toast.success("Pet form is ready (not saved to the server yet)");
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <div className="mx-4 mt-6 flex w-full min-w-0 flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
-        <AccountSidebar />
+      <div className="mx-4 mt-6 flex w-full min-w-0 flex-col pb-8 sm:mx-6 lg:mx-10">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-2 text-body-3 text-gray-400 lg:px-4"
+        >
+          <span>Pet</span>
+          <span className="mx-1">{">"}</span>
+          <span className="text-black">Create</span>
+        </nav>
 
-        <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
-          <h3 className="text-h3">Your Pet</h3>
-          <div className="mx-4 my-8">
-          <div className="relative my-8 w-fit self-start">
-          <div className="relative size-32 overflow-hidden rounded-full bg-gray-200 lg:size-60">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Owner profile"
-                  className="size-full object-cover"
+        <div className="flex w-full min-w-0 flex-col gap-4 lg:flex-row lg:justify-center lg:gap-0">
+          <AccountSidebar />
+
+          <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
+            <h3 className="text-h3">Your Pet</h3>
+
+            <div className="mx-4 my-8">
+              <div className="relative my-8 w-fit self-start">
+                <div className="relative size-32 overflow-hidden rounded-full bg-gray-200 lg:size-60">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt="Pet"
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex size-full items-center justify-center">
+                      <PawPrint
+                        className="size-24 text-white"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary absolute right-1 bottom-1 flex size-10 cursor-pointer items-center justify-center rounded-full"
+                  aria-label="Upload pet photo"
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  <Plus className="size-5" strokeWidth={2.5} aria-hidden="true" />
+                </button>
+                <input
+                  ref={imageInputRef}
+                  className="hidden"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                  onChange={handleImageChange}
                 />
-              ) : (
-                <div className="flex size-full items-center justify-center">
-                <UserRound className="size-24 text-white" aria-hidden="true" />
               </div>
+              {errors.image && (
+                <p className="mt-2 text-body-3 text-red-500">{errors.image}</p>
               )}
             </div>
-            <button
-              type="button"
-              className="btn-secondary absolute right-1 bottom-1 flex size-10 cursor-pointer items-center justify-center rounded-full disabled:cursor-not-allowed"
-              aria-label="Upload profile photo"
-              onClick={() => avatarInputRef.current?.click()}
-              disabled={isLoading || isSaving}
+
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="flex flex-1 flex-col gap-6"
             >
-              <Plus className="size-5" strokeWidth={2.5} aria-hidden="true" />
-            </button>
-            <input
-              ref={avatarInputRef}
-              className="hidden"
-              type="file"
-              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-              onChange={handleAvatarChange}
-            />
-            </div>
-            {errors.avatar && (
-              <p className="mt-2 text-body-3 text-red-500">{errors.avatar}</p>
-            )}
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="flex flex-1 flex-col gap-6"
-          >
-            <label className="flex flex-col gap-1">
-              <span className="text-body-3 font-bold text-black">
-                Your Name <span className="text-red-500">*</span>
-              </span>
-              <input
-                type="text"
-                name="name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className={`input ${errors.name ? "border-red-500" : ""}`}
-                placeholder="Please enter your name"
-                disabled={isLoading || isSaving}
-              />
-              {errors.name && (
-                <p className="text-body-3 text-red-500">{errors.name}</p>
-              )}
-            </label>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  Email <span className="text-red-500">*</span>
-                </span>
-                <input
-                  type="email"
-                  name="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className={`input ${errors.email ? "border-red-500" : ""}`}
-                  placeholder="example@email.com"
-                  disabled={isLoading || isSaving}
-                />
-                {errors.email && (
-                  <p className="text-body-3 text-red-500">{errors.email}</p>
-                )}
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-body-3 font-bold text-black">
-                  Phone <span className="text-red-500">*</span>
-                </span>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className={`input ${errors.phone ? "border-red-500" : ""}`}
-                  placeholder="Please enter your phone number"
-                  disabled={isLoading || isSaving}
-                />
-                {errors.phone && (
-                  <p className="text-body-3 text-red-500">{errors.phone}</p>
-                )}
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-body-3 font-bold text-black">
-                  ID Number <span className="text-red-500">*</span>
+                  Pet Name <span className="text-red-500">*</span>
                 </span>
                 <input
                   type="text"
-                  name="idNumber"
-                  value={idNumber}
-                  onChange={(event) => setIdNumber(event.target.value)}
-                  className={`input ${errors.idNumber ? "border-red-500" : ""}`}
-                  placeholder="Your ID number"
-                  disabled={isLoading || isSaving}
+                  name="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={`input ${errors.name ? "border-red-500" : ""}`}
+                  placeholder="Your pet name"
                 />
-                {errors.idNumber && (
-                  <p className="text-body-3 text-red-500">{errors.idNumber}</p>
+                {errors.name && (
+                  <p className="text-body-3 text-red-500">{errors.name}</p>
                 )}
               </label>
-
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="text-body-3 font-bold text-black">
-                  Date of Birth <span className="text-red-500">*</span>
+                  Pet Type <span className="text-red-500">*</span>
                 </span>
-                <input
-                  type="date"
-                  name="dateOfBirth"
-                  value={dateOfBirth}
-                  onChange={(event) => setDateOfBirth(event.target.value)}
-                  className={`input ${errors.dateOfBirth ? "border-red-500" : ""}`}
-                  disabled={isLoading || isSaving}
-                />
-                {errors.dateOfBirth && (
-                  <p className="text-body-3 text-red-500">
-                    {errors.dateOfBirth}
-                  </p>
+                <select
+                  name="petType"
+                  value={petType}
+                  onChange={(event) => {
+                    setPetType(event.target.value);
+                    setErrors((prev) => ({ ...prev, petType: "" }));
+                  }}
+                  className={`input ${errors.petType ? "border-red-500" : ""} ${
+                    petType ? "" : "text-gray-400"
+                  }`}
+                >
+                  <option value="" disabled>
+                    Select pet type
+                  </option>
+                  {PET_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                {errors.petType && (
+                  <p className="text-body-3 text-red-500">{errors.petType}</p>
                 )}
               </label>
-            </div>
+                <label className="flex flex-col gap-1">
+                  <span className="text-body-3 font-bold text-black">
+                    Breed <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    name="breed"
+                    value={breed}
+                    onChange={(event) => setBreed(event.target.value)}
+                    className={`input ${errors.breed ? "border-red-500" : ""}`}
+                    placeholder="Breed of your pet"
+                  />
+                  {errors.breed && (
+                    <p className="text-body-3 text-red-500">{errors.breed}</p>
+                  )}
+                </label>
 
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isLoading || isSaving}
-              >
-                {isSaving ? "Updating..." : "Update Profile"}
-              </button>
-            </div>
-          </form>
+                <label className="flex flex-col gap-1">
+                  <span className="text-body-3 font-bold text-black">
+                    Sex <span className="text-red-500">*</span>
+                  </span>
+                  <select
+                    name="sex"
+                    value={sex}
+                    onChange={(event) => setSex(event.target.value)}
+                    className={`input ${errors.sex ? "border-red-500" : ""} ${
+                      sex ? "" : "text-gray-400"
+                    }`}
+                  >
+                    <option value="" disabled>
+                      Select sex of your pet
+                    </option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                  {errors.sex && (
+                    <p className="text-body-3 text-red-500">{errors.sex}</p>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-body-3 font-bold text-black">
+                    Age (Month) <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    name="age"
+                    inputMode="decimal"
+                    value={age}
+                    onChange={(event) => setAge(event.target.value)}
+                    className={`input ${errors.age ? "border-red-500" : ""}`}
+                    placeholder="0"
+                  />
+                  {errors.age && (
+                    <p className="text-body-3 text-red-500">{errors.age}</p>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-body-3 font-bold text-black">
+                    Color <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    name="color"
+                    value={color}
+                    onChange={(event) => setColor(event.target.value)}
+                    className={`input ${errors.color ? "border-red-500" : ""}`}
+                    placeholder="Describe color of your pet"
+                  />
+                  {errors.color && (
+                    <p className="text-body-3 text-red-500">{errors.color}</p>
+                  )}
+                </label>
+
+                <label className="flex flex-col gap-1">
+                  <span className="text-body-3 font-bold text-black">
+                    Weight (Kilogram) <span className="text-red-500">*</span>
+                  </span>
+                  <input
+                    type="text"
+                    name="weight"
+                    inputMode="decimal"
+                    value={weight}
+                    onChange={(event) => setWeight(event.target.value)}
+                    className={`input ${errors.weight ? "border-red-500" : ""}`}
+                    placeholder="0"
+                  />
+                  {errors.weight && (
+                    <p className="text-body-3 text-red-500">{errors.weight}</p>
+                  )}
+                </label>
+              </div>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-body-3 font-bold text-black">About</span>
+                <textarea
+                  name="about"
+                  value={about}
+                  onChange={(event) => setAbout(event.target.value)}
+                  className="input min-h-[120px] resize-y"
+                  placeholder="Describe more about your pet..."
+                />
+              </label>
+
+              <div className="mt-auto flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
+                <Link href="/owner/pets" className="btn btn-secondary w-full sm:w-auto">
+                  Cancel
+                </Link>
+                <button type="submit" className="btn btn-primary w-full sm:w-auto">
+                  Create Pet
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
