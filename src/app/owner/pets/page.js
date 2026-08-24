@@ -2,31 +2,31 @@ import Link from "next/link";
 import AccountSidebar from "../../../components/AccountSidebar";
 
 const PETS = [
-    {
-      id: "1",
-      name: "Bubba",
-      type: "Dog",
-      image: "/image/dog1.jpg",
-    },
-    {
-      id: "2",
-      name: "Daisy",
-      type: "Dog",
-      image: "/image/dog2.jpg",
-    },
-    {
-      id: "3",
-      name: "I Som",
-      type: "Cat",
-      image: "/image/cat.jpg",
-    },
-    {
-      id: "4",
-      name: "Noodle Birb",
-      type: "Bird",
-      image: "/image/bird.jpg",
-    },
-  ];
+  {
+    id: "1",
+    name: "Bubba",
+    type: "Dog",
+    image: "/image/dog1.jpg",
+  },
+  {
+    id: "2",
+    name: "Daisy",
+    type: "Dog",
+    image: "/image/dog2.jpg",
+  },
+  {
+    id: "3",
+    name: "I Som",
+    type: "Cat",
+    image: "/image/cat.jpg",
+  },
+  {
+    id: "4",
+    name: "Noodle Birb",
+    type: "Bird",
+    image: "/image/bird.jpg",
+  },
+];
 
 const BADGE_CLASS = {
   Dog: "badge-dog",
@@ -36,8 +36,8 @@ const BADGE_CLASS = {
 
 export default function OwnerPetsPage() {
   return (
-    <div className="min-h-full bg-gray-100">
-      <div className="mx-10 mt-6 flex w-full flex-col justify-center">
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto flex w-full max-w-6xl flex-col px-4 py-4 lg:flex-row lg:justify-center lg:px-10 lg:py-6">
         <nav
           aria-label="Breadcrumb"
           className="mb-2 px-4 text-body-3 text-gray-400"
@@ -50,10 +50,13 @@ export default function OwnerPetsPage() {
         <div className="flex w-full flex-row justify-center">
           <AccountSidebar />
 
-          <section className="card m-4 ml-6 flex min-h-[888px] w-2/3 flex-col p-10">
-            <div className="flex items-center justify-between">
+          <section className="card mt-4 flex w-full flex-col p-4 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-h3">Your Pet</h3>
-              <Link href="/owner/pets/create" className="btn btn-primary">
+              <Link
+                href="/owner/pets/create"
+                className="btn btn-primary w-full sm:w-auto"
+              >
                 Create Pet
               </Link>
             </div>
