@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "./Icon";
 import PetSitterCard from "./PetSitterCard";
@@ -338,7 +339,13 @@ export default function PetSitterList() {
                             </p>
                         ) : (
                             sitters.map((sitter) => (
-                                <PetSitterCard key={sitter.id} {...sitter} />
+                                <Link
+                                    key={sitter.id}
+                                    href={`/find-sitter/${sitter.id}`}
+                                    className="block rounded-xl transition-shadow hover:shadow-[var(--shadow-card)]"
+                                >
+                                    <PetSitterCard {...sitter} />
+                                </Link>
                             ))
                         )}
                     </div>

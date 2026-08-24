@@ -71,6 +71,11 @@ export async function getSitters({
   };
 }
 
+export async function getSitter(id) {
+  const json = await apiFetch(`/api/sitters/${encodeURIComponent(id)}`);
+  return json.data;
+}
+
 // สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
 export async function login({ email, password }) {
   const json = await apiFetch("/api/auth/login", {

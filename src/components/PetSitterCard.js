@@ -28,7 +28,7 @@ export default function PetSitterCard({
     imageUrl,
 }) {
     return (
-        <article className="flex flex-col gap-4 rounded-xl bg-white p-4 sm:flex-row sm:gap-6 sm:p-5">
+        <article className="flex cursor-pointer flex-col gap-4 rounded-xl bg-white p-4 sm:flex-row sm:gap-6 sm:p-5">
             <div className="relative h-48 w-full shrink-0 overflow-hidden rounded-xl sm:h-46 sm:w-62">
                 {imageUrl ? (
                     <Image
