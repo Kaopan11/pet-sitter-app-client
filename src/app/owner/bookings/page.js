@@ -301,17 +301,16 @@ export default function BookingHistoryPage() {
                 <div
                   key={booking.id}
                   onClick={() => setSelectedBooking(booking)}
-                  className="w-full bg-white flex flex-col p-4 sm:p-6 cursor-pointer"
-                  style={{
-                    borderRadius: "16px",
-                    border: `1px solid ${
-                      booking.status === "ongoing"
-                        ? "#76D0FC"
-                        : booking.status === "completed"
-                        ? "#1CCD83"
-                        : "#DCDFED"
-                    }`
-                  }}
+                  className={`w-full bg-white flex flex-col p-4 sm:p-6 cursor-pointer border border-[#DCDFED] transition-colors ${
+                    booking.status === "completed"
+                      ? "hover:border-[#1CCD83]"
+                      : booking.status === "ongoing"
+                      ? "hover:border-[#76D0FC]"
+                      : booking.status === "pending"
+                      ? "hover:border-[#FA8AC0]"
+                      : ""
+                  }`}
+                  style={{ borderRadius: "16px" }}
                 >
                   {/* Header: Sitter info + Transaction date + Status badge */}
                   <div
@@ -403,13 +402,23 @@ export default function BookingHistoryPage() {
                         <span className="text-body-3" style={{ color: "#7B7E8F" }}>
                           Waiting Pet Sitter for confirm booking
                         </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toast.info("Cancel booking feature coming soon"); }}
-                          className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
-                          style={{ minWidth: "120px" }}
-                        >
-                          Cancel
-                        </button>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
+                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            style={{ minWidth: "120px" }}
+                          >
+                            Send Message
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
+                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            style={{ width: "48px", height: "48px" }}
+                            title="Call"
+                          >
+                            <Phone className="size-6" />
+                          </button>
+                        </div>
                       </div>
                     )}
                     {booking.status === "ongoing" && (
