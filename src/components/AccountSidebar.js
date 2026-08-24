@@ -9,14 +9,44 @@ const NAV_ITEMS = [
   { href: "/owner/bookings", label: "Booking History", icon: ListIcon },
 ];
 
+const MOBILE_NAV_ITEMS = NAV_ITEMS.filter((item) => item.href !== "/owner/profile");
+
 export default function AccountSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="card m-4 mr-6 flex h-[289px] w-[292px] shrink-0 flex-col overflow-hidden py-6">
-      <h4 className="px-6 text-black">Account</h4>
+    <aside
+      className="card flex h-auto w-full min-w-0 shrink-0 flex-col overflow-hidden py-0 lg:m-4 lg:mr-6 lg:py-6 lg:h-[289px] lg:w-[292px]"
+      style={{ boxShadow: "4px 4px 24px 0px rgba(0, 0, 0, 0.04)", borderRadius: "16px" }}
+    >
+      <h4 className="hidden px-6 text-black lg:block">Account</h4>
 
-      <nav aria-label="Account" className="mt-4 flex flex-col">
+      {/* Mobile: full-width segmented nav */}
+      <nav aria-label="Account" className="flex min-w-0 items-stretch lg:hidden">
+        {MOBILE_NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex flex-1 items-center justify-center gap-2 py-3 text-body-1 transition-colors ${
+                isActive
+                  ? "bg-orange-100 text-orange-500"
+                  : "text-gray-500"
+              }`}
+            >
+              <Icon className="size-6 shrink-0" />
+              <span className={isActive ? "font-bold" : ""}>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Desktop: vertical list nav */}
+      <nav aria-label="Account" className="mt-4 hidden flex-col lg:flex">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
