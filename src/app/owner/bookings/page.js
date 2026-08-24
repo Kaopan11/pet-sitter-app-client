@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, SquarePen, X, MapPin } from "lucide-react";
+import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken } from "@/lib/auth";
 import { toast } from "sonner";
@@ -90,6 +90,13 @@ const MOCK_BOOKINGS = [
     completed_date: "2025-08-13",
     completed_time: "8:40",
     has_review: true,
+    review: {
+      reviewer_name: "John Wick",
+      reviewer_avatar_url: "https://i.pravatar.cc/150?img=12",
+      review_date: "Tue, 13 Apr 2023",
+      rating: 5,
+      text: "",
+    },
   },
 ];
 
@@ -99,6 +106,14 @@ export default function BookingHistoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [viewReviewBooking, setViewReviewBooking] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reportBooking, setReportBooking] = useState(null);
+  const [reportSubject, setReportSubject] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -195,9 +210,70 @@ export default function BookingHistoryPage() {
     return timeString.substring(0, 5);
   };
 
+  const openReviewModal = (booking) => {
+    setRating(0);
+    setHoverRating(0);
+    setReviewText("");
+    setReviewBooking(booking);
+  };
+
+  const closeReviewModal = () => {
+    setReviewBooking(null);
+    setRating(0);
+    setHoverRating(0);
+    setReviewText("");
+  };
+
+  const handleSubmitReview = () => {
+    if (!reviewBooking) return;
+    if (rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+
+    const newReview = {
+      reviewer_name: reviewBooking.owner_name,
+      reviewer_avatar_url: null,
+      review_date: formatDate(new Date().toISOString()),
+      rating,
+      text: reviewText,
+    };
+
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === reviewBooking.id ? { ...b, has_review: true, review: newReview } : b
+      )
+    );
+
+    toast.success("Review submitted");
+    closeReviewModal();
+  };
+
+  const openReportModal = (booking) => {
+    setReportSubject("");
+    setReportDescription("");
+    setReportBooking(booking);
+  };
+
+  const closeReportModal = () => {
+    setReportBooking(null);
+    setReportSubject("");
+    setReportDescription("");
+  };
+
+  const handleSubmitReport = () => {
+    if (!reportSubject.trim()) {
+      toast.error("Please enter a subject");
+      return;
+    }
+
+    toast.success("Report submitted");
+    closeReportModal();
+  };
+
   return (
     <div className="flex min-h-full bg-gray-100">
-      <div className="mx-4 mt-6 flex w-full flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
+      <div className="mx-4 mt-6 flex w-full min-w-0 flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
         <AccountSidebar />
 
         <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:w-2/3 lg:p-8">
@@ -225,7 +301,7 @@ export default function BookingHistoryPage() {
                 <div
                   key={booking.id}
                   onClick={() => setSelectedBooking(booking)}
-                  className="w-full bg-white hover:shadow-md transition-shadow flex flex-col p-4 sm:p-6 cursor-pointer"
+                  className="w-full bg-white flex flex-col p-4 sm:p-6 cursor-pointer"
                   style={{
                     borderRadius: "16px",
                     border: `1px solid ${
@@ -321,12 +397,19 @@ export default function BookingHistoryPage() {
                   <div>
                     {booking.status === "pending" && (
                       <div
-                        className="w-full flex items-center"
+                        className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
                         style={{ backgroundColor: "#F6F6F9", padding: "16px", borderRadius: "8px", gap: "16px", minHeight: "80px", boxSizing: "border-box" }}
                       >
                         <span className="text-body-3" style={{ color: "#7B7E8F" }}>
                           Waiting Pet Sitter for confirm booking
                         </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toast.info("Cancel booking feature coming soon"); }}
+                          className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                          style={{ minWidth: "120px" }}
+                        >
+                          Cancel
+                        </button>
                       </div>
                     )}
                     {booking.status === "ongoing" && (
@@ -340,14 +423,14 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
-                            className="btn btn-primary flex-1 sm:flex-none"
+                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
                             style={{ minWidth: "120px" }}
                           >
                             Send Message
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
-                            className="btn btn-icon shrink-0"
+                            className="btn btn-icon shrink-0 hover:text-orange-500!"
                             style={{ width: "48px", height: "48px" }}
                             title="Call"
                           >
@@ -371,23 +454,23 @@ export default function BookingHistoryPage() {
                         </div>
                         <div className="flex items-center gap-4">
                           <button
-                            onClick={(e) => { e.stopPropagation(); toast.info("Report feature coming soon"); }}
-                            className="btn btn-ghost shrink-0"
+                            onClick={(e) => { e.stopPropagation(); openReportModal(booking); }}
+                            className="btn btn-ghost shrink-0 hover:text-orange-500!"
                           >
                             Report
                           </button>
                           {booking.has_review ? (
                             <button
-                              onClick={(e) => { e.stopPropagation(); toast.info("Your review feature coming soon"); }}
-                              className="btn btn-primary flex-1 sm:flex-none"
+                              onClick={(e) => { e.stopPropagation(); setViewReviewBooking(booking); }}
+                              className="btn btn-secondary flex-1 sm:flex-none hover:text-orange-500!"
                               style={{ minWidth: "120px" }}
                             >
                               Your Review
                             </button>
                           ) : (
                             <button
-                              onClick={(e) => { e.stopPropagation(); toast.info("Review feature coming soon"); }}
-                              className="btn btn-primary flex-1 sm:flex-none"
+                              onClick={(e) => { e.stopPropagation(); openReviewModal(booking); }}
+                              className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
                               style={{ minWidth: "120px" }}
                             >
                               Review
@@ -509,6 +592,231 @@ export default function BookingHistoryPage() {
               <span className="text-body-1" style={{ color: "#000000", textAlign: "right" }}>
                 {selectedBooking.total ? `${selectedBooking.total} THB` : "-"}
               </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Write Review Modal */}
+      {reviewBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeReviewModal}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "800px",
+              maxHeight: "800px",
+              overflowY: "auto",
+              borderRadius: "16px",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>Rating &amp; Review</h3>
+              <button onClick={closeReviewModal} aria-label="Close" className="hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col items-center gap-6 px-6 py-8">
+              <div className="flex flex-col items-center gap-4">
+                <span className="text-body-1" style={{ color: "#000000", fontWeight: 700 }}>What is your rate?</span>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      aria-label={`Rate ${star} star`}
+                    >
+                      <Star
+                        className="size-8"
+                        style={{
+                          color: (hoverRating || rating) >= star ? "#1CCD83" : "#DCDFED",
+                          fill: (hoverRating || rating) >= star ? "#1CCD83" : "#DCDFED"
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col items-center gap-3">
+                <span className="text-body-1" style={{ color: "#000000", fontWeight: 700 }}>Share more about your experience</span>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Your review..."
+                  rows={5}
+                  className="w-full resize-none text-body-2"
+                  style={{ color: "#000000", border: "1px solid #DCDFED", borderRadius: "8px", padding: "12px", outline: "none" }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 pb-6">
+              <button onClick={closeReviewModal} className="btn btn-secondary">
+                Cancel
+              </button>
+              <button onClick={handleSubmitReview} className="btn btn-primary">
+                Send Review&amp;Rating
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Review Modal */}
+      {viewReviewBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setViewReviewBooking(null)}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "800px",
+              maxHeight: "600px",
+              overflowY: "auto",
+              borderRadius: "16px",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>Your Rating and Review</h3>
+              <button onClick={() => setViewReviewBooking(null)} aria-label="Close" className="hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col gap-4 px-6 py-6">
+              <div className="flex items-center justify-between gap-3" style={{ paddingBottom: "16px", borderBottom: "1px solid #DCDFED" }}>
+                <div className="flex items-center gap-3">
+                  <div className="relative size-12 overflow-hidden rounded-full bg-gray-200 shrink-0">
+                    {viewReviewBooking.review?.reviewer_avatar_url ? (
+                      <img
+                        src={viewReviewBooking.review.reviewer_avatar_url}
+                        alt={viewReviewBooking.review.reviewer_name}
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <div className="size-full bg-gray-300" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-body-2" style={{ color: "#000000", fontWeight: 700 }}>
+                      {viewReviewBooking.review?.reviewer_name}
+                    </p>
+                    <p className="text-body-3" style={{ color: "#AEB1C3" }}>
+                      {viewReviewBooking.review?.review_date}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className="size-5"
+                      style={{
+                        color: (viewReviewBooking.review?.rating || 0) >= star ? "#1CCD83" : "#DCDFED",
+                        fill: (viewReviewBooking.review?.rating || 0) >= star ? "#1CCD83" : "#DCDFED"
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {viewReviewBooking.review?.text && (
+                <p className="text-body-2" style={{ color: "#3A3B46" }}>
+                  {viewReviewBooking.review.text}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-center px-6 pb-6">
+              <button
+                onClick={() => toast.info("View Pet Sitter feature coming soon")}
+                className="btn btn-secondary"
+              >
+                View Pet Sitter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Modal */}
+      {reportBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeReportModal}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "800px",
+              maxHeight: "800px",
+              overflowY: "auto",
+              borderRadius: "16px",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>Report</h3>
+              <button onClick={closeReportModal} aria-label="Close" className="hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col gap-4 px-6 py-5">
+              <div className="flex flex-col gap-2">
+                <span className="text-body-2" style={{ color: "#000000", fontWeight: 500 }}>Issue</span>
+                <input
+                  type="text"
+                  value={reportSubject}
+                  onChange={(e) => setReportSubject(e.target.value)}
+                  placeholder="Subject"
+                  className="w-full text-body-2"
+                  style={{ color: "#000000", border: "1px solid #DCDFED", borderRadius: "8px", padding: "12px 16px", outline: "none" }}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-body-2" style={{ color: "#000000", fontWeight: 500 }}>Description</span>
+                <textarea
+                  value={reportDescription}
+                  onChange={(e) => setReportDescription(e.target.value)}
+                  placeholder="Describe detail..."
+                  rows={5}
+                  className="w-full resize-none text-body-2"
+                  style={{ color: "#000000", border: "1px solid #DCDFED", borderRadius: "8px", padding: "12px", outline: "none" }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 pb-6" style={{ marginTop: "auto" }}>
+              <button onClick={closeReportModal} className="btn btn-secondary">
+                Cancel
+              </button>
+              <button onClick={handleSubmitReport} className="btn btn-primary">
+                Send Report
+              </button>
             </div>
           </div>
         </div>
