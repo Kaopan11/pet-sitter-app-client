@@ -22,8 +22,8 @@ function getAvatarSrc(user) {
 
 const MENU_ITEMS = [
   { href: "/owner/profile", label: "Profile", icon: "/navbar/menu-profile.svg" },
-  { href: "/pets", label: "Your Pet", icon: "/navbar/menu-paw.svg" },
-  { href: "/history", label: "History", icon: "/navbar/menu-history.svg" },
+  { href: "/owner/pets", label: "Your Pet", icon: "/navbar/menu-paw.svg" },
+  { href: "/owner/bookings", label: "History", icon: "/navbar/menu-history.svg" },
 ];
 
 function Logo() {

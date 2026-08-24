@@ -22,9 +22,12 @@ export default function AccountSidebar() {
       <h4 className="hidden px-6 text-black lg:block">Account</h4>
 
       {/* Mobile: full-width segmented nav */}
-      <nav aria-label="Account" className="flex min-w-0 items-stretch lg:hidden">
+      <nav aria-label="Account" className="flex min-w-0 items-stretch overflow-x-auto lg:hidden">
         {MOBILE_NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/owner/pets"
+              ? pathname.startsWith("/owner/pets")
+              : pathname === item.href;
           const Icon = item.icon;
 
           return (
@@ -32,14 +35,16 @@ export default function AccountSidebar() {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex flex-1 items-center justify-center gap-2 py-3 text-body-1 transition-colors ${
+              className={`flex min-w-0 flex-1 items-center justify-center gap-2 px-2 py-3 text-body-3 transition-colors ${
                 isActive
                   ? "bg-orange-100 text-orange-500"
                   : "text-gray-500"
               }`}
             >
-              <Icon className="size-6 shrink-0" />
-              <span className={isActive ? "font-bold" : ""}>{item.label}</span>
+              <Icon className="size-5 shrink-0 sm:size-6" />
+              <span className={`truncate ${isActive ? "font-bold" : ""}`}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -48,7 +53,10 @@ export default function AccountSidebar() {
       {/* Desktop: vertical list nav */}
       <nav aria-label="Account" className="mt-4 hidden flex-col lg:flex">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/owner/pets"
+              ? pathname.startsWith("/owner/pets")
+              : pathname === item.href;
           const Icon = item.icon;
 
           return (

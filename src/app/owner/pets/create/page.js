@@ -2,15 +2,15 @@ import AccountSidebar from "../../../components/AccountSidebar";
 
 export default function OwnerPetsCreatePage() {
   return (
-    <div className="flex h-full bg-gray-100">
-      <div className="mx-10 mt-6 flex w-full flex-row justify-center">
+    <div className="flex min-h-screen bg-gray-100">
+      <div className="mx-4 mt-6 flex w-full min-w-0 flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
         <AccountSidebar />
 
-        <div className="card m-4 ml-6 flex min-h-[888px] w-2/3 flex-col p-10">
+        <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
           <h3 className="text-h3">Your Pet</h3>
           <div className="mx-4 my-8">
           <div className="relative my-8 w-fit self-start">
-          <div className="relative size-60 overflow-hidden rounded-full bg-gray-200">
+          <div className="relative size-32 overflow-hidden rounded-full bg-gray-200 lg:size-60">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
