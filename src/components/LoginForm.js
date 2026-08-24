@@ -64,8 +64,8 @@ export default function LoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <header className="flex flex-col items-center gap-2 text-center">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 sm:gap-6">
+      <header className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
         <h1 className="text-h2">{title}</h1>
         <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
@@ -99,17 +99,21 @@ export default function LoginForm({
       </div>
 
       {showRemember && showForgotPassword ? (
-        <div className="flex items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-body-3 text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <label className="flex min-h-11 items-center gap-2 text-body-3 text-gray-500">
             <input
               type="checkbox"
               checked={remember}
               onChange={(event) => setRemember(event.target.checked)}
+              className="size-4 shrink-0"
             />
             Remember?
           </label>
           {/* ยังไม่เชื่อม API forgot-password */}
-          <button type="button" className="text-body-3 font-medium text-primary">
+          <button
+            type="button"
+            className="min-h-11 text-body-3 font-medium text-primary"
+          >
             Forget Password?
           </button>
         </div>
@@ -117,7 +121,10 @@ export default function LoginForm({
 
       {showForgotPassword && !showRemember ? (
         <p className="text-center">
-          <button type="button" className="text-body-3 font-medium text-primary">
+          <button
+            type="button"
+            className="min-h-11 text-body-3 font-medium text-primary"
+          >
             Forget Password?
           </button>
         </p>
