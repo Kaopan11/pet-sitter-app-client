@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Icon from "./Icon";
 import { getSitter } from "@/lib/api";
 import { getUser } from "@/lib/auth";
@@ -192,7 +193,7 @@ function TimeDropdown({ name, value, open, onToggle, onSelect }) {
         {selected?.label ?? "Select time"}
       </button>
       {open ? (
-        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-[var(--shadow-dropdown)]">
+        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-(--shadow-dropdown)">
           {HOURLY_TIMES.map((time) => (
             <button
               key={time.value}
@@ -258,7 +259,7 @@ function BookingModal({ date, startTime, endTime, onChange, onClose, onContinue 
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -266,7 +267,7 @@ function BookingModal({ date, startTime, endTime, onChange, onClose, onContinue 
         role="dialog"
         aria-modal="true"
         aria-labelledby="booking-title"
-        className="w-full max-w-xl overflow-visible rounded-2xl bg-white shadow-[var(--shadow-card)]"
+        className="w-full max-w-xl overflow-visible rounded-2xl bg-white shadow-(--shadow-card)"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
@@ -301,7 +302,7 @@ function BookingModal({ date, startTime, endTime, onChange, onClose, onContinue 
                 {formatBookingDate(date) || "Select date"}
               </button>
               {openPicker === "date" ? (
-                <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-[var(--shadow-dropdown)]">
+                <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
                   <div className="mb-3 flex items-center justify-between">
                     <button
                       type="button"
@@ -455,7 +456,7 @@ function Gallery({ photos, title }) {
             <button
               type="button"
               onClick={() => go(-1)}
-              className="absolute top-1/2 left-0 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:-left-2"
+              className="absolute top-1/2 left-0 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:-left-2"
               aria-label="Previous photo"
             >
               <Icon src="/icon/chevron-left.svg" className="h-6 w-6" />
@@ -463,7 +464,7 @@ function Gallery({ photos, title }) {
             <button
               type="button"
               onClick={() => go(1)}
-              className="absolute top-1/2 right-0 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:-right-2"
+              className="absolute top-1/2 right-0 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:-right-2"
               aria-label="Next photo"
             >
               <Icon src="/icon/chevron-right.svg" className="h-6 w-6" />
@@ -476,6 +477,7 @@ function Gallery({ photos, title }) {
 }
 
 export default function PetSitterDetail({ sitterId }) {
+  const router = useRouter();
   const [sitter, setSitter] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -546,10 +548,20 @@ export default function PetSitterDetail({ sitterId }) {
     setBooking((current) => ({ ...current, [name]: value }));
   }
 
+  /** Continue → หน้าจอง 3 step พร้อม query ตาม contract ทีม */
   function handleBookingContinue(event) {
     event.preventDefault();
     if (!booking.date || !booking.startTime || !booking.endTime) return;
+
+    const params = new URLSearchParams({
+      sitterId: String(sitterId),
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    });
+
     setBookingOpen(false);
+    router.push(`/owner/booking?${params.toString()}`);
   }
 
   return (
@@ -603,7 +615,7 @@ export default function PetSitterDetail({ sitterId }) {
                   rel="noreferrer"
                   className="absolute top-1/2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
                 >
-                  <span className="flex size-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-[var(--shadow-dropdown)]">
+                  <span className="flex size-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-(--shadow-dropdown)">
                     <Icon src="/icon/paw.svg" className="h-7 w-7" />
                   </span>
                   <span className="text-body-2 font-bold text-orange-500">See Map</span>
@@ -614,7 +626,7 @@ export default function PetSitterDetail({ sitterId }) {
         </div>
 
         <aside className="lg:sticky lg:top-28">
-          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-[var(--shadow-card)]">
+          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-(--shadow-card)">
             {sitter.avatarUrl ? (
               <Image
                 src={sitter.avatarUrl}

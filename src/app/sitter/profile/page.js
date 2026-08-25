@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { Plus, UserRound, CirclePlus, Calendar, X } from "lucide-react";
 import PetTypeSelect from "@/components/PetTypeSelect";
 import {
@@ -169,7 +170,9 @@ export default function PetSitterProfilePage() {
   }
 
   useEffect(() => {
-    load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only profile load
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
   }, []);
 
   function handleChange(event) {
@@ -461,7 +464,7 @@ export default function PetSitterProfilePage() {
         </div>
         <button
           type="submit"
-          className="btn btn-primary min-w-[120px]"
+          className="btn btn-primary min-w-30"
           disabled={isSaving}
         >
           {isSaving ? "Saving..." : "Update"}
@@ -481,12 +484,14 @@ export default function PetSitterProfilePage() {
         <div className="flex flex-col gap-4">
           <p className="text-body-2 text-black">Profile Image</p>
           <div className="relative w-fit">
-            <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+            <div className="relative flex h-60 w-60 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Pet sitter profile"
-                  className="h-full w-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               ) : (
                 <UserRound className="h-26 w-26 text-white" />
@@ -607,7 +612,7 @@ export default function PetSitterProfilePage() {
 
           <FormField label="Introduction (Describe about yourself as pet sitter)">
             <textarea
-              className="input min-h-[120px] resize-y"
+              className="input min-h-30 resize-y"
               name="introduction"
               value={form.introduction}
               onChange={handleChange}
@@ -653,7 +658,7 @@ export default function PetSitterProfilePage() {
 
         <FormField label="Services (Describe all of your service for pet sitting)">
           <textarea
-            className="input min-h-[120px] resize-y"
+            className="input min-h-30 resize-y"
             name="services"
             value={form.services}
             onChange={handleChange}
@@ -662,7 +667,7 @@ export default function PetSitterProfilePage() {
 
         <FormField label="My Place (Describe you place)">
           <textarea
-            className="input min-h-[120px] resize-y"
+            className="input min-h-30 resize-y"
             name="myPlace"
             value={form.myPlace}
             onChange={handleChange}
@@ -676,10 +681,12 @@ export default function PetSitterProfilePage() {
           <div className="flex flex-wrap gap-4">
             {photos.map((photo) => (
               <div key={photo.id} className="relative size-42 overflow-hidden rounded-xl">
-                <img
+                <Image
                   src={photo.photo_url}
                   alt="Gallery photo"
-                  className="size-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
                 <button
                   type="button"
@@ -696,10 +703,12 @@ export default function PetSitterProfilePage() {
                 key={file.name + file.lastModified}
                 className="relative size-42 overflow-hidden rounded-xl"
               >
-                <img
+                <Image
                   src={URL.createObjectURL(file)}
                   alt="New gallery photo"
-                  className="size-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
                 <button
                   type="button"

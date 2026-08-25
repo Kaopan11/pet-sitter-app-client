@@ -76,6 +76,12 @@ export async function getSitter(id) {
   return json.data;
 }
 
+/** สัตว์เลี้ยงของ owner ที่ login — Day 2 booking */
+export async function getMyPets() {
+  const json = await apiFetch("/api/users/me/pets");
+  return json.data ?? [];
+}
+
 // สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
 export async function login({ email, password }) {
   const json = await apiFetch("/api/auth/login", {
