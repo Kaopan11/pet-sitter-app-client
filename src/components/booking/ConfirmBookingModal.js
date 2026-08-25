@@ -2,7 +2,7 @@
 
 import Icon from "@/components/Icon";
 
-/** Modal ยืนยันก่อนจอง — Yes → POST /api/bookings (cash) */
+/** Modal ยืนยันก่อนจอง — Yes → POST /api/bookings (cash | stripe) */
 export default function ConfirmBookingModal({
   open,
   onClose,

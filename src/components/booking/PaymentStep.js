@@ -1,7 +1,11 @@
 import Icon from "@/components/Icon";
 import Image from "next/image";
 
-/** Step 3 — Cash ใช้จองได้ (Day 4); Card ยัง placeholder จน Stripe */
+/**
+ * Step 3 — Cash หรือ Card (Day 5)
+ * Card: จ่ายผ่าน Stripe Payment Element หลัง Confirm (ไม่กรอกเลขบัตรที่นี่)
+ * UI ใช้ค่า "card" — API ส่ง paymentMethod: "stripe"
+ */
 export default function PaymentStep({ paymentMethod, onPaymentMethodChange }) {
   return (
     <section>
@@ -34,70 +38,14 @@ export default function PaymentStep({ paymentMethod, onPaymentMethodChange }) {
       </div>
 
       {paymentMethod === "card" ? (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="card-number"
-              className="mb-2 block text-body-2 font-medium text-gray-600"
-            >
-              Card Number<span className="text-orange-500">*</span>
-            </label>
-            <input
-              id="card-number"
-              type="text"
-              className="input"
-              placeholder="xxx-xxxx-x-xx-xx"
-              autoComplete="cc-number"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="card-owner"
-              className="mb-2 block text-body-2 font-medium text-gray-600"
-            >
-              Card Owner<span className="text-orange-500">*</span>
-            </label>
-            <input
-              id="card-owner"
-              type="text"
-              className="input"
-              placeholder="Card owner name"
-              autoComplete="cc-name"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="card-expiry"
-              className="mb-2 block text-body-2 font-medium text-gray-600"
-            >
-              Expiry Date<span className="text-orange-500">*</span>
-            </label>
-            <input
-              id="card-expiry"
-              type="text"
-              className="input"
-              placeholder="xxx-xxx-xxxx"
-              autoComplete="cc-exp"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="card-cvc"
-              className="mb-2 block text-body-2 font-medium text-gray-600"
-            >
-              CVC/CVV<span className="text-orange-500">*</span>
-            </label>
-            <input
-              id="card-cvc"
-              type="text"
-              className="input"
-              placeholder="xxx"
-              autoComplete="cc-csc"
-            />
-          </div>
+        <div className="mt-8 flex flex-col items-center justify-center gap-5 rounded-2xl bg-gray-100 px-6 py-14 text-center">
+          <Icon src="/icon/credit-card.svg" className="size-12 text-orange-500" />
+          <p className="max-w-lg text-body-2 text-gray-600">
+            After you confirm this booking, you will enter your card details
+            securely with Stripe.
+            <br />
+            Test card: 4242 4242 4242 4242
+          </p>
         </div>
       ) : (
         <div className="mt-8 flex flex-col items-center justify-center gap-5 rounded-2xl bg-gray-100 px-6 py-14 text-center">

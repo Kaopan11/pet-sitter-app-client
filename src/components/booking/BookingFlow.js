@@ -3,8 +3,8 @@
 /**
  * ตัวควบคุมหลักของ Owner Booking
  * Day 2–3: โหลด sitter / pets / guest
- * Day 4: Confirm → POST /api/bookings (cash) → Thank You
- * Step: 1 Your Pet → 2 Information → 3 Payment → Confirm → Thank You
+ * Day 4: Confirm cash → POST → Thank You
+ * Day 5: Confirm card → POST stripe → Payment Element → Thank You
  */
 
 import Image from "next/image";
@@ -17,10 +17,12 @@ import YourPetStep from "@/components/booking/YourPetStep";
 import InformationStep from "@/components/booking/InformationStep";
 import PaymentStep from "@/components/booking/PaymentStep";
 import ConfirmBookingModal from "@/components/booking/ConfirmBookingModal";
+import StripePaymentModal from "@/components/booking/StripePaymentModal";
 import ThankYouView from "@/components/booking/ThankYouView";
 import { EMPTY_GUEST } from "@/components/booking/mockBookingData";
 import { createBooking, getMyPets, getProfile, getSitter } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { getStripePublishableKey } from "@/lib/stripe";
 import {
   normalizeBookingGuest,
   normalizeBookingPet,
@@ -28,6 +30,11 @@ import {
 } from "@/lib/booking";
 
 const TOTAL_STEPS = 3;
+
+/** UI "card" → API "stripe" */
+function toApiPaymentMethod(uiMethod) {
+  return uiMethod === "card" ? "stripe" : "cash";
+}
 
 export default function BookingFlow({
   sitterId,
@@ -47,6 +54,8 @@ export default function BookingFlow({
   const [submitting, setSubmitting] = useState(false);
   const [confirmError, setConfirmError] = useState("");
   const [bookingResult, setBookingResult] = useState(null);
+  const [stripeClientSecret, setStripeClientSecret] = useState("");
+  const [stripePaymentOpen, setStripePaymentOpen] = useState(false);
 
   const [sitter, setSitter] = useState(null);
   const [pets, setPets] = useState([]);
@@ -112,10 +121,13 @@ export default function BookingFlow({
 
   const sitterPetTypes = sitter?.petTypes ?? [];
 
-  // ต้องมีอย่างน้อย 1 ตัวที่ sitter รับได้ ถึง Next/Confirm ได้
   const hasEligibleSelection = selectedPets.some((pet) =>
     sitterPetTypes.includes(String(pet.petType).toLowerCase()),
   );
+
+  const canConfirm =
+    hasEligibleSelection &&
+    (paymentMethod === "cash" || paymentMethod === "card");
 
   function togglePet(petId) {
     const id = String(petId);
@@ -132,24 +144,25 @@ export default function BookingFlow({
     if (step > 1) setStep((current) => current - 1);
   }
 
-  const canConfirmCash = hasEligibleSelection && paymentMethod === "cash";
-
-  function handleConfirmBooking() {
-    if (!canConfirmCash) return;
-    setConfirmError("");
-    setConfirmOpen(true);
-  }
-
-  async function handleConfirmYes() {
-    if (submitting || !canConfirmCash) return;
-
-    const petIds = selectedPets
+  function buildPetIds() {
+    return selectedPets
       .filter((pet) =>
         sitterPetTypes.includes(String(pet.petType).toLowerCase()),
       )
       .map((pet) => Number(pet.id))
       .filter((id) => Number.isFinite(id) && id > 0);
+  }
 
+  function handleConfirmBooking() {
+    if (!canConfirm) return;
+    setConfirmError("");
+    setConfirmOpen(true);
+  }
+
+  async function handleConfirmYes() {
+    if (submitting || !canConfirm) return;
+
+    const petIds = buildPetIds();
     if (petIds.length < 1) {
       setConfirmError("Please select at least one eligible pet.");
       return;
@@ -158,6 +171,15 @@ export default function BookingFlow({
     if (!Number.isInteger(hours) || hours <= 0) {
       setConfirmError(
         "Booking duration must be whole hours (for example 10:00–13:00).",
+      );
+      return;
+    }
+
+    const apiPaymentMethod = toApiPaymentMethod(paymentMethod);
+
+    if (apiPaymentMethod === "stripe" && !getStripePublishableKey()) {
+      setConfirmError(
+        "Card payment is not configured. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env.local.",
       );
       return;
     }
@@ -173,10 +195,25 @@ export default function BookingFlow({
         endTime,
         petIds,
         message: additionalMessage,
-        paymentMethod: "cash",
+        paymentMethod: apiPaymentMethod,
       });
 
       setBookingResult(data ?? null);
+
+      if (apiPaymentMethod === "stripe") {
+        const clientSecret = data?.clientSecret;
+        if (!clientSecret) {
+          setConfirmError(
+            "Booking was created but card payment could not start. Please contact support or try Cash.",
+          );
+          return;
+        }
+        setStripeClientSecret(clientSecret);
+        setConfirmOpen(false);
+        setStripePaymentOpen(true);
+        return;
+      }
+
       setConfirmOpen(false);
       setIsCompleted(true);
     } catch (err) {
@@ -192,6 +229,17 @@ export default function BookingFlow({
     if (submitting) return;
     setConfirmOpen(false);
     setConfirmError("");
+  }
+
+  function handleStripePaymentSuccess() {
+    setStripePaymentOpen(false);
+    setStripeClientSecret("");
+    setIsCompleted(true);
+  }
+
+  function handleCloseStripePayment() {
+    setStripePaymentOpen(false);
+    setStripeClientSecret("");
   }
 
   const canGoNext = step === 1 ? hasEligibleSelection : true;
@@ -252,7 +300,6 @@ export default function BookingFlow({
 
   return (
     <div className="relative" style={{ minHeight: "calc(100vh - 5rem)" }}>
-      {/* ลายตกแต่งมุมขวาล่าง (ชิดขอบจอ) */}
       <Image
         src="/image/star-green-arc-blue.svg"
         alt=""
@@ -264,7 +311,6 @@ export default function BookingFlow({
 
       <div className="relative z-10 mx-auto max-w-300 px-4 py-8 sm:px-8">
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-stretch">
-          {/* คอลัมน์ซ้าย: stepper + เนื้อหา step */}
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             <BookingStepper currentStep={step} />
 
@@ -318,31 +364,23 @@ export default function BookingFlow({
                     Next
                   </button>
                 ) : (
-                  <div className="flex flex-col items-end gap-2">
-                    {paymentMethod !== "cash" ? (
-                      <p className="max-w-xs text-right text-body-3 text-gray-400">
-                        Card payment is not available yet. Please select Cash.
-                      </p>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={handleConfirmBooking}
-                      disabled={!canConfirmCash}
-                      className={`inline-flex min-h-12 min-w-40 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
-                        canConfirmCash
-                          ? "bg-orange-500 text-white hover:bg-orange-400"
-                          : "cursor-not-allowed bg-gray-100 text-gray-300"
-                      }`}
-                    >
-                      Confirm Booking
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleConfirmBooking}
+                    disabled={!canConfirm}
+                    className={`inline-flex min-h-12 min-w-40 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
+                      canConfirm
+                        ? "bg-orange-500 text-white hover:bg-orange-400"
+                        : "cursor-not-allowed bg-gray-100 text-gray-300"
+                    }`}
+                  >
+                    Confirm Booking
+                  </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* คอลัมน์ขวา: สรุปการจอง + ยอดรวม preview */}
           <BookingDetailSidebar
             sitter={sitter}
             date={date}
@@ -359,6 +397,13 @@ export default function BookingFlow({
           onConfirm={handleConfirmYes}
           submitting={submitting}
           error={confirmError}
+        />
+
+        <StripePaymentModal
+          open={stripePaymentOpen}
+          clientSecret={stripeClientSecret}
+          onSuccess={handleStripePaymentSuccess}
+          onClose={handleCloseStripePayment}
         />
       </div>
     </div>

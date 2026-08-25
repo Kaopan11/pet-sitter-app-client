@@ -115,9 +115,10 @@ export async function getProfile() {
 }
 
 /**
- * สร้าง booking (Day 4 — cash)
+ * สร้าง booking — cash | stripe (Day 4–5)
  * ห้ามส่ง totalPrice — BE คำนวณเอง
  * petIds ต้องเป็น number จาก GET /api/users/me/pets
+ * stripe → data.clientSecret สำหรับ Payment Element
  */
 export async function createBooking({
   sitterId,
