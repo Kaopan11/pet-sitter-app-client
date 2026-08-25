@@ -2,7 +2,8 @@
 
 /**
  * ตัวควบคุมหลักของ Owner Booking
- * Day 2: ดึง sitter + pets จาก API จริง (ยังไม่ POST booking)
+ * Day 2: ดึง sitter + pets จาก API จริง
+ * Day 3: ดึง guest จาก GET /api/users/me (ยังไม่ POST booking)
  * Step: 1 Your Pet → 2 Information → 3 Payment → Confirm → Thank You
  */
 
@@ -17,10 +18,11 @@ import InformationStep from "@/components/booking/InformationStep";
 import PaymentStep from "@/components/booking/PaymentStep";
 import ConfirmBookingModal from "@/components/booking/ConfirmBookingModal";
 import ThankYouView from "@/components/booking/ThankYouView";
-import { MOCK_GUEST } from "@/components/booking/mockBookingData";
-import { getMyPets, getSitter } from "@/lib/api";
+import { EMPTY_GUEST } from "@/components/booking/mockBookingData";
+import { getMyPets, getProfile, getSitter } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import {
+  normalizeBookingGuest,
   normalizeBookingPet,
   normalizeBookingSitter,
 } from "@/lib/booking";
@@ -37,7 +39,7 @@ export default function BookingFlow({
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedPetIds, setSelectedPetIds] = useState([]);
-  const [guest, setGuest] = useState(MOCK_GUEST);
+  const [guest, setGuest] = useState(EMPTY_GUEST);
   const [additionalMessage, setAdditionalMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -61,9 +63,10 @@ export default function BookingFlow({
       setError("");
 
       try {
-        const [sitterRaw, petsRaw] = await Promise.all([
+        const [sitterRaw, petsRaw, profileRaw] = await Promise.all([
           getSitter(sitterId),
           getMyPets(),
+          getProfile(),
         ]);
 
         if (cancelled) return;
@@ -79,11 +82,13 @@ export default function BookingFlow({
 
         setSitter(nextSitter);
         setPets(nextPets);
+        setGuest(normalizeBookingGuest(profileRaw));
         setSelectedPetIds([]);
       } catch (err) {
         if (!cancelled) {
           setSitter(null);
           setPets([]);
+          setGuest(EMPTY_GUEST);
           setError(err instanceof Error ? err.message : "Failed to load booking data");
         }
       } finally {
@@ -212,7 +217,6 @@ export default function BookingFlow({
                 {step === 2 && (
                   <InformationStep
                     guest={guest}
-                    onGuestChange={setGuest}
                     additionalMessage={additionalMessage}
                     onMessageChange={setAdditionalMessage}
                   />
