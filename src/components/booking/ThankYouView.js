@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * หน้า Thank You หลังยืนยันจอง (mock)
- * transactionNo ยังเป็นค่าคงที่ — Day ถัดไปจะมาจาก API
+ * หน้า Thank You หลังจองสำเร็จ
+ * transactionNo / total จากผล POST /api/bookings เมื่อมี
  */
 
 import Image from "next/image";
@@ -52,9 +52,12 @@ export default function ThankYouView({
   endTime,
   hours,
   selectedPets,
-  transactionNo = "122312",
+  transactionNo = "",
+  totalPrice,
 }) {
-  const total = calculateBookingTotal(hours, selectedPets.length);
+  const previewTotal = calculateBookingTotal(hours, selectedPets.length);
+  const parsedTotal = Number(totalPrice);
+  const total = Number.isFinite(parsedTotal) ? parsedTotal : previewTotal;
   const petNames =
     selectedPets.length === 0
       ? "-"
@@ -98,7 +101,7 @@ export default function ThankYouView({
       />
 
       <div className="relative z-10 mx-auto max-w-160">
-        <div className="overflow-hidden rounded-2xl bg-white shadow-card">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-(--shadow-card)">
           <div className="bg-black px-8 py-14 text-center text-white sm:px-12">
             <h1 className="text-h2 font-bold tracking-tight text-white sm:text-[2rem] sm:leading-10">
               Thank You For Booking
@@ -111,7 +114,7 @@ export default function ThankYouView({
           <div className="px-8 py-8 sm:px-10 sm:py-10">
             <div className="space-y-1 text-body-3 font-medium text-gray-400">
               <p>Transaction Date: {formatTransactionDate()}</p>
-              <p>Transaction No. : {transactionNo}</p>
+              <p>Transaction No. : {transactionNo || "-"}</p>
             </div>
 
             <dl className="mt-8 space-y-7">

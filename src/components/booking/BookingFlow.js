@@ -2,8 +2,8 @@
 
 /**
  * ตัวควบคุมหลักของ Owner Booking
- * Day 2: ดึง sitter + pets จาก API จริง
- * Day 3: ดึง guest จาก GET /api/users/me (ยังไม่ POST booking)
+ * Day 2–3: โหลด sitter / pets / guest
+ * Day 4: Confirm → POST /api/bookings (cash) → Thank You
  * Step: 1 Your Pet → 2 Information → 3 Payment → Confirm → Thank You
  */
 
@@ -19,7 +19,7 @@ import PaymentStep from "@/components/booking/PaymentStep";
 import ConfirmBookingModal from "@/components/booking/ConfirmBookingModal";
 import ThankYouView from "@/components/booking/ThankYouView";
 import { EMPTY_GUEST } from "@/components/booking/mockBookingData";
-import { getMyPets, getProfile, getSitter } from "@/lib/api";
+import { createBooking, getMyPets, getProfile, getSitter } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import {
   normalizeBookingGuest,
@@ -44,6 +44,9 @@ export default function BookingFlow({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmError, setConfirmError] = useState("");
+  const [bookingResult, setBookingResult] = useState(null);
 
   const [sitter, setSitter] = useState(null);
   const [pets, setPets] = useState([]);
@@ -129,15 +132,66 @@ export default function BookingFlow({
     if (step > 1) setStep((current) => current - 1);
   }
 
+  const canConfirmCash = hasEligibleSelection && paymentMethod === "cash";
+
   function handleConfirmBooking() {
-    if (!hasEligibleSelection) return;
+    if (!canConfirmCash) return;
+    setConfirmError("");
     setConfirmOpen(true);
   }
 
-  // ยังไม่ POST booking — แค่ไปหน้า Thank You (mock) จน Day 4
-  function handleConfirmYes() {
+  async function handleConfirmYes() {
+    if (submitting || !canConfirmCash) return;
+
+    const petIds = selectedPets
+      .filter((pet) =>
+        sitterPetTypes.includes(String(pet.petType).toLowerCase()),
+      )
+      .map((pet) => Number(pet.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+
+    if (petIds.length < 1) {
+      setConfirmError("Please select at least one eligible pet.");
+      return;
+    }
+
+    if (!Number.isInteger(hours) || hours <= 0) {
+      setConfirmError(
+        "Booking duration must be whole hours (for example 10:00–13:00).",
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    setConfirmError("");
+
+    try {
+      const data = await createBooking({
+        sitterId,
+        date,
+        startTime,
+        endTime,
+        petIds,
+        message: additionalMessage,
+        paymentMethod: "cash",
+      });
+
+      setBookingResult(data ?? null);
+      setConfirmOpen(false);
+      setIsCompleted(true);
+    } catch (err) {
+      setConfirmError(
+        err instanceof Error ? err.message : "Failed to create booking",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleCloseConfirm() {
+    if (submitting) return;
     setConfirmOpen(false);
-    setIsCompleted(true);
+    setConfirmError("");
   }
 
   const canGoNext = step === 1 ? hasEligibleSelection : true;
@@ -180,7 +234,18 @@ export default function BookingFlow({
         endTime={endTime}
         hours={hours}
         selectedPets={selectedPets}
-        paymentMethod={paymentMethod}
+        transactionNo={
+          bookingResult?.bookingId != null
+            ? String(bookingResult.bookingId)
+            : bookingResult?.id != null
+              ? String(bookingResult.id)
+              : ""
+        }
+        totalPrice={
+          typeof bookingResult?.totalPrice === "number"
+            ? bookingResult.totalPrice
+            : Number(bookingResult?.totalPrice)
+        }
       />
     );
   }
@@ -253,18 +318,25 @@ export default function BookingFlow({
                     Next
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleConfirmBooking}
-                    disabled={!hasEligibleSelection}
-                    className={`inline-flex min-h-12 min-w-40 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
-                      hasEligibleSelection
-                        ? "bg-orange-500 text-white hover:bg-orange-400"
-                        : "cursor-not-allowed bg-gray-100 text-gray-300"
-                    }`}
-                  >
-                    Confirm Booking
-                  </button>
+                  <div className="flex flex-col items-end gap-2">
+                    {paymentMethod !== "cash" ? (
+                      <p className="max-w-xs text-right text-body-3 text-gray-400">
+                        Card payment is not available yet. Please select Cash.
+                      </p>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={handleConfirmBooking}
+                      disabled={!canConfirmCash}
+                      className={`inline-flex min-h-12 min-w-40 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
+                        canConfirmCash
+                          ? "bg-orange-500 text-white hover:bg-orange-400"
+                          : "cursor-not-allowed bg-gray-100 text-gray-300"
+                      }`}
+                    >
+                      Confirm Booking
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -283,8 +355,10 @@ export default function BookingFlow({
 
         <ConfirmBookingModal
           open={confirmOpen}
-          onClose={() => setConfirmOpen(false)}
+          onClose={handleCloseConfirm}
           onConfirm={handleConfirmYes}
+          submitting={submitting}
+          error={confirmError}
         />
       </div>
     </div>

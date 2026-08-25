@@ -1,7 +1,7 @@
 import Icon from "@/components/Icon";
 import Image from "next/image";
 
-/** Step 3 — เลือก Card / Cash (UI เท่านั้น ยังไม่ Stripe / ไม่ POST) */
+/** Step 3 — Cash ใช้จองได้ (Day 4); Card ยัง placeholder จน Stripe */
 export default function PaymentStep({ paymentMethod, onPaymentMethodChange }) {
   return (
     <section>

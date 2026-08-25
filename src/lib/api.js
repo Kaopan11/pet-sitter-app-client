@@ -114,6 +114,41 @@ export async function getProfile() {
   return json.data;
 }
 
+/**
+ * สร้าง booking (Day 4 — cash)
+ * ห้ามส่ง totalPrice — BE คำนวณเอง
+ * petIds ต้องเป็น number จาก GET /api/users/me/pets
+ */
+export async function createBooking({
+  sitterId,
+  date,
+  startTime,
+  endTime,
+  petIds,
+  message,
+  paymentMethod = "cash",
+}) {
+  const body = {
+    sitterId,
+    date,
+    startTime,
+    endTime,
+    petIds,
+    paymentMethod,
+  };
+
+  const trimmedMessage = typeof message === "string" ? message.trim() : "";
+  if (trimmedMessage) {
+    body.message = trimmedMessage;
+  }
+
+  const json = await apiFetch("/api/bookings", {
+    method: "POST",
+    body,
+  });
+  return json.data;
+}
+
 // บันทึกโปรไฟล์
 export async function updateProfile({
   name,
