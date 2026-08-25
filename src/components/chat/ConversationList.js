@@ -3,9 +3,15 @@ export default function ConversationList({
   activeId,
   onSelect,
 }) {
+  const hasThread = Boolean(activeId);
+
   return (
-    <aside className="flex h-full w-full shrink-0 flex-col bg-black md:w-[368px]">
-      <div className="px-10 py-10">
+    <aside
+      className={`h-full w-full shrink-0 flex-col bg-black md:flex md:w-[368px] ${
+        hasThread ? "hidden" : "flex"
+      }`}
+    >
+      <div className="px-6 py-8 md:px-10 md:py-10">
         <h1 className="text-h4 text-white">Messages</h1>
       </div>
       <div className="flex-1 overflow-y-auto">

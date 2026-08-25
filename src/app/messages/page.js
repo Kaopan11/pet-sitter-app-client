@@ -170,13 +170,17 @@ function MessagesView() {
   if (loading) return <MessagesFallback />;
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="flex h-full min-h-0 flex-1">
       <ConversationList
         conversations={conversations}
         activeId={activeId}
         onSelect={selectConversation}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div
+        className={`min-w-0 flex-1 flex-col ${
+          activeId ? "flex" : "hidden md:flex"
+        }`}
+      >
         {error ? (
           <p className="border-b border-red-light bg-red-light px-10 py-3 text-body-3 text-red">
             {error}

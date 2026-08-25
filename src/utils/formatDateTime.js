@@ -24,6 +24,18 @@ export function formatDate(value) {
   return `${day} ${month} ${year}`;
 }
 
+/** 14:32 */
+export function formatMessageTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 /** 24 Aug, 7 AM - 10 AM */
 export function formatBookedDateList(booking) {
   if (!booking?.booking_date) return "—";

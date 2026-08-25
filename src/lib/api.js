@@ -130,10 +130,10 @@ export async function updateProfile({
   return json.data;
 }
 
-export async function createConversation(sitterId) {
+export async function createConversation(otherUserId) {
   const json = await apiFetch("/api/conversations", {
     method: "POST",
-    body: { sitterId },
+    body: { otherUserId, sitterId: otherUserId },
   });
   return json.data;
 }

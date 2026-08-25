@@ -8,6 +8,7 @@ import { Calendar, List, UserRound, CreditCard, LogOut, MessagesSquare, ArrowLef
 import axios from "axios";
 import { clearAuth, getUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
+import { useUnreadChatCount } from "@/lib/useUnreadChatCount";
 
 jwtInterceptor();
 
@@ -36,11 +37,12 @@ const menuItems = [
   },
 ];
 
-export default function SitterLayout({ children }) {
+export default function SitterLayout({ children, precheckedSitter = false }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isSitter, setIsSitter] = useState(false);
+  const [isSitter, setIsSitter] = useState(precheckedSitter);
   const [headerUser, setHeaderUser] = useState({ name: "", avatarUrl: "" });
+  const unreadChatCount = useUnreadChatCount(isSitter);
 
   useEffect(() => {
     const user = getUser();
@@ -131,7 +133,9 @@ export default function SitterLayout({ children }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-18 shrink-0 items-center justify-between bg-white px-16">
+        <header className={`flex h-18 shrink-0 items-center justify-between bg-white ${
+          pathname === "/messages" ? "px-4 md:px-16" : "px-16"
+        }`}>
           <div className="flex items-center gap-3">
             <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {headerUser.avatarUrl ? (
@@ -152,14 +156,33 @@ export default function SitterLayout({ children }) {
           </div>
           <Link
             href="/messages"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:text-orange-500"
-            aria-label="Open messages"
+            className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:text-orange-500 ${
+              pathname === "/messages" ? "text-orange-500" : "text-gray-400"
+            }`}
+            aria-label={
+              unreadChatCount > 0
+                ? `Open messages, ${unreadChatCount} unread`
+                : "Open messages"
+            }
           >
             <MessagesSquare className="h-6 w-6" />
+            {unreadChatCount > 0 ? (
+              <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                {unreadChatCount > 9 ? "9+" : unreadChatCount}
+              </span>
+            ) : null}
           </Link>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-12 py-8">{children}</div>
+        <div
+          className={
+            pathname === "/messages"
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+              : "flex-1 overflow-y-auto px-12 py-8"
+          }
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

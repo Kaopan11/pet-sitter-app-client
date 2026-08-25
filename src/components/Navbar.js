@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getToken, getUser, updateStoredUser, saveAuth } from "@/lib/auth";
 import { becomeSitter } from "@/lib/api";
+import { useUnreadChatCount } from "@/lib/useUnreadChatCount";
 
 const FALLBACK_AVATAR = "/icon/user.svg";
 
@@ -116,15 +117,20 @@ function BecomeSitterModal({ onCancel, onConfirm, loading, error }) {
   );
 }
 
-function IconButton({ src, alt, hasDot, href, onClick }) {
+function IconButton({ src, alt, hasDot, badge = 0, href, onClick }) {
   const className =
     "relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100";
+  const label = badge > 0 ? `${alt}, ${badge} unread` : alt;
   const inner = (
     <>
       <span className="relative block size-6 overflow-clip">
         <img src={src} alt="" className="size-full object-contain" />
       </span>
-      {hasDot ? (
+      {badge > 0 ? (
+        <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      ) : hasDot ? (
         <img
           src="/navbar/icon-dot.svg"
           alt=""
@@ -136,14 +142,14 @@ function IconButton({ src, alt, hasDot, href, onClick }) {
 
   if (href) {
     return (
-      <Link href={href} className={className} aria-label={alt} onClick={onClick}>
+      <Link href={href} className={className} aria-label={label} onClick={onClick}>
         {inner}
       </Link>
     );
   }
 
   return (
-    <button type="button" className={className} aria-label={alt} onClick={onClick}>
+    <button type="button" className={className} aria-label={label} onClick={onClick}>
       {inner}
     </button>
   );
@@ -162,6 +168,7 @@ export default function Navbar() {
   const mobileNavRef = useRef(null);
   const isLoggedIn = Boolean(user);
   const isSitter = Boolean(user?.isSitter);
+  const unreadChatCount = useUnreadChatCount(isLoggedIn);
   const avatarSrc = getAvatarSrc(user);
   const isRemoteAvatar =
     typeof avatarSrc === "string" && /^https?:\/\//.test(avatarSrc);
@@ -311,7 +318,12 @@ export default function Navbar() {
           <div className="hidden items-center gap-6 md:flex">
             <div className="flex items-center gap-3">
               <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
-              <IconButton src="/navbar/icon-chat.svg" alt="Messages" href="/messages" />
+              <IconButton
+                src="/navbar/icon-chat.svg"
+                alt="Messages"
+                href="/messages"
+                badge={unreadChatCount}
+              />
 
               <div className="relative" ref={menuRef}>
                 <button
@@ -431,6 +443,7 @@ export default function Navbar() {
                   src="/navbar/icon-chat.svg"
                   alt="Messages"
                   href="/messages"
+                  badge={unreadChatCount}
                   onClick={closeMenus}
                 />
               </div>

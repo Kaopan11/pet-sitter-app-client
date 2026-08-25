@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken } from "@/lib/auth";
-import { createConversation } from "@/lib/api";
+import { createConversation, getSitters } from "@/lib/api";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -15,6 +15,7 @@ const MOCK_BOOKINGS = [
   {
     id: "1",
     sitter: {
+      id: "mock-sitter-1",
       name: "Happy Housel",
       avatar_url: "https://i.pravatar.cc/150?img=1",
     },
@@ -34,6 +35,7 @@ const MOCK_BOOKINGS = [
   {
     id: "2",
     sitter: {
+      id: "mock-sitter-2",
       name: "Gentle >< for all pet! (Kid friendly)",
       avatar_url: "https://i.pravatar.cc/150?img=2",
     },
@@ -53,6 +55,7 @@ const MOCK_BOOKINGS = [
   {
     id: "3",
     sitter: {
+      id: "mock-sitter-3",
       name: "We love cat and your cat",
       avatar_url: "https://i.pravatar.cc/150?img=3",
     },
@@ -74,6 +77,7 @@ const MOCK_BOOKINGS = [
   {
     id: "4",
     sitter: {
+      id: "mock-sitter-4",
       name: "Happy energetic pup",
       avatar_url: "https://i.pravatar.cc/150?img=4",
     },
@@ -100,6 +104,61 @@ const MOCK_BOOKINGS = [
     },
   },
 ];
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function bookingSitterId(booking) {
+  const value =
+    booking?.sitter?.id ??
+    booking?.sitter_id ??
+    booking?.sitter?.user_id ??
+    booking?.sitterId;
+  return UUID_PATTERN.test(String(value ?? "")) ? String(value) : "";
+}
+
+function normalizeOwnerBooking(booking) {
+  const sitterId = bookingSitterId(booking);
+  return {
+    ...booking,
+    sitter: {
+      ...(booking.sitter ?? {}),
+      id: sitterId || booking.sitter?.id,
+    },
+    sitter_id: sitterId || booking.sitter_id,
+  };
+}
+
+async function attachLiveSitterIds(bookings) {
+  try {
+    const { data } = await getSitters({ limit: 20 });
+    if (!data?.length) return bookings.map(normalizeOwnerBooking);
+
+    return bookings.map((booking, index) => {
+      if (bookingSitterId(booking)) return normalizeOwnerBooking(booking);
+
+      const name = String(booking.sitter?.name ?? "").trim().toLowerCase();
+      const match =
+        data.find((sitter) => {
+          const title = String(sitter.title ?? sitter.display_name ?? sitter.sitter_name ?? "")
+            .trim()
+            .toLowerCase();
+          return name && title === name;
+        }) ?? data[index % data.length];
+
+      return normalizeOwnerBooking({
+        ...booking,
+        sitter: {
+          ...(booking.sitter ?? {}),
+          id: match.id,
+        },
+        sitter_id: match.id,
+      });
+    });
+  } catch {
+    return bookings.map(normalizeOwnerBooking);
+  }
+}
 
 export default function BookingHistoryPage() {
   const router = useRouter();
@@ -144,15 +203,22 @@ export default function BookingHistoryPage() {
         }
 
         const json = await res.json();
+        const rows = (json.data || []).map(normalizeOwnerBooking);
+        const next = rows.some((booking) => !bookingSitterId(booking))
+          ? await attachLiveSitterIds(rows)
+          : rows;
         if (!cancelled) {
-          setBookings(json.data || []);
+          setBookings(next);
         }
       } catch (error) {
         if (!cancelled) {
           // Use mock data in development
           if (process.env.NODE_ENV === "development") {
-            setBookings(MOCK_BOOKINGS);
-            setLoadError("");
+            const mockWithSitters = await attachLiveSitterIds(MOCK_BOOKINGS);
+            if (!cancelled) {
+              setBookings(mockWithSitters);
+              setLoadError("");
+            }
           } else {
             setLoadError(error.message || "Failed to load bookings");
           }
@@ -172,11 +238,10 @@ export default function BookingHistoryPage() {
 
   async function openSitterChat(event, booking) {
     event.stopPropagation();
-    const sitterId =
-      booking?.sitter?.id ?? booking?.sitter_id ?? booking?.sitter?.user_id;
+    const sitterId = bookingSitterId(booking);
 
     if (!sitterId) {
-      router.push("/messages");
+      toast.error("Cannot open chat: this booking has no pet sitter");
       return;
     }
 
@@ -420,6 +485,33 @@ export default function BookingHistoryPage() {
                       >
                         <span className="text-body-3" style={{ color: "#7B7E8F" }}>
                           Waiting Pet Sitter for confirm booking
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => openSitterChat(e, booking)}
+                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            style={{ minWidth: "120px" }}
+                          >
+                            Send Message
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
+                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            style={{ width: "48px", height: "48px" }}
+                            title="Call"
+                          >
+                            <Phone className="size-6" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {booking.status === "confirmed" && (
+                      <div
+                        className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", borderRadius: "8px", gap: "16px", minHeight: "80px", boxSizing: "border-box" }}
+                      >
+                        <span className="text-body-3" style={{ color: "#7B7E8F" }}>
+                          Pet Sitter has confirmed your booking
                         </span>
                         <div className="flex items-center gap-4">
                           <button
