@@ -116,13 +116,11 @@ function BecomeSitterModal({ onCancel, onConfirm, loading, error }) {
   );
 }
 
-function IconButton({ src, alt, hasDot }) {
-  return (
-    <button
-      type="button"
-      className="relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100"
-      aria-label={alt}
-    >
+function IconButton({ src, alt, hasDot, href, onClick }) {
+  const className =
+    "relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100";
+  const inner = (
+    <>
       <span className="relative block size-6 overflow-clip">
         <img src={src} alt="" className="size-full object-contain" />
       </span>
@@ -133,6 +131,20 @@ function IconButton({ src, alt, hasDot }) {
           className="absolute top-1 right-1.5 size-1.5"
         />
       ) : null}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={className} aria-label={alt} onClick={onClick}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={className} aria-label={alt} onClick={onClick}>
+      {inner}
     </button>
   );
 }
@@ -299,7 +311,7 @@ export default function Navbar() {
           <div className="hidden items-center gap-6 md:flex">
             <div className="flex items-center gap-3">
               <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
-              <IconButton src="/navbar/icon-chat.svg" alt="Messages" hasDot />
+              <IconButton src="/navbar/icon-chat.svg" alt="Messages" href="/messages" />
 
               <div className="relative" ref={menuRef}>
                 <button
@@ -415,7 +427,12 @@ export default function Navbar() {
             <>
               <div className="flex items-center gap-3 pb-2">
                 <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
-                <IconButton src="/navbar/icon-chat.svg" alt="Messages" hasDot />
+                <IconButton
+                  src="/navbar/icon-chat.svg"
+                  alt="Messages"
+                  href="/messages"
+                  onClick={closeMenus}
+                />
               </div>
               {MENU_ITEMS.map((item) => (
                 <Link

@@ -14,15 +14,16 @@ async function apiFetch(path, { method = "GET", body } = {}) {
   assertApiUrl();
 
   const token = getToken();
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   const headers = {};
-  if (body) headers["Content-Type"] = "application/json";
+  if (body && !isFormData) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, {
     method,
     cache: "no-store",
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
   });
 
   const json = await res.json().catch(() => ({}));
@@ -126,5 +127,40 @@ export async function updateProfile({
     method: "PUT",
     body: { name, email, phone, id_number, date_of_birth },
   });
+  return json.data;
+}
+
+export async function createConversation(sitterId) {
+  const json = await apiFetch("/api/conversations", {
+    method: "POST",
+    body: { sitterId },
+  });
+  return json.data;
+}
+
+export async function getConversations() {
+  const json = await apiFetch("/api/conversations");
+  return json.data ?? [];
+}
+
+export async function getMessages(conversationId) {
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+  );
+  return json.data ?? [];
+}
+
+export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
+  const formData = new FormData();
+  formData.append("content", content);
+  if (imageFile) formData.append("image", imageFile);
+
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
   return json.data;
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken } from "@/lib/auth";
+import { createConversation } from "@/lib/api";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -168,6 +169,24 @@ export default function BookingHistoryPage() {
       cancelled = true;
     };
   }, [router]);
+
+  async function openSitterChat(event, booking) {
+    event.stopPropagation();
+    const sitterId =
+      booking?.sitter?.id ?? booking?.sitter_id ?? booking?.sitter?.user_id;
+
+    if (!sitterId) {
+      router.push("/messages");
+      return;
+    }
+
+    try {
+      const conversation = await createConversation(sitterId);
+      router.push(`/messages?id=${conversation.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start chat");
+    }
+  }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -404,7 +423,7 @@ export default function BookingHistoryPage() {
                         </span>
                         <div className="flex items-center gap-4">
                           <button
-                            onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
+                            onClick={(e) => openSitterChat(e, booking)}
                             className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
                             style={{ minWidth: "120px" }}
                           >
@@ -431,7 +450,7 @@ export default function BookingHistoryPage() {
                         </span>
                         <div className="flex items-center gap-4">
                           <button
-                            onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
+                            onClick={(e) => openSitterChat(e, booking)}
                             className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
                             style={{ minWidth: "120px" }}
                           >

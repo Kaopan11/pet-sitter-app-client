@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Icon from "./Icon";
-import { getSitter } from "@/lib/api";
-import { getUser } from "@/lib/auth";
+import { createConversation, getSitter } from "@/lib/api";
+import { getToken, getUser } from "@/lib/auth";
 
 const PET_BADGE = {
   dog: "badge-dog",
@@ -482,6 +483,7 @@ export default function PetSitterDetail({ sitterId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [booking, setBooking] = useState({
     date: "",
@@ -517,6 +519,24 @@ export default function PetSitterDetail({ sitterId }) {
       cancelled = true;
     };
   }, [sitterId]);
+
+  async function handleSendMessage() {
+    if (!getToken()) {
+      router.push("/login");
+      return;
+    }
+    if (!sitter?.id || sendingMessage) return;
+
+    setSendingMessage(true);
+    try {
+      const conversation = await createConversation(sitter.id);
+      router.push(`/messages?id=${conversation.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start chat");
+    } finally {
+      setSendingMessage(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -683,8 +703,13 @@ export default function PetSitterDetail({ sitterId }) {
 
             <div className="mt-6 flex w-full gap-3 border-t border-gray-200 pt-6">
               {isLoggedIn ? (
-                <button type="button" className="btn btn-secondary min-w-0 flex-1 px-3">
-                  Send Message
+                <button
+                  type="button"
+                  className="btn btn-secondary min-w-0 flex-1 px-3"
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage}
+                >
+                  {sendingMessage ? "Opening..." : "Send Message"}
                 </button>
               ) : (
                 <Link href={loginHref} className="btn btn-secondary min-w-0 flex-1 px-3">

@@ -150,13 +150,13 @@ export default function SitterLayout({ children }) {
               {headerUser.name || "Pet Sitter"}
             </span>
           </div>
-          <button
-            type="button"
+          <Link
+            href="/messages"
             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:text-orange-500"
             aria-label="Open messages"
           >
             <MessagesSquare className="h-6 w-6" />
-          </button>
+          </Link>
         </header>
 
         <div className="flex-1 overflow-y-auto px-12 py-8">{children}</div>
