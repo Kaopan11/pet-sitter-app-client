@@ -11,8 +11,8 @@ import {
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import Icon from "@/components/Icon";
 import { formatBookedDateList } from "@/utils/formatDateTime";
+import Pagination from "@/components/Pagination";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -23,17 +23,6 @@ const STATUS = {
   success: { label: "Success", text: "text-green", dot: "bg-green" },
   cancelled: { label: "Canceled", text: "text-red", dot: "bg-red" },
 };
-
-function getPageNumbers(current, total) {
-  if (total <= 0) return [];
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
-
-  const start = Math.max(1, Math.min(current - 2, total - 4));
-  const end = Math.min(total, start + 4);
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-}
 
 export default function BookingListPage() {
   const router = useRouter();
@@ -60,8 +49,6 @@ export default function BookingListPage() {
     const clickedPage = Math.min(Math.max(1, page), Math.max(1, totalPages));
     getBookingData(clickedPage);
   };
-
-  const pageNumbers = getPageNumbers(currentPage, totalPages);
 
   return (
     <section className="flex flex-col gap-6">
@@ -156,45 +143,11 @@ export default function BookingListPage() {
         </table>
       </div>
 
-      {pageNumbers.length > 1 ? (
-        <nav
-          className="flex items-center justify-center gap-1"
-          aria-label="Pagination"
-        >
-          <button
-            type="button"
-            onClick={() => goToPage(currentPage - 1)}
-            disabled={currentPage <= 1}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Previous page"
-          >
-            <Icon src="/icon/chevron-left.svg" className="h-5 w-5" />
-          </button>
-          {pageNumbers.map((page) => (
-            <button
-              key={page}
-              type="button"
-              onClick={() => goToPage(page)}
-              className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-body-2 font-bold transition-colors ${
-                currentPage === page
-                  ? "bg-orange-100 text-orange-500"
-                  : "text-gray-400 hover:text-orange-500"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => goToPage(currentPage + 1)}
-            disabled={currentPage >= totalPages}
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Next page"
-          >
-            <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
-          </button>
-        </nav>
-      ) : null}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={goToPage}
+      />
     </section>
   );
 }
