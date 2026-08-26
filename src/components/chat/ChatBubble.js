@@ -4,8 +4,8 @@ export default function ChatBubble({ message, isMine, avatarUrl }) {
   const hasText = Boolean(String(message.content ?? "").trim());
   const timeLabel = formatMessageTime(message.sentAt);
   const bubbleClass = isMine
-    ? "max-w-[70%] rounded-[12px] rounded-tr-none bg-orange-500 px-4 py-2 text-body-2 text-white"
-    : "max-w-[70%] rounded-[12px] rounded-tl-none border border-gray-200 bg-white px-4 py-2 text-body-2 text-black";
+    ? "max-w-[70%] rounded-[24px] rounded-br-none bg-orange-600 px-6 py-3 text-body-2 text-white"
+    : "max-w-[70%] rounded-[24px] rounded-bl-none border border-gray-200 bg-white px-6 py-3 text-body-2 text-black";
 
   const bubble = (
     <div className={bubbleClass}>

@@ -57,7 +57,7 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col border-t border-gray-200 bg-white px-4 py-4 md:px-10 md:py-6"
+      className="flex flex-col border-t border-gray-200 bg-white px-4 pb-4 pt-3 md:px-10 md:py-6"
     >
       {previewUrl ? (
         <div className="mb-4 flex items-start gap-3">
@@ -82,7 +82,7 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
       {imageError ? (
         <p className="mb-3 text-body-3 text-red">{imageError}</p>
       ) : null}
-      <div className="flex items-center gap-4 md:gap-6">
+      <div className="flex items-center gap-4">
         <input
           ref={fileInputRef}
           type="file"
@@ -92,7 +92,7 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
         />
         <button
           type="button"
-          className="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100 disabled:opacity-40"
+          className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100 disabled:opacity-40"
           aria-label="Attach image"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
@@ -104,12 +104,12 @@ export default function ChatInput({ value, onChange, onSend, disabled }) {
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Message here..."
-          className="h-12 min-w-0 flex-1 border-0 bg-transparent text-body-2 text-black outline-none placeholder:text-gray-400"
+          className="h-8 min-w-0 flex-1 border-0 bg-transparent text-body-3 text-gray-600 outline-none placeholder:text-gray-400"
           disabled={busy}
         />
         <button
           type="submit"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-orange-500 disabled:opacity-40"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-orange-500 shadow-[2px_2px_12px_rgba(64,50,133,0.12)] disabled:opacity-40"
           aria-label="Send message"
           disabled={busy || !canSend}
         >

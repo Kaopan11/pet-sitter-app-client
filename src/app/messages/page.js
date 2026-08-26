@@ -175,6 +175,13 @@ function MessagesView() {
         conversations={conversations}
         activeId={activeId}
         onSelect={selectConversation}
+        onBack={() => {
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+            return;
+          }
+          router.push(getUser()?.isSitter ? "/sitter/profile" : "/");
+        }}
       />
       <div
         className={`min-w-0 flex-1 flex-col ${
@@ -182,7 +189,7 @@ function MessagesView() {
         }`}
       >
         {error ? (
-          <p className="border-b border-red-light bg-red-light px-10 py-3 text-body-3 text-red">
+          <p className="border-b border-red-light bg-red-light px-4 py-3 text-body-3 text-red md:px-10">
             {error}
           </p>
         ) : null}

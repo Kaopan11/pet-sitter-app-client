@@ -84,7 +84,11 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-gray-100">
-      <aside className="flex h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-[#FAFAFB]">
+      <aside
+        className={`h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-[#FAFAFB] ${
+          pathname === "/messages" ? "hidden md:flex" : "flex"
+        }`}
+      >
         <div className="px-6 py-10">
           <Link href="/">
             <Image src="/image/logo.png" alt="Sitter logo" width={120} height={40} />
@@ -133,9 +137,13 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className={`flex h-18 shrink-0 items-center justify-between bg-white ${
-          pathname === "/messages" ? "px-4 md:px-16" : "px-16"
-        }`}>
+        <header
+          className={`h-18 shrink-0 items-center justify-between bg-white ${
+            pathname === "/messages"
+              ? "hidden px-4 md:flex md:px-16"
+              : "flex px-16"
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {headerUser.avatarUrl ? (

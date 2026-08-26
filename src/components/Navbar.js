@@ -31,7 +31,7 @@ function Logo() {
   return (
     <Link
       href="/"
-      className="relative block h-10 w-[132px] shrink-0"
+      className="relative block h-6 w-[79px] shrink-0 md:h-10 md:w-[132px]"
       aria-label="Sitter home"
     >
       <span className="absolute top-[9.68%] right-[17.58%] bottom-[11.15%] left-[1.96%]">
@@ -117,24 +117,39 @@ function BecomeSitterModal({ onCancel, onConfirm, loading, error }) {
   );
 }
 
-function IconButton({ src, alt, hasDot, badge = 0, href, onClick }) {
-  const className =
-    "relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100";
+function IconButton({
+  src,
+  alt,
+  hasDot,
+  badge = 0,
+  href,
+  onClick,
+  variant = "circle",
+}) {
+  const isPlain = variant === "plain";
+  const className = isPlain
+    ? "relative flex size-6 shrink-0 cursor-pointer items-center justify-center"
+    : "relative flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-100";
   const label = badge > 0 ? `${alt}, ${badge} unread` : alt;
+  const showDot = hasDot || (isPlain && badge > 0);
   const inner = (
     <>
       <span className="relative block size-6 overflow-clip">
         <img src={src} alt="" className="size-full object-contain" />
       </span>
-      {badge > 0 ? (
+      {!isPlain && badge > 0 ? (
         <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
           {badge > 9 ? "9+" : badge}
         </span>
-      ) : hasDot ? (
+      ) : showDot ? (
         <img
           src="/navbar/icon-dot.svg"
           alt=""
-          className="absolute top-1 right-1.5 size-1.5"
+          className={
+            isPlain
+              ? "absolute -top-0.5 -right-0.5 size-1.5"
+              : "absolute top-1 right-1.5 size-1.5"
+          }
         />
       ) : null}
     </>
@@ -311,7 +326,7 @@ export default function Navbar() {
   return (
     <>
     <header className="sticky top-0 z-50 bg-[#FFFFFF] shadow-[0_1px_0_0_var(--gray-200)]">
-      <nav className="mx-auto flex h-20 w-full items-center justify-between px-5 md:px-20">
+      <nav className="mx-auto flex h-12 w-full items-center justify-between px-5 md:h-20 md:px-20">
         <Logo />
 
         {isLoggedIn ? (
@@ -419,15 +434,37 @@ export default function Navbar() {
           </div>
         )}
 
-        <button
-          type="button"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full text-black md:hidden"
-          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileMenuOpen}
-          onClick={() => setMobileMenuOpen((open) => !open)}
-        >
-          {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-        </button>
+        {isLoggedIn ? (
+          <div className="flex items-center gap-6 md:hidden">
+            <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot variant="plain" />
+            <IconButton
+              src="/navbar/icon-chat.svg"
+              alt="Messages"
+              href="/messages"
+              badge={unreadChatCount}
+              variant="plain"
+            />
+            <button
+              type="button"
+              className="flex size-6 shrink-0 items-center justify-center text-black"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="flex size-6 shrink-0 items-center justify-center text-black md:hidden"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+          </button>
+        )}
       </nav>
 
       {mobileMenuOpen ? (
@@ -437,16 +474,6 @@ export default function Navbar() {
         >
           {isLoggedIn ? (
             <>
-              <div className="flex items-center gap-3 pb-2">
-                <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
-                <IconButton
-                  src="/navbar/icon-chat.svg"
-                  alt="Messages"
-                  href="/messages"
-                  badge={unreadChatCount}
-                  onClick={closeMenus}
-                />
-              </div>
               {MENU_ITEMS.map((item) => (
                 <Link
                   key={item.href}

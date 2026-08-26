@@ -22,8 +22,8 @@ export default function ChatThread({
     return (
       <section className="flex min-h-0 flex-1 flex-col bg-white">
         <div className="flex flex-1 flex-col items-center justify-center gap-4">
-          <img src="/image/paw-pink.svg" alt="" className="h-16 w-16" />
-          <p className="text-body-2 text-gray-400">Start a conversation!</p>
+          <img src="/image/paw-pink.svg" alt="" className="h-[84px] w-[82px]" />
+          <p className="text-body-1 text-gray-300">Start a conversation!</p>
         </div>
       </section>
     );
@@ -31,17 +31,17 @@ export default function ChatThread({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-white">
-      <header className="flex h-20 items-center justify-between border-b border-gray-100 px-4 md:h-24 md:px-10">
+      <header className="flex h-[60px] items-center justify-between bg-[#F6F6F9] px-2.5 md:h-24 md:bg-white md:px-10 md:border-b md:border-gray-100">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full md:hidden"
+            className="flex size-6 shrink-0 items-center justify-center md:hidden"
             aria-label="Back to conversations"
           >
-            <img src="/icon/chevron-left.svg" alt="" className="size-5" />
+            <img src="/icon/chevron-left.svg" alt="" className="size-6" />
           </button>
-          <span className="relative size-10 overflow-hidden rounded-full bg-gray-200 md:size-12">
+          <span className="relative hidden size-12 overflow-hidden rounded-full bg-gray-200 md:block">
             {conversation.otherUser?.avatarUrl ? (
               <img
                 src={conversation.otherUser.avatarUrl}
@@ -72,9 +72,9 @@ export default function ChatThread({
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-10 md:py-8">
         {messages.length === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <img src="/image/paw-pink.svg" alt="" className="h-16 w-16" />
-            <p className="text-body-2 text-gray-400">Start a conversation!</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-6">
+            <img src="/image/paw-pink.svg" alt="" className="h-[84px] w-[82px]" />
+            <p className="text-body-1 text-gray-300">Start a conversation!</p>
           </div>
         ) : (
           messages.map((message) => (
