@@ -5,42 +5,13 @@ import Link from "next/link";
 import { Plus, PawPrint } from "lucide-react";
 import AccountSidebar from "@/components/AccountSidebar";
 import { toast } from "sonner";
+import { validatePetProfile } from "../../../../utils/validatePetProfile";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
-function validatePet({ name, petType, breed, sex, age, color, weight }) {
-  const errors = {};
 
-  if (!name.trim()) {
-    errors.name = "Pet name is required";
-  }
-  if (!petType) {
-    errors.petType = "Pet type is required";
-  }
-  if (!breed.trim()) {
-    errors.breed = "Breed is required";
-  }
-  if (!sex) {
-    errors.sex = "Sex is required";
-  }
-  if (!age.trim()) {
-    errors.age = "Age is required";
-  } else if (!/^\d+(\.\d+)?$/.test(age.trim()) || Number(age) < 0) {
-    errors.age = "Age must be a number";
-  }
-  if (!color.trim()) {
-    errors.color = "Color is required";
-  }
-  if (!weight.trim()) {
-    errors.weight = "Weight is required";
-  } else if (!/^\d+(\.\d+)?$/.test(weight.trim()) || Number(weight) <= 0) {
-    errors.weight = "Weight must be a number";
-  }
-
-  return errors;
-}
 
 export default function OwnerPetsCreatePage() {
   const imageInputRef = useRef(null);
@@ -53,6 +24,7 @@ export default function OwnerPetsCreatePage() {
   const [weight, setWeight] = useState("");
   const [about, setAbout] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
 
   function handleImageChange(event) {
@@ -79,7 +51,7 @@ export default function OwnerPetsCreatePage() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    const nextErrors = validatePet({
+    const nextErrors = validatePetProfile({
       name,
       petType,
       breed,
@@ -117,13 +89,13 @@ export default function OwnerPetsCreatePage() {
             <h3 className="text-h3">Your Pet</h3>
 
             <div className="mx-4 my-8">
-              <div className="relative my-8 w-fit self-start">
-                <div className="relative size-32 overflow-hidden rounded-full bg-gray-200 lg:size-60">
+              <div className="relative my-8 w-fit shrink-0 self-start">
+                <div className="relative size-60 shrink-0 overflow-hidden rounded-full bg-gray-200">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
                       alt="Pet"
-                      className="size-full object-cover"
+                      className="h-full w-full max-w-none object-cover"
                     />
                   ) : (
                     <div className="flex size-full items-center justify-center">
