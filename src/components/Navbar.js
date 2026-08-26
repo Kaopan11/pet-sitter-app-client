@@ -181,6 +181,7 @@ export default function Navbar() {
   const [becomeSitterError, setBecomeSitterError] = useState("");
   const menuRef = useRef(null);
   const mobileNavRef = useRef(null);
+  const mobileToggleRef = useRef(null);
   const isLoggedIn = Boolean(user);
   const isSitter = Boolean(user?.isSitter);
   const unreadChatCount = useUnreadChatCount(isLoggedIn);
@@ -251,7 +252,10 @@ export default function Navbar() {
     if (!mobileMenuOpen) return;
 
     function handlePointerDown(event) {
-      if (!mobileNavRef.current?.contains(event.target)) {
+      if (
+        !mobileNavRef.current?.contains(event.target) &&
+        !mobileToggleRef.current?.contains(event.target)
+      ) {
         setMobileMenuOpen(false);
       }
     }
@@ -434,6 +438,7 @@ export default function Navbar() {
           </div>
         )}
 
+<<<<<<< HEAD
         {isLoggedIn ? (
           <div className="flex items-center gap-6 md:hidden">
             <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot variant="plain" />
@@ -458,13 +463,30 @@ export default function Navbar() {
           <button
             type="button"
             className="flex size-6 shrink-0 items-center justify-center text-black md:hidden"
+=======
+        <div className="flex shrink-0 items-center gap-2 md:hidden">
+          {isLoggedIn ? (
+            <>
+              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
+              <IconButton src="/navbar/icon-chat.svg" alt="Messages" hasDot />
+            </>
+          ) : null}
+          <button
+            ref={mobileToggleRef}
+            type="button"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-black"
+>>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((open) => !open)}
           >
             {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
+<<<<<<< HEAD
         )}
+=======
+        </div>
+>>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
       </nav>
 
       {mobileMenuOpen ? (
