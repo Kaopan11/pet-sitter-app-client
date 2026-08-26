@@ -4,112 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
-<<<<<<< HEAD
-import { getToken } from "@/lib/auth";
-import { createConversation, getSitters } from "@/lib/api";
-=======
 import { getToken, getUser } from "@/lib/auth";
->>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
+import { createConversation, getSitters } from "@/lib/api";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-<<<<<<< HEAD
-// Mock data for testing/demo
-const MOCK_BOOKINGS = [
-  {
-    id: "1",
-    sitter: {
-      id: "mock-sitter-1",
-      name: "Happy Housel",
-      avatar_url: "https://i.pravatar.cc/150?img=1",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Bubba, Daisy" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 16 Aug 2023",
-    date_label: "Transaction date",
-    transaction_no: "122312",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "pending",
-    has_review: false,
-  },
-  {
-    id: "2",
-    sitter: {
-      id: "mock-sitter-2",
-      name: "Gentle >< for all pet! (Kid friendly)",
-      avatar_url: "https://i.pravatar.cc/150?img=2",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 14 Aug 2023",
-    date_label: "Booking date",
-    transaction_no: "122313",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "ongoing",
-    has_review: false,
-  },
-  {
-    id: "3",
-    sitter: {
-      id: "mock-sitter-3",
-      name: "We love cat and your cat",
-      avatar_url: "https://i.pravatar.cc/150?img=3",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 24 Apr 2023",
-    date_label: "Booking date",
-    transaction_no: "122314",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "completed",
-    completed_date: "2025-08-26",
-    completed_time: "11:03",
-    has_review: false,
-  },
-  {
-    id: "4",
-    sitter: {
-      id: "mock-sitter-4",
-      name: "Happy energetic pup",
-      avatar_url: "https://i.pravatar.cc/150?img=4",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 16 Aug 2023",
-    date_label: "Transaction date",
-    transaction_no: "122315",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "completed",
-    completed_date: "2025-08-13",
-    completed_time: "8:40",
-    has_review: true,
-    review: {
-      reviewer_name: "John Wick",
-      reviewer_avatar_url: "https://i.pravatar.cc/150?img=12",
-      review_date: "Tue, 13 Apr 2023",
-      rating: 5,
-      text: "",
-    },
-  },
-];
-=======
 const STATUS_CONFIG = {
   waiting_confirm: { color: "#FA8AC0", label: "Waiting for confirm" },
   waiting_service: { color: "#F5A623", label: "Waiting for service" },
@@ -124,7 +24,6 @@ const HOVER_BORDER_CLASS = {
   in_service: "hover:border-[#76D0FC]",
   success: "hover:border-[#1CCD83]",
 };
->>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -225,36 +124,17 @@ export default function BookingHistoryPage() {
           throw new Error(json.message || "Failed to load bookings");
         }
 
-<<<<<<< HEAD
-        const json = await res.json();
         const rows = (json.data || []).map(normalizeOwnerBooking);
         const next = rows.some((booking) => !bookingSitterId(booking))
           ? await attachLiveSitterIds(rows)
           : rows;
         if (!cancelled) {
           setBookings(next);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          // Use mock data in development
-          if (process.env.NODE_ENV === "development") {
-            const mockWithSitters = await attachLiveSitterIds(MOCK_BOOKINGS);
-            if (!cancelled) {
-              setBookings(mockWithSitters);
-              setLoadError("");
-            }
-          } else {
-            setLoadError(error.message || "Failed to load bookings");
-          }
-=======
-        if (!cancelled) {
-          setBookings(json.data || []);
           setLoadError("");
         }
       } catch (error) {
         if (!cancelled) {
           setLoadError(error.message || "Failed to load bookings");
->>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
         }
       } finally {
         if (!cancelled) {
