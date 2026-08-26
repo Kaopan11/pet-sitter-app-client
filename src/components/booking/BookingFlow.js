@@ -27,9 +27,17 @@ import {
   normalizeBookingGuest,
   normalizeBookingPet,
   normalizeBookingSitter,
+  calculateBookingTotal,
 } from "@/lib/booking";
 
 const TOTAL_STEPS = 3;
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
 
 /** UI "card" → API "stripe" */
 function toApiPaymentMethod(uiMethod) {
@@ -141,7 +149,11 @@ export default function BookingFlow({
   }
 
   function goBack() {
-    if (step > 1) setStep((current) => current - 1);
+    if (step > 1) {
+      setStep((current) => current - 1);
+      return;
+    }
+    router.push(`/find-sitter/${sitterId}`);
   }
 
   function buildPetIds() {
@@ -244,6 +256,69 @@ export default function BookingFlow({
 
   const canGoNext = step === 1 ? hasEligibleSelection : true;
 
+  const previewTotal = useMemo(
+    () => calculateBookingTotal(hours, selectedPets.length),
+    [hours, selectedPets.length],
+  );
+
+  const detailProps = {
+    sitter,
+    date,
+    startTime,
+    endTime,
+    hours,
+    selectedPets,
+  };
+
+  function renderNavButtons({ fullWidth = false } = {}) {
+    const widthClass = fullWidth
+      ? "min-w-0 flex-1"
+      : "min-w-24 sm:min-w-30 sm:flex-none";
+    const confirmWidth = fullWidth
+      ? "min-w-0 flex-1"
+      : "min-w-24 sm:min-w-40 sm:flex-none";
+
+    return (
+      <>
+        <button
+          type="button"
+          onClick={goBack}
+          className={`inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200 sm:px-8 ${widthClass}`}
+        >
+          Back
+        </button>
+
+        {step < TOTAL_STEPS ? (
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canGoNext}
+            className={`inline-flex min-h-12 items-center justify-center rounded-full px-6 text-body-2 font-bold sm:px-8 ${widthClass} ${
+              canGoNext
+                ? "cursor-pointer bg-orange-500 text-white hover:bg-orange-400"
+                : "cursor-not-allowed bg-gray-100 text-gray-300"
+            }`}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleConfirmBooking}
+            disabled={!canConfirm}
+            className={`inline-flex min-h-12 items-center justify-center rounded-full px-4 text-body-2 font-bold sm:px-8 ${confirmWidth} ${
+              canConfirm
+                ? "cursor-pointer bg-orange-500 text-white hover:bg-orange-400"
+                : "cursor-not-allowed bg-gray-100 text-gray-300"
+            }`}
+          >
+            Confirm Booking
+          </button>
+        )}
+      </>
+    );
+  }
+
   if (loading) {
     return (
       <div className="mx-auto max-w-300 px-4 py-16 sm:px-8">
@@ -309,13 +384,14 @@ export default function BookingFlow({
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto max-w-300 px-4 py-8 sm:px-8">
-        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-stretch">
+      {/* pb สำรองพื้นที่ sticky footer บน mobile */}
+      <div className="relative z-10 mx-auto max-w-300 px-4 pt-6 pb-36 sm:px-8 md:py-8 md:pb-8">
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-stretch md:gap-6">
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             <BookingStepper currentStep={step} />
 
             <div className="flex flex-1 flex-col rounded-2xl bg-white shadow-(--shadow-card)">
-              <div className="flex-1 px-6 pt-8 sm:px-10">
+              <div className="flex-1 px-4 pt-6 pb-6 sm:px-10 sm:pt-8 md:pb-0">
                 {step === 1 && (
                   <YourPetStep
                     pets={pets}
@@ -341,54 +417,22 @@ export default function BookingFlow({
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-4 px-6 py-8 sm:px-10">
-                <button
-                  type="button"
-                  onClick={goBack}
-                  className="inline-flex min-h-12 min-w-30 items-center justify-center rounded-full bg-orange-100 px-8 text-body-2 font-bold text-orange-500 hover:bg-orange-200"
-                >
-                  Back
-                </button>
-
-                {step < TOTAL_STEPS ? (
-                  <button
-                    type="button"
-                    onClick={goNext}
-                    disabled={!canGoNext}
-                    className={`inline-flex min-h-12 min-w-30 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
-                      canGoNext
-                        ? "bg-orange-500 text-white hover:bg-orange-400"
-                        : "cursor-not-allowed bg-gray-100 text-gray-300"
-                    }`}
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleConfirmBooking}
-                    disabled={!canConfirm}
-                    className={`inline-flex min-h-12 min-w-40 items-center justify-center rounded-full px-8 text-body-2 font-bold ${
-                      canConfirm
-                        ? "bg-orange-500 text-white hover:bg-orange-400"
-                        : "cursor-not-allowed bg-gray-100 text-gray-300"
-                    }`}
-                  >
-                    Confirm Booking
-                  </button>
-                )}
+              {/* Desktop: ปุ่มอยู่ในการ์ดขั้นตอน */}
+              <div className="hidden items-center justify-between gap-4 px-6 py-8 sm:px-10 md:flex">
+                {renderNavButtons()}
               </div>
+            </div>
+
+            {/* Mobile: Booking Detail ใต้เนื้อหา (Total อยู่ sticky) */}
+            <div className="md:hidden">
+              <BookingDetailSidebar {...detailProps} hideTotal />
             </div>
           </div>
 
-          <BookingDetailSidebar
-            sitter={sitter}
-            date={date}
-            startTime={startTime}
-            endTime={endTime}
-            hours={hours}
-            selectedPets={selectedPets}
-          />
+          {/* Desktop: sidebar + Total */}
+          <div className="hidden md:block">
+            <BookingDetailSidebar {...detailProps} />
+          </div>
         </div>
 
         <ConfirmBookingModal
@@ -405,6 +449,19 @@ export default function BookingFlow({
           onSuccess={handleStripePaymentSuccess}
           onClose={handleCloseStripePayment}
         />
+      </div>
+
+      {/* Mobile sticky: Total + Back/Next ตาม Figma */}
+      <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
+        <div className="flex items-center justify-between bg-black px-4 py-3.5 text-white">
+          <span className="text-body-2 font-medium">Total</span>
+          <span className="text-body-1 font-bold">
+            {formatCurrency(previewTotal)} THB
+          </span>
+        </div>
+        <div className="flex gap-3 border-t border-gray-100 bg-white px-4 py-4">
+          {renderNavButtons({ fullWidth: true })}
+        </div>
       </div>
     </div>
   );

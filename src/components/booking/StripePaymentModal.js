@@ -67,12 +67,12 @@ function StripeCheckoutForm({ onSuccess, onCancel }) {
       />
 
       {error ? (
-        <p className="text-body-3 text-red-500" role="alert">
+        <p className="text-body-3 wrap-break-word text-red-500" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className="flex gap-3">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row">
         <button
           type="button"
           onClick={onCancel}
@@ -106,19 +106,19 @@ export default function StripePaymentModal({
   if (!stripePromise) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/40 px-4 py-6 sm:items-center sm:py-8"
         role="dialog"
         aria-modal="true"
         aria-labelledby="stripe-payment-title"
       >
-        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-(--shadow-dropdown) sm:p-8">
+        <div className="my-auto max-h-[min(90vh,40rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-(--shadow-dropdown) sm:p-8">
           <h2
             id="stripe-payment-title"
             className="text-h4 font-bold text-gray-900"
           >
             Card payment
           </h2>
-          <p className="mt-4 text-body-3 text-red-500" role="alert">
+          <p className="mt-4 text-body-3 wrap-break-word text-red-500" role="alert">
             NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set. Add your pk_test key
             to .env.local.
           </p>
@@ -136,23 +136,23 @@ export default function StripePaymentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/40 px-4 py-6 sm:items-center sm:py-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="stripe-payment-title"
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-(--shadow-dropdown) sm:p-8">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="my-auto max-h-[min(90vh,44rem)] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-(--shadow-dropdown) sm:p-8">
+        <div className="mb-6 flex items-start justify-between gap-3 sm:gap-4">
           <h2
             id="stripe-payment-title"
-            className="text-h4 font-bold text-gray-900"
+            className="min-w-0 text-h4 font-bold wrap-break-word text-gray-900"
           >
             Card payment
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 sm:size-8"
             aria-label="Close"
           >
             <Icon src="/icon/x.svg" className="size-5" />

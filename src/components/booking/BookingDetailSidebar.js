@@ -13,14 +13,19 @@ function formatCurrency(amount) {
 
 function DetailBlock({ label, children }) {
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 space-y-1">
       <dt className="text-body-3 text-gray-400">{label}:</dt>
-      <dd className="text-body-2 font-medium text-gray-600">{children}</dd>
+      <dd className="text-body-2 font-medium wrap-break-word text-gray-600">
+        {children}
+      </dd>
     </div>
   );
 }
 
-/** Sidebar สรุปการจอง — ยอดรวมเปลี่ยนตามจำนวนสัตว์ที่เลือก */
+/**
+ * สรุปการจอง
+ * hideTotal — mobile ย้าย Total ไป sticky footer (Figma)
+ */
 export default function BookingDetailSidebar({
   sitter,
   date,
@@ -28,19 +33,20 @@ export default function BookingDetailSidebar({
   endTime,
   hours,
   selectedPets,
+  hideTotal = false,
 }) {
   const petCount = selectedPets.length;
   const total = calculateBookingTotal(hours, petCount);
 
   return (
-    <aside className="flex h-full min-h-120 w-full flex-col overflow-hidden rounded-2xl bg-white shadow-(--shadow-card) lg:min-h-0 lg:w-82 lg:shrink-0">
-      <div className="flex flex-1 flex-col px-6 pt-6 pb-6 sm:px-8">
+    <aside className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-(--shadow-card) md:h-full md:w-82 md:shrink-0">
+      <div className="flex flex-1 flex-col px-4 pt-5 pb-5 sm:px-8 sm:pt-6 sm:pb-6">
         <h2 className="text-h4 font-bold text-gray-900">Booking Detail</h2>
         <div className="mt-4 h-px w-full bg-gray-100" aria-hidden />
 
-        <dl className="mt-6 flex flex-col gap-6">
+        <dl className="mt-5 flex flex-col gap-5 sm:mt-6 sm:gap-6">
           <DetailBlock label="Pet Sitter">
-            {sitter.displayName}  By {sitter.sitterName}
+            {sitter.displayName} By {sitter.sitterName}
           </DetailBlock>
 
           <DetailBlock label="Date & Time">
@@ -59,10 +65,14 @@ export default function BookingDetailSidebar({
         </dl>
       </div>
 
-      <div className="mt-auto flex items-center justify-between bg-black px-6 py-5 text-white sm:px-8">
-        <span className="text-body-2 font-medium">Total</span>
-        <span className="text-h4 font-bold">{formatCurrency(total)} THB</span>
-      </div>
+      {!hideTotal ? (
+        <div className="mt-auto flex items-center justify-between gap-3 bg-black px-4 py-4 text-white sm:px-8 sm:py-5">
+          <span className="shrink-0 text-body-2 font-medium">Total</span>
+          <span className="min-w-0 text-right text-h4 font-bold wrap-break-word">
+            {formatCurrency(total)} THB
+          </span>
+        </div>
+      ) : null}
     </aside>
   );
 }

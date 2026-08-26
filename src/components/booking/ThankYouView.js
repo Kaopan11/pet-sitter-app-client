@@ -30,15 +30,11 @@ function formatTransactionDate(date = new Date()) {
   });
 }
 
-function DetailBlock({ label, children, nowrap = false }) {
+function DetailBlock({ label, children }) {
   return (
     <div className="min-w-0 space-y-1.5">
       <dt className="text-body-3 font-medium text-gray-400">{label}:</dt>
-      <dd
-        className={`text-body-1 font-bold text-gray-900 ${
-          nowrap ? "whitespace-nowrap" : ""
-        }`}
-      >
+      <dd className="text-body-1 font-bold wrap-break-word text-gray-900">
         {children}
       </dd>
     </div>
@@ -65,10 +61,10 @@ export default function ThankYouView({
 
   return (
     <div
-      className="relative overflow-hidden px-4 py-12 sm:px-8 sm:py-16"
+      className="relative overflow-x-hidden px-4 py-8 sm:px-8 sm:py-16"
       style={{ minHeight: "calc(100vh - 5rem)" }}
     >
-      {/* มุมซ้ายบน — โค้งเขียว + ก้อนชมพู */}
+      {/* Desktop decorations */}
       <Image
         src="/image/cloud-pink-arc-green.svg"
         alt=""
@@ -78,8 +74,6 @@ export default function ThankYouView({
         aria-hidden
         priority
       />
-
-      {/* มุมขวาล่าง — แมว + โค้งเหลือง */}
       <Image
         src="/image/cat-arc-yellow.svg"
         alt=""
@@ -89,8 +83,6 @@ export default function ThankYouView({
         aria-hidden
         priority
       />
-
-      {/* ดาวฟ้าตาม Figma (ระหว่างการ์ดกับแมว) */}
       <Image
         src="/image/pill-blue.svg"
         alt=""
@@ -100,10 +92,28 @@ export default function ThankYouView({
         aria-hidden
       />
 
+      {/* Mobile decorations — โค้งเขียว + อุ้งเท้า ตาม Figma */}
+      <Image
+        src="/image/circle-green.svg"
+        alt=""
+        width={200}
+        height={200}
+        className="pointer-events-none absolute -bottom-8 -left-16 z-0 w-48 opacity-80 md:hidden"
+        aria-hidden
+      />
+      <Image
+        src="/image/paw-pink.svg"
+        alt=""
+        width={96}
+        height={96}
+        className="pointer-events-none absolute bottom-28 left-1/2 z-0 w-20 -translate-x-1/2 opacity-90 md:hidden"
+        aria-hidden
+      />
+
       <div className="relative z-10 mx-auto max-w-160">
         <div className="overflow-hidden rounded-2xl bg-white shadow-(--shadow-card)">
-          <div className="bg-black px-8 py-14 text-center text-white sm:px-12">
-            <h1 className="text-h2 font-bold tracking-tight text-white sm:text-[2rem] sm:leading-10">
+          <div className="bg-black px-5 py-10 text-center text-white sm:px-12 sm:py-14">
+            <h1 className="text-h3 font-bold tracking-tight wrap-break-word text-white sm:text-h2 sm:text-[2rem] sm:leading-10">
               Thank You For Booking
             </h1>
             <p className="mt-3 text-body-2 font-medium text-white/90">
@@ -111,28 +121,28 @@ export default function ThankYouView({
             </p>
           </div>
 
-          <div className="px-8 py-8 sm:px-10 sm:py-10">
-            <div className="space-y-1 text-body-3 font-medium text-gray-400">
+          <div className="px-5 py-6 sm:px-10 sm:py-10">
+            <div className="space-y-1 text-body-3 font-medium wrap-break-word text-gray-400">
               <p>Transaction Date: {formatTransactionDate()}</p>
               <p>Transaction No. : {transactionNo || "-"}</p>
             </div>
 
             <dl className="mt-8 space-y-7">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-3">
                 <DetailBlock label="Pet Sitter">
                   {sitter.displayName} By {sitter.sitterName}
                 </DetailBlock>
                 <button
                   type="button"
-                  className="mt-6 inline-flex shrink-0 items-center gap-1.5 text-body-2 font-bold text-orange-500 hover:text-orange-400"
+                  className="mt-6 inline-flex min-h-11 shrink-0 items-center gap-1.5 text-body-2 font-bold text-orange-500 hover:text-orange-400"
                 >
                   <Icon src="/icon/map-pin.svg" className="size-4" />
                   View Map
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-7 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                <DetailBlock label="Date & Time" nowrap>
+              <div className="grid grid-cols-1 gap-7 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+                <DetailBlock label="Date & Time">
                   {formatBookingDate(date)}
                   {" | "}
                   {formatTimeRange(startTime, endTime)}
@@ -145,25 +155,28 @@ export default function ThankYouView({
               <DetailBlock label="Pet">{petNames}</DetailBlock>
             </dl>
 
-            <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
-              <span className="text-body-1 font-bold text-gray-900">Total</span>
-              <span className="text-h4 font-bold text-gray-900">
+            <div className="mt-8 flex items-center justify-between gap-3 border-t border-gray-100 pt-6">
+              <span className="shrink-0 text-body-1 font-bold text-gray-900">
+                Total
+              </span>
+              <span className="min-w-0 text-right text-h4 font-bold wrap-break-word text-gray-900">
                 {formatCurrency(total)} THB
               </span>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+        {/* Figma mobile: ปุ่มคู่ขนาน */}
+        <div className="relative z-10 mt-8 flex w-full flex-row items-center justify-center gap-3 sm:gap-4">
           <Link
             href="/owner/bookings"
-            className="inline-flex min-h-12 min-w-50 items-center justify-center rounded-full bg-orange-100 px-10 text-body-2 font-bold text-orange-500 hover:bg-orange-200"
+            className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center rounded-full bg-orange-100 px-4 text-body-2 font-bold text-orange-500 hover:bg-orange-200 sm:flex-none sm:min-w-50 sm:px-10"
           >
             Booking Detail
           </Link>
           <Link
             href="/"
-            className="inline-flex min-h-12 min-w-50 items-center justify-center rounded-full bg-orange-500 px-10 text-body-2 font-bold text-white hover:bg-orange-400"
+            className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center rounded-full bg-orange-500 px-4 text-body-2 font-bold text-white hover:bg-orange-400 sm:flex-none sm:min-w-50 sm:px-10"
           >
             Back To Home
           </Link>
