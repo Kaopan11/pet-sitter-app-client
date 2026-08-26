@@ -11,6 +11,7 @@ import { createConversation, getSitter, getSitterAvailability, getSitterReviews 
 import { getToken, getUser } from "@/lib/auth";
 import {
   bookingRangeOverlapsBooked,
+  dateSpanMustOverlapBooked,
   isTimeInsideBookedSlot,
   normalizeBookedSlots,
 } from "@/lib/booking";
@@ -585,8 +586,21 @@ function BookingModal({
                   <div className="grid grid-cols-7">
                     {calendarDays.map((item) => {
                       const key = toDateKey(item.date);
+                      const spanFrom =
+                        isManyDays && startDate && !endDate && key !== startDate
+                          ? key < startDate
+                            ? key
+                            : startDate
+                          : "";
+                      const spanTo = spanFrom ? (key < startDate ? startDate : key) : "";
                       const isUnavailable =
-                        item.date < today || !dateHasBookableStart(key, bookedSlots);
+                        item.date < today ||
+                        !dateHasBookableStart(key, bookedSlots) ||
+                        Boolean(
+                          spanFrom &&
+                            spanTo &&
+                            dateSpanMustOverlapBooked(spanFrom, spanTo, bookedSlots),
+                        );
                       const isStart = key === startDate;
                       const isEnd = isManyDays && Boolean(endDate) && key === endDate;
                       const inRange =

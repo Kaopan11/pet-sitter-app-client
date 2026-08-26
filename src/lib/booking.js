@@ -179,21 +179,33 @@ function expandBookedRange({ startDate, endDate, startTime, endTime }) {
   return slots;
 }
 
-function rangesOverlap(startA, endA, startB, endB) {
-  return Boolean(startA && endA && startB && endB && startA < endB && startB < endA);
+/** "2026-08-30" + "00:00" → that calendar day at midnight; "24:00" → next midnight */
+export function combineBookingDateTime(dateKey, timeValue) {
+  const date = normalizeBookingDate(dateKey);
+  const time = timeValue === "24:00" ? "24:00" : normalizeBookingTime(timeValue);
+  if (!date || !time) return null;
+
+  const [year, month, day] = date.split("-").map(Number);
+  if ([year, month, day].some((part) => Number.isNaN(part))) return null;
+
+  if (time === "24:00") {
+    return new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+  }
+
+  const [hour, minute] = time.split(":").map(Number);
+  if ([hour, minute].some((part) => Number.isNaN(part))) return null;
+  return new Date(year, month - 1, day, hour, minute || 0, 0, 0);
 }
 
 export function isTimeInsideBookedSlot(date, time, bookedSlots) {
-  return (bookedSlots ?? []).some(
-    (slot) => slot.date === date && time >= slot.startTime && time < slot.endTime,
-  );
-}
+  const instant = combineBookingDateTime(date, time);
+  if (!instant) return false;
 
-export function slotOverlapsBooked(date, startTime, endTime, bookedSlots) {
-  return (bookedSlots ?? []).some(
-    (slot) =>
-      slot.date === date && rangesOverlap(startTime, endTime, slot.startTime, slot.endTime),
-  );
+  return (bookedSlots ?? []).some((slot) => {
+    const slotStart = combineBookingDateTime(slot.date, slot.startTime);
+    const slotEnd = combineBookingDateTime(slot.date, slot.endTime);
+    return Boolean(slotStart && slotEnd && instant >= slotStart && instant < slotEnd);
+  });
 }
 
 export function bookingRangeOverlapsBooked(
@@ -203,26 +215,27 @@ export function bookingRangeOverlapsBooked(
   endTime,
   bookedSlots,
 ) {
-  const from = startDate;
-  const to = endDate || startDate;
-  if (!from || !startTime || !endTime) return false;
+  const proposedStart = combineBookingDateTime(startDate, startTime);
+  const proposedEnd = combineBookingDateTime(endDate || startDate, endTime);
+  if (!proposedStart || !proposedEnd || proposedEnd <= proposedStart) return false;
 
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
-    return slotOverlapsBooked(from, startTime, endTime, bookedSlots);
-  }
+  return (bookedSlots ?? []).some((slot) => {
+    const slotStart = combineBookingDateTime(slot.date, slot.startTime);
+    const slotEnd = combineBookingDateTime(slot.date, slot.endTime);
+    return Boolean(
+      slotStart && slotEnd && proposedStart < slotEnd && slotStart < proposedEnd,
+    );
+  });
+}
 
-  for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
-    const year = cursor.getFullYear();
-    const month = String(cursor.getMonth() + 1).padStart(2, "0");
-    const day = String(cursor.getDate()).padStart(2, "0");
-    if (slotOverlapsBooked(`${year}-${month}-${day}`, startTime, endTime, bookedSlots)) {
-      return true;
-    }
-  }
+export function slotOverlapsBooked(date, startTime, endTime, bookedSlots) {
+  return bookingRangeOverlapsBooked(date, date, startTime, endTime, bookedSlots);
+}
 
-  return false;
+/** True when every possible time span from startDate to endDate would hit a booked slot */
+export function dateSpanMustOverlapBooked(startDate, endDate, bookedSlots) {
+  if (!startDate || !endDate || startDate >= endDate) return false;
+  return bookingRangeOverlapsBooked(startDate, endDate, "23:00", "00:00", bookedSlots);
 }
 
 /** GET /api/sitters/:id → รูปทรง sidebar / eligibility */
