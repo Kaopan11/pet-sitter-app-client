@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 
+//change dob output from api to dob format --> setDateOfBirth(toDateInputValue(argument));
 function toDateInputValue(value) {
   if (!value) return "";
   return String(value).slice(0, 10);
@@ -227,13 +228,13 @@ export default function OwnerProfilePage() {
           )}
 
           <div className="mx-4 my-8">
-          <div className="relative my-8 w-fit self-start">
-          <div className="relative size-32 overflow-hidden rounded-full bg-gray-200 lg:size-60">
+          <div className="relative my-8 w-fit shrink-0 self-start">
+          <div className="relative size-60 shrink-0 overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="Owner profile"
-                  className="size-full object-cover"
+                  className="h-full w-full max-w-none object-cover"
                 />
               ) : (
                 <div className="flex size-full items-center justify-center">
