@@ -1114,6 +1114,12 @@ export default function PetSitterDetail({ sitterId }) {
     if (!booking.endDate) {
       setBooking((current) => ({ ...current, endDate: current.startDate }));
     }
+    const params = new URLSearchParams({
+      sitterId: String(sitter.id ?? sitterId),
+      date: endDate,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+    });
     setBookingOpen(false);
     router.push(`/owner/booking?${params.toString()}`);
   }
