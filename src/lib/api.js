@@ -83,6 +83,32 @@ export async function getMyPets() {
   return json.data ?? [];
 }
 
+export async function getSitterReviews(id, { page = 1, limit = 5, rating = null } = {}) {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (rating) params.set("rating", String(rating));
+
+  const json = await apiFetch(
+    `/api/sitters/${encodeURIComponent(id)}/reviews?${params.toString()}`
+  );
+  const data = json.data ?? json.reviews ?? [];
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: json.pagination ?? {
+      page,
+      limit,
+      total: Array.isArray(data) ? data.length : 0,
+      totalPages: 0,
+    },
+    summary: json.summary ?? {
+      rating_avg: 0,
+      review_count: 0,
+    },
+  };
+}
+
 // สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
 export async function login({ email, password }) {
   const json = await apiFetch("/api/auth/login", {

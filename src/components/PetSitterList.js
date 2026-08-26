@@ -165,7 +165,7 @@ export default function PetSitterList() {
     const pageNumbers = getPageNumbers(currentPage, totalPages);
 
     return (
-        <div className="min-h-full bg-gray-100 px-4 py-8 sm:px-8">
+        <div className="min-h-full bg-[#FAFAFB] px-4 py-8 sm:px-8">
             <div className="mx-auto max-w-7xl">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-h3 font-bold text-gray-900">
