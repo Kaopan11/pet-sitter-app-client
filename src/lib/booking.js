@@ -3,7 +3,7 @@
  * - อ่าน query จาก URL
  * - คำนวณชั่วโมง / ราคา preview
  * - format วัน–เวลาสำหรับ UI
- * - normalize sitter/pet จาก API → รูปทรงที่ UI ใช้
+ * - normalize sitter/pet/guest จาก API → รูปทรงที่ UI ใช้
  */
 
 const TIME_PATTERN = /^(\d{1,2}):(\d{2})$/;
@@ -144,5 +144,18 @@ export function normalizeBookingPet(raw) {
     avatarUrl:
       firstString(raw.avatarUrl, raw.avatar_url, raw.image_url, raw.image) ||
       FALLBACK_AVATAR,
+  };
+}
+
+/** GET /api/users/me → guest บน Step Information (read-only) */
+export function normalizeBookingGuest(raw) {
+  if (!raw || typeof raw !== "object") {
+    return { name: "", email: "", phone: "" };
+  }
+
+  return {
+    name: firstString(raw.name) || "",
+    email: firstString(raw.email) || "",
+    phone: firstString(raw.phone) || "",
   };
 }
