@@ -438,55 +438,30 @@ export default function Navbar() {
           </div>
         )}
 
-<<<<<<< HEAD
-        {isLoggedIn ? (
-          <div className="flex items-center gap-6 md:hidden">
-            <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot variant="plain" />
-            <IconButton
-              src="/navbar/icon-chat.svg"
-              alt="Messages"
-              href="/messages"
-              badge={unreadChatCount}
-              variant="plain"
-            />
-            <button
-              type="button"
-              className="flex size-6 shrink-0 items-center justify-center text-black"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen((open) => !open)}
-            >
-              {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="flex size-6 shrink-0 items-center justify-center text-black md:hidden"
-=======
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           {isLoggedIn ? (
             <>
-              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
-              <IconButton src="/navbar/icon-chat.svg" alt="Messages" hasDot />
+              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot variant="plain" />
+              <IconButton
+                src="/navbar/icon-chat.svg"
+                alt="Messages"
+                href="/messages"
+                badge={unreadChatCount}
+                variant="plain"
+              />
             </>
           ) : null}
           <button
             ref={mobileToggleRef}
             type="button"
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-black"
->>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((open) => !open)}
           >
             {mobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
-<<<<<<< HEAD
-        )}
-=======
         </div>
->>>>>>> 33ad763 (feat(navbar): enhance mobile menu toggle and add notification/message icons)
       </nav>
 
       {mobileMenuOpen ? (
