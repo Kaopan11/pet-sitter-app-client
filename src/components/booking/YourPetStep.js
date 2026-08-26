@@ -24,7 +24,7 @@ function PetTypeBadge({ petType }) {
 function PetCheckbox({ checked, disabled }) {
   return (
     <span
-      className={`flex size-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+      className={`flex size-6 shrink-0 items-center justify-center rounded border-2 transition-colors ${
         disabled
           ? "border-gray-200 bg-gray-50"
           : checked
@@ -54,7 +54,7 @@ export default function YourPetStep({
   const hasPets = pets.length > 0;
 
   return (
-    <section>
+    <section className="w-full min-w-0">
       <h2 className="text-body-1 font-medium text-gray-900">Choose your pet</h2>
 
       {!hasPets ? (
@@ -63,7 +63,8 @@ export default function YourPetStep({
         </p>
       ) : null}
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
+      {/* Mobile: แถวเต็มความกว้าง · Desktop: grid 2–3 คอลัมน์ */}
+      <div className="mt-6 flex w-full flex-col gap-3 md:grid md:grid-cols-2 md:gap-5 lg:grid-cols-3">
         {pets.map((pet) => {
           const eligible = isEligible(pet);
           const selected = selectedPetIds.includes(pet.id);
@@ -72,7 +73,7 @@ export default function YourPetStep({
           return (
             <label
               key={pet.id}
-              className={`relative flex min-h-55 flex-col items-center rounded-2xl border border-gray-100 bg-white px-4 py-6 transition-colors ${
+              className={`relative flex w-full min-w-0 flex-col items-center rounded-2xl border border-gray-100 bg-white px-4 py-5 transition-colors md:min-h-55 md:py-6 ${
                 !eligible
                   ? "cursor-not-allowed opacity-40"
                   : selected
@@ -92,18 +93,18 @@ export default function YourPetStep({
                 <PetCheckbox checked={selected} disabled={!eligible} />
               </div>
 
-              <div className="relative mt-2 size-22 overflow-hidden rounded-full bg-gray-100">
+              <div className="relative mt-1 size-20 overflow-hidden rounded-full bg-gray-100 md:mt-2 md:size-22">
                 <Image
                   src={pet.avatarUrl}
                   alt={pet.name}
                   fill
-                  sizes="88px"
+                  sizes="(max-width: 768px) 80px, 88px"
                   unoptimized={remote}
                   className="object-cover"
                 />
               </div>
 
-              <p className="mt-4 text-center text-body-1 font-bold text-gray-900">
+              <p className="mt-3 w-full text-center text-body-1 font-bold wrap-break-word text-gray-900 md:mt-4">
                 {pet.name}
               </p>
               <div className="mt-2">
@@ -115,12 +116,12 @@ export default function YourPetStep({
 
         <Link
           href="/owner/pets"
-          className="flex min-h-55 flex-col items-center justify-center gap-4 rounded-2xl bg-orange-100 px-4 py-6 transition-colors hover:bg-orange-200"
+          className="flex w-full min-w-0 flex-col items-center justify-center gap-3 rounded-2xl bg-orange-100 px-4 py-8 transition-colors hover:bg-orange-200 md:min-h-55 md:gap-4 md:py-6"
         >
           <span className="flex size-12 items-center justify-center rounded-full bg-orange-500">
             <Icon src="/icon/plus.svg" className="size-6 text-white" />
           </span>
-          <span className="text-body-1 font-bold text-orange-500">
+          <span className="text-center text-body-1 font-bold text-orange-500">
             Create New Pet
           </span>
         </Link>

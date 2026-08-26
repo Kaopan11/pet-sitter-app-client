@@ -2,29 +2,36 @@
 
 import Icon from "@/components/Icon";
 
-/** Modal ยืนยันก่อนจอง — Yes → Thank You (mock) */
-export default function ConfirmBookingModal({ open, onClose, onConfirm }) {
+/** Modal ยืนยันก่อนจอง — Yes → POST /api/bookings (cash | stripe) */
+export default function ConfirmBookingModal({
+  open,
+  onClose,
+  onConfirm,
+  submitting = false,
+  error = "",
+}) {
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto bg-black/40 px-4 py-6 sm:items-center sm:py-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="booking-confirm-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-dropdown sm:p-8">
-        <div className="flex items-start justify-between gap-4">
+      <div className="my-auto max-h-[min(90vh,40rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-(--shadow-dropdown) sm:p-8">
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
           <h2
             id="booking-confirm-title"
-            className="text-h4 font-bold text-gray-900"
+            className="min-w-0 text-h4 font-bold wrap-break-word text-gray-900"
           >
             Booking Confirmation
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            disabled={submitting}
+            className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
             aria-label="Close"
           >
             <Icon src="/icon/x.svg" className="size-5" />
@@ -35,20 +42,28 @@ export default function ConfirmBookingModal({ open, onClose, onConfirm }) {
           Are you sure to booking this pet sitter?
         </p>
 
-        <div className="mt-8 flex gap-3">
+        {error ? (
+          <p className="mt-4 text-body-3 wrap-break-word text-red-500" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200"
+            disabled={submitting}
+            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-500 px-6 text-body-2 font-bold text-white hover:bg-orange-400"
+            disabled={submitting}
+            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-500 px-6 text-body-2 font-bold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Yes, I&apos;m sure
+            {submitting ? "Booking..." : "Yes, I'm sure"}
           </button>
         </div>
       </div>

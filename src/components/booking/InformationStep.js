@@ -1,14 +1,11 @@
-/** Step 2 — ข้อมูลผู้จอง (แก้ไขได้) + ข้อความเพิ่มเติม */
+/**
+ * Step 2 — ข้อมูลผู้จองจากโปรไฟล์ (อ่านอย่างเดียว) + ข้อความถึง sitter (optional)
+ */
 export default function InformationStep({
   guest,
-  onGuestChange,
   additionalMessage,
   onMessageChange,
 }) {
-  function updateField(field, value) {
-    onGuestChange({ ...guest, [field]: value });
-  }
-
   return (
     <section>
       <div className="space-y-6">
@@ -22,14 +19,15 @@ export default function InformationStep({
           <input
             id="guest-name"
             type="text"
-            className="input"
+            className="input bg-gray-100 text-black"
             value={guest.name}
             placeholder="Full name"
-            onChange={(e) => updateField("name", e.target.value)}
+            readOnly
+            aria-readonly="true"
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
             <label
               htmlFor="guest-email"
@@ -40,10 +38,11 @@ export default function InformationStep({
             <input
               id="guest-email"
               type="email"
-              className="input"
+              className="input bg-gray-100 text-black"
               value={guest.email}
               placeholder="youremail@company.com"
-              onChange={(e) => updateField("email", e.target.value)}
+              readOnly
+              aria-readonly="true"
             />
           </div>
 
@@ -57,10 +56,11 @@ export default function InformationStep({
             <input
               id="guest-phone"
               type="tel"
-              className="input"
+              className="input bg-gray-100 text-black"
               value={guest.phone}
               placeholder="xxx-xxx-xxx"
-              onChange={(e) => updateField("phone", e.target.value)}
+              readOnly
+              aria-readonly="true"
             />
           </div>
         </div>
