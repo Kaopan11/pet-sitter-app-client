@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Icon from "./Icon";
+import Pagination from "./Pagination";
 import { createConversation, getSitter, getSitterReviews } from "@/lib/api";
 import { getToken, getUser } from "@/lib/auth";
 
@@ -802,17 +803,6 @@ function normalizeReview(raw) {
   };
 }
 
-function getReviewPageNumbers(current, total) {
-  if (total <= 0) return [];
-  if (total <= 5) {
-    return Array.from({ length: total }, (_, index) => index + 1);
-  }
-
-  const start = Math.max(1, Math.min(current - 2, total - 4));
-  const end = Math.min(total, start + 4);
-  return Array.from({ length: end - start + 1 }, (_, index) => start + index);
-}
-
 function FilterStars({ count }) {
   return (
     <span className="flex items-center gap-0.5 text-green">
@@ -871,7 +861,6 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
     };
   }, [sitterId, page, ratingFilter, ratingAvg, reviewCount]);
 
-  const pageNumbers = getReviewPageNumbers(page, totalPages);
   const average = summary.ratingAvg;
   const count = summary.reviewCount;
 
@@ -986,41 +975,14 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
             </ul>
           )}
 
-        {pageNumbers.length > 1 ? (
-          <nav className="mt-6 flex items-center justify-center gap-1" aria-label="Reviews pagination">
-            <button
-              type="button"
-              onClick={() => setPage(page - 1)}
-              disabled={page <= 1}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Previous page"
-            >
-              <Icon src="/icon/chevron-left.svg" className="h-5 w-5" />
-            </button>
-            {pageNumbers.map((pageNumber) => (
-              <button
-                key={pageNumber}
-                type="button"
-                onClick={() => setPage(pageNumber)}
-                className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-body-2 font-bold transition-colors ${
-                  page === pageNumber
-                    ? "bg-orange-100 text-orange-500"
-                    : "text-gray-400 hover:text-orange-500"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Next page"
-            >
-              <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
-            </button>
-          </nav>
+        {totalPages > 1 ? (
+          <div className="mt-6">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
         ) : null}
       </div>
     </section>
