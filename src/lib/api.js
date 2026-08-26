@@ -77,6 +77,14 @@ export async function getSitter(id) {
   return json.data;
 }
 
+/** ช่วงเวลาที่ sitter ถูกจองแล้ว — ใช้ disable ปฏิทิน / เวลา */
+export async function getSitterAvailability(id) {
+  const json = await apiFetch(
+    `/api/sitters/${encodeURIComponent(id)}/availability`,
+  );
+  return json.data ?? [];
+}
+
 /** สัตว์เลี้ยงของ owner ที่ login — Day 2 booking */
 export async function getMyPets() {
   const json = await apiFetch("/api/users/me/pets");

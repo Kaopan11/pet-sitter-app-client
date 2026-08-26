@@ -7,8 +7,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Icon from "./Icon";
 import Pagination from "./Pagination";
-import { createConversation, getSitter, getSitterReviews } from "@/lib/api";
+import { createConversation, getSitter, getSitterAvailability, getSitterReviews } from "@/lib/api";
 import { getToken, getUser } from "@/lib/auth";
+import {
+  bookingRangeOverlapsBooked,
+  isTimeInsideBookedSlot,
+  normalizeBookedSlots,
+} from "@/lib/booking";
 
 const PET_BADGE = {
   dog: "badge-dog",
@@ -203,8 +208,11 @@ function isAtLeastThreeHoursAhead(dateKey, timeValue, now = new Date()) {
   return Boolean(start && start.getTime() >= now.getTime() + MIN_BOOKING_ADVANCE_MS);
 }
 
-function dateHasBookableStart(dateKey, now = new Date()) {
-  return HOURLY_TIMES.some((time) => isAtLeastThreeHoursAhead(dateKey, time.value, now));
+function dateHasBookableStart(dateKey, bookedSlots = [], now = new Date()) {
+  return HOURLY_TIMES.some((time) => {
+    if (!isAtLeastThreeHoursAhead(dateKey, time.value, now)) return false;
+    return !isTimeInsideBookedSlot(dateKey, time.value, bookedSlots);
+  });
 }
 
 function isSameDayBooking(startDate, endDate, isManyDays) {
@@ -327,6 +335,7 @@ function BookingModal({
   endDate,
   startTime,
   endTime,
+  bookedSlots = [],
   onChange,
   onClose,
   onContinue,
@@ -342,12 +351,27 @@ function BookingModal({
 
   function isStartOptionDisabled(time) {
     if (startDate && !isAtLeastThreeHoursAhead(startDate, time)) return true;
+    if (startDate && isTimeInsideBookedSlot(startDate, time, bookedSlots)) return true;
     if (sameDay && endTime && time >= endTime) return true;
+    if (
+      startDate &&
+      endTime &&
+      bookingRangeOverlapsBooked(startDate, endDate || startDate, time, endTime, bookedSlots)
+    ) {
+      return true;
+    }
     return false;
   }
 
   function isEndOptionDisabled(time) {
     if (sameDay && startTime && time <= startTime) return true;
+    if (
+      startDate &&
+      startTime &&
+      bookingRangeOverlapsBooked(startDate, endDate || startDate, startTime, time, bookedSlots)
+    ) {
+      return true;
+    }
     return false;
   }
 
@@ -356,7 +380,7 @@ function BookingModal({
     if (startTime && isStartOptionDisabled(startTime)) patch.startTime = "";
     if (endTime && isEndOptionDisabled(endTime)) patch.endTime = "";
     if (Object.keys(patch).length) onChange(patch);
-  }, [startDate, endDate, startTime, endTime, sameDay]);
+  }, [startDate, endDate, startTime, endTime, sameDay, bookedSlots, onChange]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -433,7 +457,14 @@ function BookingModal({
       (!isManyDays || endDate) &&
       !isStartOptionDisabled(startTime) &&
       !isEndOptionDisabled(endTime) &&
-      isStartBeforeEnd(startDate, startTime, endDate || startDate, endTime, isManyDays)
+      isStartBeforeEnd(startDate, startTime, endDate || startDate, endTime, isManyDays) &&
+      !bookingRangeOverlapsBooked(
+        startDate,
+        endDate || startDate,
+        startTime,
+        endTime,
+        bookedSlots,
+      )
   );
 
   function handleSubmit(event) {
@@ -555,7 +586,7 @@ function BookingModal({
                     {calendarDays.map((item) => {
                       const key = toDateKey(item.date);
                       const isUnavailable =
-                        item.date < today || !dateHasBookableStart(key);
+                        item.date < today || !dateHasBookableStart(key, bookedSlots);
                       const isStart = key === startDate;
                       const isEnd = isManyDays && Boolean(endDate) && key === endDate;
                       const inRange =
@@ -632,7 +663,7 @@ function BookingModal({
                 </div>
               </div>
               <p className="pl-10 text-body-3 text-gray-400">
-                Book at least 3 hours in advance. Start time must be before end time.
+                Book at least 3 hours in advance. Grayed-out times are already booked.
               </p>
             </div>
           </div>
@@ -1004,10 +1035,30 @@ export default function PetSitterDetail({ sitterId }) {
     startTime: "",
     endTime: "",
   });
+  const [bookedSlots, setBookedSlots] = useState([]);
 
   useEffect(() => {
     setIsLoggedIn(Boolean(getUser()));
   }, []);
+
+  useEffect(() => {
+    if (!bookingOpen || !sitterId) return;
+    let cancelled = false;
+
+    async function loadAvailability() {
+      try {
+        const data = await getSitterAvailability(sitterId);
+        if (!cancelled) setBookedSlots(normalizeBookedSlots(data));
+      } catch {
+        if (!cancelled) setBookedSlots([]);
+      }
+    }
+
+    loadAvailability();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingOpen, sitterId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1109,6 +1160,18 @@ export default function PetSitterDetail({ sitterId }) {
     if (!isAtLeastThreeHoursAhead(booking.startDate, booking.startTime)) return;
     const endDate = booking.endDate || booking.startDate;
     if (!isStartBeforeEnd(booking.startDate, booking.startTime, endDate, booking.endTime, endDate !== booking.startDate)) {
+      return;
+    }
+    if (
+      bookingRangeOverlapsBooked(
+        booking.startDate,
+        endDate,
+        booking.startTime,
+        booking.endTime,
+        bookedSlots,
+      )
+    ) {
+      toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
     if (!booking.endDate) {
@@ -1289,6 +1352,7 @@ export default function PetSitterDetail({ sitterId }) {
           endDate={booking.endDate}
           startTime={booking.startTime}
           endTime={booking.endTime}
+          bookedSlots={bookedSlots}
           onChange={handleBookingChange}
           onClose={() => setBookingOpen(false)}
           onContinue={handleBookingContinue}
