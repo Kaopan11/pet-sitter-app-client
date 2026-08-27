@@ -1150,10 +1150,6 @@ export default function PetSitterDetail({ sitterId }) {
     setLoginModalOpen(true);
   }
 
-  function handleSendMessage() {
-    requireLogin();
-  }
-
   function handleBookNow() {
     requireLogin(() => setBookingOpen(true));
   }

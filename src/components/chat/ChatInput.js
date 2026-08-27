@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { normalizeChatImage } from "@/lib/normalizeChatImage";
 
-export default function ChatInput({ value, onChange, onSend, disabled }) {
+export default function ChatInput({ value, onChange, onSend, disabled = false }) {
   const fileInputRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
