@@ -35,6 +35,26 @@ async function apiFetch(path, { method = "GET", body } = {}) {
   return json;
 }
 
+//createPet(formData) / updatePet(id, formData) → เรียก apiFormFetch
+async function apiFormFetch(path, { method = "POST", body } = {}) {
+  assertApiUrl();
+  const token = getToken(); //line 40-42: get token from getToken function in auth.js send to backend along with formdata
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_URL}${path}`, {
+    //`${API_URL}${path}`= 'http://localhost:4000/api/pets'
+    method, //line 45-48: objects
+    cache: "no-store",
+    headers, //line 47-48: headers: {Authorization: `Bearer ${token}`}
+    body, // FormData ตรง ๆ ไม่ stringify
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.message || `Request failed (${res.status})`);
+  }
+  return json;
+}
+
 export async function checkHealth() {
   return apiFetch("/health");
 }
@@ -200,37 +220,33 @@ export async function updateProfile({
   return json.data;
 }
 
-export async function createConversation(otherUserId) {
-  const json = await apiFetch("/api/conversations", {
-    method: "POST",
-    body: { otherUserId, sitterId: otherUserId },
-  });
-  return json.data;
+//mapPet เป็น ตัวแปลงชื่อฟิลด์ จากของที่ backend ส่งมา ให้กลายเป็นชื่อที่หน้า UI ใช้อยู่แล้ว
+export function mapPet(pet) {
+  if (!pet) return null;
+  return {
+    id: pet.id,
+    name: pet.name ?? "",
+    type: pet.pet_type ?? "",
+    breed: pet.breed ?? "",
+    sex: pet.sex ?? "",
+    age: pet.age_months == null ? "" : String(pet.age_months),
+    color: pet.color ?? "",
+    weight: pet.weight_kg == null ? "" : String(pet.weight_kg),
+    about: pet.about ?? "",
+    image: pet.avatar_url ?? "",
+  };
 }
 
-export async function getConversations() {
-  const json = await apiFetch("/api/conversations");
-  return json.data ?? [];
+// รายการ pet ของ owner ที่ login — หน้า /owner/pets (ไม่ใช้ร่วมกับ booking)
+export async function getOwnerPets() {
+  const json = await apiFetch("/api/pets");
+  const pets = Array.isArray(json.data) ? json.data : [];
+  return pets.map(mapPet).filter(Boolean);
 }
 
-export async function getMessages(conversationId) {
-  const json = await apiFetch(
-    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
-  );
-  return json.data ?? [];
+//รับ formData
+export async function createPet(formData) {
+  const json = await apiFormFetch("/api/pets", { method: "POST", body: formData,});
+  return mapPet(json.data);
 }
-
-export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
-  const formData = new FormData();
-  formData.append("content", content);
-  if (imageFile) formData.append("image", imageFile);
-
-  const json = await apiFetch(
-    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
-  return json.data;
-}
+//apiFormFectch is to validate data from frontend and send the data to backend later (endpoint method, attached formdata)
