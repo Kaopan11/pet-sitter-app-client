@@ -3,10 +3,21 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import Icon from "./Icon";
 import Pagination from "./Pagination";
 import PetSitterCard from "./PetSitterCard";
+import SitterCardOverlay from "./find-sitter/SitterCardOverlay";
 import { getSitters } from "@/lib/api";
+
+const Map = dynamic(() => import("@/components/Map"), {
+    ssr: false,
+    loading: () => (
+        <div className="h-[600px] w-full bg-gray-100 animate-pulse rounded-2xl flex items-center justify-center text-gray-400 font-medium">
+            กำลังโหลดแผนที่...
+        </div>
+    ),
+});
 
 const PET_OPTIONS = [
     { id: "dog", label: "Dog" },
@@ -60,6 +71,8 @@ export default function PetSitterList() {
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [selectedSitterId, setSelectedSitterId] = useState(null);
+    const [mapCenter, setMapCenter] = useState([13.7563, 100.5018]);
 
     const syncFormFromUrl = useCallback(() => {
         const rating = Number.parseInt(searchParams.get("rating") ?? "", 10);
@@ -88,8 +101,15 @@ export default function PetSitterList() {
                 page: Number.isInteger(page) && page > 0 ? page : 1,
                 limit: PAGE_SIZE,
             });
-            setSitters(result.data);
-            setTotalPages(result.pagination.totalPages);
+            const data = result.data || [];
+            setSitters(data);
+            setTotalPages(result.pagination?.totalPages || 0);
+            if (data.length > 0) {
+                setSelectedSitterId(data[0].id);
+                const firstLat = Number(data[0].latitude || data[0].lat) || 13.7563;
+                const firstLng = Number(data[0].longitude || data[0].lng) || 100.5018;
+                setMapCenter([firstLat, firstLng]);
+            }
         } catch (err) {
             setSitters([]);
             setTotalPages(0);
@@ -98,6 +118,14 @@ export default function PetSitterList() {
             setLoading(false);
         }
     }, [searchParams]);
+
+    const handleSelectSitter = (sitter, idx = 0) => {
+        if (!sitter) return;
+        setSelectedSitterId(sitter.id);
+        const lat = Number(sitter.latitude || sitter.lat) || (13.7563 + (idx * 0.015 - 0.03));
+        const lng = Number(sitter.longitude || sitter.lng) || (100.5018 + (idx * 0.02 - 0.04));
+        setMapCenter([lat, lng]);
+    };
 
     useEffect(() => {
         syncFormFromUrl();
@@ -312,21 +340,55 @@ export default function PetSitterList() {
                 </aside>
 
                 <section className="flex min-w-0 flex-col">
-                    <div className="flex flex-col gap-4">
-                        {loading ? (
-                            <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
-                                Loading pet sitters...
-                            </p>
-                        ) : error ? (
-                            <p className="rounded-xl bg-white p-6 text-body-2 text-red">
-                                {error}
-                            </p>
-                        ) : sitters.length === 0 ? (
-                            <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
-                                No pet sitters found
-                            </p>
-                        ) : (
-                            sitters.map((sitter) => (
+                    {loading ? (
+                        <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
+                            Loading pet sitters...
+                        </p>
+                    ) : error ? (
+                        <p className="rounded-xl bg-white p-6 text-body-2 text-red">
+                            {error}
+                        </p>
+                    ) : sitters.length === 0 ? (
+                        <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
+                            No pet sitters found
+                        </p>
+                    ) : viewMode === "map" ? (
+                        <div className="relative h-[650px] w-full rounded-2xl overflow-hidden shadow-[var(--shadow-card)] border border-gray-200">
+                            <Map
+                                center={mapCenter}
+                                zoom={13}
+                                markers={sitters.map((sitter, idx) => {
+                                    const lat = Number(sitter.latitude || sitter.lat) || (13.7563 + (idx * 0.015 - 0.03));
+                                    const lng = Number(sitter.longitude || sitter.lng) || (100.5018 + (idx * 0.02 - 0.04));
+                                    return {
+                                        id: sitter.id,
+                                        position: [lat, lng],
+                                        popup: sitter.trade_name || sitter.name || "Pet Sitter",
+                                        sitterData: sitter,
+                                        idx: idx
+                                    };
+                                })}
+                                selectedId={selectedSitterId}
+                                onMarkerClick={(marker) => {
+                                    const targetSitter = sitters.find(s => s.id === marker.id) || marker.sitterData;
+                                    if (targetSitter) {
+                                        handleSelectSitter(targetSitter, marker.idx);
+                                    }
+                                }}
+                                className="h-full w-full z-0"
+                            />
+                            <SitterCardOverlay
+                                sitters={sitters}
+                                selectedId={selectedSitterId}
+                                onSelect={(sitter) => {
+                                    const idx = sitters.findIndex(s => s.id === sitter.id);
+                                    handleSelectSitter(sitter, idx);
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-4">
+                            {sitters.map((sitter) => (
                                 <Link
                                     key={sitter.id}
                                     href={`/find-sitter/${sitter.id}`}
@@ -334,9 +396,9 @@ export default function PetSitterList() {
                                 >
                                     <PetSitterCard {...sitter} />
                                 </Link>
-                            ))
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
                 {totalPages > 1 && (
                     <div className="col-span-full mt-8">

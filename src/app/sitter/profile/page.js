@@ -20,6 +20,16 @@ import {
   errorToastClassNames,
   successToastClassNames,
 } from "@/lib/toastStyles";
+import dynamic from "next/dynamic";
+
+const LocationPicker = dynamic(() => import("@/components/location/LocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] w-full items-center justify-center rounded-2xl bg-gray-100 text-body-2 text-gray-400 font-medium">
+      กำลังโหลดระบบแผนที่เลือกพิกัด...
+    </div>
+  )
+});
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -863,12 +873,30 @@ export default function PetSitterProfilePage() {
           </div>
         </div>
 
-        <div
-          className="flex h-56 items-center justify-center rounded-xl bg-gray-200 text-body-2 text-gray-400"
-          role="img"
-          aria-label="Map preview"
-        >
-          Map preview
+        <div className="mt-4">
+          <LocationPicker
+            initialLocation={{
+              addressDetail: form.addressDetail,
+              district: form.district,
+              subDistrict: form.subDistrict,
+              province: form.province,
+              postcode: form.postCode,
+              latitude: form.latitude || 13.7563,
+              longitude: form.longitude || 100.5018,
+            }}
+            onChange={(location) => {
+              setForm((prev) => ({
+                ...prev,
+                addressDetail: location.addressDetail ?? prev.addressDetail,
+                district: location.district ?? prev.district,
+                subDistrict: location.subDistrict ?? prev.subDistrict,
+                province: location.province ?? prev.province,
+                postCode: location.postcode ?? prev.postCode,
+                latitude: location.latitude,
+                longitude: location.longitude,
+              }));
+            }}
+          />
         </div>
       </section>
       ) : null}
