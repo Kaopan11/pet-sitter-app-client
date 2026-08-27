@@ -214,6 +214,41 @@ export async function getAuthMe(accessToken) {
   return json.data;
 }
 
+/**
+ * กรอก name + phone ครั้งแรกหลัง Social (ticket 05)
+ * Header: Bearer จาก Supabase (pending token)
+ * 200 → { token, user } เป็น Owner | 409 เบอร์ซ้ำ
+ */
+export async function completeOAuthProfile({ accessToken, name, phone }) {
+  assertApiUrl();
+
+  if (!accessToken) {
+    const error = new Error("Missing access token");
+    error.status = 401;
+    throw error;
+  }
+
+  const res = await fetch(`${API_URL}/api/auth/oauth/complete`, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, phone }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
+
+  return json.data;
+}
+
 // asSitter true = สร้าง sitter_profiles (pending) | false = owner
 export async function register({ name, email, phone, password, asSitter }) {
   const json = await apiFetch("/api/auth/register", {
