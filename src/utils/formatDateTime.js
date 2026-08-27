@@ -39,16 +39,23 @@ export function formatMessageTime(value) {
 /** 24 Aug, 7 AM - 10 AM */
 export function formatBookedDateList(booking) {
   if (!booking?.start_date) return "—";
-  const start = `${formatDay(booking.start_date)}, ${formatTime(booking.start_time)}`;
-  const end = formatTime(booking.end_time);
-  return `${start} - ${end}`;
+  const startDateAndTime = `${formatDay(booking.start_date)}, ${formatTime(booking.start_time)}`;
+  const endTime = formatTime(booking.end_time);
+  if (booking.end_date && booking.end_date !== booking.start_date) {
+    return `${startDateAndTime} - ${formatDay(booking.end_date)}, ${endTime}`;
+  }
+  return `${startDateAndTime} - ${endTime}`;
 }
 
 /** 16 Oct 2022 | 7 AM - 10 AM */
 export function formatBookedDateDetail(booking) {
   if (!booking?.start_date) return "—";
-  const date = formatDate(booking.start_date);
-  const start = formatTime(booking.start_time);
-  const end = formatTime(booking.end_time);
-  return `${date} | ${start} - ${end}`;
+  const startDate = formatDate(booking.start_date);
+  const startTime = formatTime(booking.start_time);
+  const endTime = formatTime(booking.end_time);
+  const endDate = formatDate(booking.end_date);
+  if (booking.end_date && booking.end_date !== booking.start_date) {
+    return `${startDate} | ${startTime} - ${endDate} | ${endTime}`;
+  }
+  return `${startDate} | ${startTime} - ${endTime}`;
 }
