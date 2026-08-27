@@ -10,12 +10,19 @@ export default function ChatThread({
   onDraftChange,
   onSend,
   onClose,
-  sending,
 }) {
   const bottomRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const root = listRef.current;
+    const end = bottomRef.current;
+    if (!root || !end) return;
+
+    const distance = root.scrollHeight - root.scrollTop - root.clientHeight;
+    if (distance < 160 || messages.length <= 1) {
+      root.scrollTop = root.scrollHeight;
+    }
   }, [messages.length]);
 
   if (!conversation) {
@@ -70,7 +77,10 @@ export default function ChatThread({
         </button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-10 md:py-8">
+      <div
+        ref={listRef}
+        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-6 md:px-10 md:py-8"
+      >
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-6">
             <img src="/image/paw-pink.svg" alt="" className="h-[84px] w-[82px]" />
@@ -79,9 +89,9 @@ export default function ChatThread({
         ) : (
           messages.map((message) => (
             <ChatBubble
-              key={message.id}
+              key={message.clientKey ?? message.id}
               message={message}
-              isMine={message.senderId === currentUserId}
+              isMine={String(message.senderId) === String(currentUserId)}
               avatarUrl={conversation.otherUser?.avatarUrl}
             />
           ))
@@ -93,7 +103,6 @@ export default function ChatThread({
         value={draft}
         onChange={onDraftChange}
         onSend={onSend}
-        disabled={sending}
       />
     </section>
   );

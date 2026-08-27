@@ -398,6 +398,13 @@ export async function getMessages(conversationId) {
   return json.data ?? [];
 }
 
+export async function markConversationRead(conversationId) {
+  await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/read`,
+    { method: "POST" },
+  );
+}
+
 export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
   const formData = new FormData();
   formData.append("content", content);

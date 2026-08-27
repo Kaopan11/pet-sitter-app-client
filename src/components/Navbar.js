@@ -341,7 +341,7 @@ export default function Navbar() {
                 src="/navbar/icon-chat.svg"
                 alt="Messages"
                 href="/messages"
-                badge={unreadChatCount}
+                hasDot={unreadChatCount > 0}
               />
 
               <div className="relative" ref={menuRef}>
@@ -446,7 +446,7 @@ export default function Navbar() {
                 src="/navbar/icon-chat.svg"
                 alt="Messages"
                 href="/messages"
-                badge={unreadChatCount}
+                hasDot={unreadChatCount > 0}
                 variant="plain"
               />
             </>
