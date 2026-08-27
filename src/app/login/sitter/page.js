@@ -15,6 +15,7 @@ export default function SitterLoginPage() {
         registerHref="/register"
         registerPrompt="Don't have Pet Sitter account?"
         showForgotPassword
+        forgotPasswordFrom="sitter"
       />
     </AuthShell>
   );

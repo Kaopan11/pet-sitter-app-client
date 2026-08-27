@@ -29,7 +29,10 @@ async function apiFetch(path, { method = "GET", body } = {}) {
   const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(json.message || `Request failed (${res.status})`);
+    // ติด status ไว้ให้ UI แยก 400 / 401 ได้ (เช่น reset-password)
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
   }
 
   return json;
@@ -143,6 +146,106 @@ export async function login({ email, password }) {
     method: "POST",
     body: { email, password },
   });
+  return json.data;
+}
+
+/**
+ * ลืมรหัส — BE ส่งเมลรีเซ็ต (ถ้ามีบัญชี)
+ * สำเร็จ 200: ข้อความกลางๆ เสมอ (กันเดาว่าอีเมลมีในระบบ)
+ * ล้มเหลว 400: อีเมลผิดรูป ฯลฯ → throw Error(message)
+ */
+export async function forgotPassword({ email }) {
+  const json = await apiFetch("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+  // คืน message ให้ UI เอาไป toast ได้ตรงๆ
+  return {
+    message:
+      json.message ||
+      "If an account exists for this email, a reset link has been sent.",
+  };
+}
+
+/**
+ * ตั้งรหัสใหม่จากลิงก์ในเมล (ticket 03)
+ * body: { accessToken จาก Supabase, newPassword ≥ 6 }
+ * สำเร็จ 200 → message | 401 token หมดอายุ | 400 รหัสสั้น/ไม่มี token
+ */
+export async function resetPassword({ accessToken, newPassword }) {
+  const json = await apiFetch("/api/auth/reset-password", {
+    method: "POST",
+    body: { accessToken, newPassword },
+  });
+  return {
+    message: json.message || "Password updated successfully",
+  };
+}
+
+/**
+ * หลัง OAuth — เช็คว่ามีโปรไฟล์ในระบบเราแล้วหรือยัง (ticket 04)
+ * ใช้ Bearer จาก Supabase access_token (ยังไม่ผ่าน getToken ของแอป)
+ * 200 → { token, user } | 404 Profile incomplete | 401 token ไม่ผ่าน
+ */
+export async function getAuthMe(accessToken) {
+  assertApiUrl();
+
+  if (!accessToken) {
+    const error = new Error("Missing access token");
+    error.status = 401;
+    throw error;
+  }
+
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
+
+  // รูปเดียวกับ login: data = { token, user }
+  return json.data;
+}
+
+/**
+ * กรอก name + phone ครั้งแรกหลัง Social (ticket 05)
+ * Header: Bearer จาก Supabase (pending token)
+ * 200 → { token, user } เป็น Owner | 409 เบอร์ซ้ำ
+ */
+export async function completeOAuthProfile({ accessToken, name, phone }) {
+  assertApiUrl();
+
+  if (!accessToken) {
+    const error = new Error("Missing access token");
+    error.status = 401;
+    throw error;
+  }
+
+  const res = await fetch(`${API_URL}/api/auth/oauth/complete`, {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, phone }),
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
+
   return json.data;
 }
 
