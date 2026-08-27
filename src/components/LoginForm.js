@@ -33,12 +33,24 @@ export default function LoginForm({
   showRemember = false,
   showForgotPassword = false,
   showSocial = false,
+  /** "owner" | "sitter" — ใช้ตอนกลับจาก /forgot-password */
+  forgotPasswordFrom = "owner",
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // ลิงก์ไป /forgot-password — พกอีเมลที่พิมพ์ไว้ (ถ้ามี)
+  const forgotPasswordHref = (() => {
+    const params = new URLSearchParams();
+    const trimmed = email.trim();
+    if (trimmed) params.set("email", trimmed);
+    if (forgotPasswordFrom === "sitter") params.set("from", "sitter");
+    const query = params.toString();
+    return query ? `/forgot-password?${query}` : "/forgot-password";
+  })();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -109,24 +121,24 @@ export default function LoginForm({
             />
             Remember?
           </label>
-          {/* ยังไม่เชื่อม API forgot-password */}
-          <button
-            type="button"
-            className="min-h-11 text-body-3 font-medium text-primary"
+          {/* ticket 02: ไปหน้าขอลิงก์รีเซ็ต → POST /api/auth/forgot-password */}
+          <Link
+            href={forgotPasswordHref}
+            className="inline-flex min-h-11 items-center text-body-3 font-medium text-primary"
           >
             Forget Password?
-          </button>
+          </Link>
         </div>
       ) : null}
 
       {showForgotPassword && !showRemember ? (
         <p className="text-center">
-          <button
-            type="button"
-            className="min-h-11 text-body-3 font-medium text-primary"
+          <Link
+            href={forgotPasswordHref}
+            className="inline-flex min-h-11 items-center text-body-3 font-medium text-primary"
           >
             Forget Password?
-          </button>
+          </Link>
         </p>
       ) : null}
 

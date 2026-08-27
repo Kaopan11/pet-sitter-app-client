@@ -146,6 +146,24 @@ export async function login({ email, password }) {
   return json.data;
 }
 
+/**
+ * ลืมรหัส — BE ส่งเมลรีเซ็ต (ถ้ามีบัญชี)
+ * สำเร็จ 200: ข้อความกลางๆ เสมอ (กันเดาว่าอีเมลมีในระบบ)
+ * ล้มเหลว 400: อีเมลผิดรูป ฯลฯ → throw Error(message)
+ */
+export async function forgotPassword({ email }) {
+  const json = await apiFetch("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+  // คืน message ให้ UI เอาไป toast ได้ตรงๆ
+  return {
+    message:
+      json.message ||
+      "If an account exists for this email, a reset link has been sent.",
+  };
+}
+
 // asSitter true = สร้าง sitter_profiles (pending) | false = owner
 export async function register({ name, email, phone, password, asSitter }) {
   const json = await apiFetch("/api/auth/register", {
