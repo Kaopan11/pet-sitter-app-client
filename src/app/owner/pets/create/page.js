@@ -1,10 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, PawPrint } from "lucide-react";
 import AccountSidebar from "@/components/AccountSidebar";
 import { toast } from "sonner";
+import { createPet } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import { validatePetProfile } from "../../../../utils/validatePetProfile";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -14,6 +17,7 @@ const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 
 export default function OwnerPetsCreatePage() {
+  const router = useRouter();
   const imageInputRef = useRef(null);
   const [name, setName] = useState("");
   const [petType, setPetType] = useState("");
@@ -48,8 +52,14 @@ export default function OwnerPetsCreatePage() {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+
+    if (!getToken()) {
+      router.replace("/login/owner");//if not log-in will take user to log-in page
+      return;
+      //stop reading other lines 
+    }
 
     const nextErrors = validatePetProfile({
       name,
@@ -63,12 +73,38 @@ export default function OwnerPetsCreatePage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (imageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(imageUrl);
-    }
+    try {
+      const formData = new FormData();
+      formData.append("name", name.trim()); //"name"is key in object, value: name.trim() which is state
+      formData.append("pet_type", petType);
+      formData.append("breed", breed.trim());
+      formData.append("sex", sex);
+      formData.append("age", age.trim());
+      formData.append("color", color.trim());
+      formData.append("weight", weight.trim());
+      formData.append("about", about.trim());
 
-    toast.success("Pet form is ready (not saved to the server yet)");
+      if (imageFile) {
+        formData.append("avatar", imageFile);
+      }
+
+      await createPet(formData);
+
+      if (imageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(imageUrl);
+      }
+
+      toast.success("Pet created successfully");
+      router.push("/owner/pets");
+    } catch (error) {
+      if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
+        router.replace("/login/owner");
+        return;
+      }
+      toast.error(error.message || "Failed to create pet");
+    }
   }
+  
 
   return (
     <div className="flex min-h-screen bg-gray-100">
