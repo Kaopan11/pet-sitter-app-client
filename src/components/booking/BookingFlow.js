@@ -20,13 +20,15 @@ import ConfirmBookingModal from "@/components/booking/ConfirmBookingModal";
 import StripePaymentModal from "@/components/booking/StripePaymentModal";
 import ThankYouView from "@/components/booking/ThankYouView";
 import { EMPTY_GUEST } from "@/components/booking/mockBookingData";
-import { createBooking, getMyPets, getProfile, getSitter } from "@/lib/api";
+import { createBooking, getMyPets, getProfile, getSitter, getSitterAvailability } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { getStripePublishableKey } from "@/lib/stripe";
 import {
   normalizeBookingGuest,
   normalizeBookingPet,
   normalizeBookingSitter,
+  normalizeBookedSlots,
+  slotOverlapsBooked,
   calculateBookingTotal,
 } from "@/lib/booking";
 
@@ -96,6 +98,19 @@ export default function BookingFlow({
           throw new Error("Pet sitter not found");
         }
 
+        let bookedSlots = [];
+        try {
+          bookedSlots = normalizeBookedSlots(await getSitterAvailability(sitterId));
+        } catch {
+          bookedSlots = [];
+        }
+
+        if (slotOverlapsBooked(date, startTime, endTime, bookedSlots)) {
+          throw new Error(
+            "This date and time is already booked. Please choose another slot.",
+          );
+        }
+
         const nextPets = (Array.isArray(petsRaw) ? petsRaw : [])
           .map(normalizeBookingPet)
           .filter((pet) => pet?.id);
@@ -120,7 +135,7 @@ export default function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [sitterId, router]);
+  }, [sitterId, date, startTime, endTime, router]);
 
   const selectedPets = useMemo(
     () => pets.filter((pet) => selectedPetIds.includes(pet.id)),
@@ -331,11 +346,16 @@ export default function BookingFlow({
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-8">
         <div className="card space-y-4 p-8 text-center">
-          <h1 className="text-h3 text-gray-900">Could not load booking</h1>
+          <h1 className="text-h3 text-gray-900">
+            {error?.includes("already booked") ? "Time unavailable" : "Could not load booking"}
+          </h1>
           <p className="text-body-2 text-gray-500">
             {error || "Pet sitter not found"}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href={`/find-sitter/${sitterId}`} className="btn btn-secondary">
+              Choose another time
+            </Link>
             <Link href="/find-sitter" className="btn btn-secondary">
               Back to search
             </Link>
