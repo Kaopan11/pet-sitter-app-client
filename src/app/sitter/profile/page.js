@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import axios from "axios";
 import { toast } from "sonner";
+import LoadingState from "@/components/LoadingState";
 import { updateStoredUser } from "@/lib/auth";
 import {
   errorToastClassNames,
@@ -79,6 +80,7 @@ export default function PetSitterProfilePage() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
@@ -159,6 +161,7 @@ export default function PetSitterProfilePage() {
           "Failed to load profile",
       );
     } finally {
+      setIsLoading(false);
       // ยังไม่เปิดรับ onValueChange ทันทีที่ API กลับมา
       // รอให้ React วาด dropdown และให้ Radix ยิง event ปลอมจบก่อน แล้วค่อย skipAddressSelect = false
       requestAnimationFrame(() => {
@@ -465,7 +468,7 @@ export default function PetSitterProfilePage() {
         <button
           type="submit"
           className="btn btn-primary min-w-30"
-          disabled={isSaving}
+          disabled={isLoading || isSaving}
         >
           {isSaving ? "Saving..." : "Update"}
         </button>
@@ -473,6 +476,10 @@ export default function PetSitterProfilePage() {
 
       {error ? <p className="text-body-2 text-red">{error}</p> : null}
 
+      {isLoading ? (
+        <LoadingState />
+      ) : (
+        <>
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="basic-info-title"
@@ -848,6 +855,8 @@ export default function PetSitterProfilePage() {
           Map preview
         </div>
       </section>
+        </>
+      )}
     </form>
   );
 }

@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/admin/Sidebar";
+import jwtInterceptor from "@/utils/jwtInterceptor";
+
+jwtInterceptor();
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-[#F6F6F9] overflow-hidden font-sans">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -30,7 +33,7 @@ export default function AdminLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto px-12 py-8">
           {children}
         </main>
       </div>
