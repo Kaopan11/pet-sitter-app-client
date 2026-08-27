@@ -250,3 +250,38 @@ export async function createPet(formData) {
   return mapPet(json.data);
 }
 //apiFormFectch is to validate data from frontend and send the data to backend later (endpoint method, attached formdata)
+
+export async function createConversation(otherUserId) {
+  const json = await apiFetch("/api/conversations", {
+    method: "POST",
+    body: { otherUserId, sitterId: otherUserId },
+  });
+  return json.data;
+}
+
+export async function getConversations() {
+  const json = await apiFetch("/api/conversations");
+  return json.data ?? [];
+}
+
+export async function getMessages(conversationId) {
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+  );
+  return json.data ?? [];
+}
+
+export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
+  const formData = new FormData();
+  formData.append("content", content);
+  if (imageFile) formData.append("image", imageFile);
+
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+  return json.data;
+}
