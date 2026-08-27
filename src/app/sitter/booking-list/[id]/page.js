@@ -5,9 +5,10 @@ import { Eye, X } from "lucide-react";
 import Icon from "@/components/Icon";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatBookedDateDetail, formatDate } from "@/utils/formatDateTime";
+import { createConversation } from "@/lib/api";
 import {
   errorToastClassNames,
   successToastClassNames,
@@ -25,11 +26,13 @@ const STATUS = {
 
 export default function BookingDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [booking, setBooking] = useState(null);
   const [selectedPet, setSelectedPet] = useState(null);
   const [showOwner, setShowOwner] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   const getBookingById = async () => {
     const response = await axios.get(`${API_BASE_URL}/api/sitters/bookings/${id}`);
@@ -61,6 +64,30 @@ export default function BookingDetailPage() {
       setIsUpdatingStatus(false);
     }
   };
+
+  async function handleSendMessage() {
+    const ownerId = booking?.pet_owner?.id ?? booking?.owner_id;
+    if (!ownerId || sendingMessage) {
+      if (!ownerId) {
+        toast("Cannot open chat: owner is missing", {
+          classNames: errorToastClassNames,
+        });
+      }
+      return;
+    }
+
+    setSendingMessage(true);
+    try {
+      const conversation = await createConversation(ownerId);
+      router.push(`/messages?id=${conversation.id}`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Failed to start chat", {
+        classNames: errorToastClassNames,
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  }
 
   const statusKey = booking?.status;
   const status = STATUS[statusKey];
@@ -143,14 +170,24 @@ export default function BookingDetailPage() {
       <article className="flex flex-col gap-8 rounded-2xl bg-white px-16 py-10">
         <div className="flex items-start justify-between gap-4">
           <DetailField label="Pet Owner Name">{ownerName}</DetailField>
-          <button
-            type="button"
-            className="flex cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500"
-            onClick={() => setShowOwner(true)}
-          >
-            <Eye className="h-6 w-6" aria-hidden="true" />
-            View Profile
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500 disabled:opacity-40"
+              onClick={handleSendMessage}
+              disabled={sendingMessage}
+            >
+              {sendingMessage ? "Opening..." : "Send Message"}
+            </button>
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500"
+              onClick={() => setShowOwner(true)}
+            >
+              <Eye className="h-6 w-6" aria-hidden="true" />
+              View Profile
+            </button>
+          </div>
         </div>
 
         <DetailField label="Pet(s)">{booking?.pet_count ?? 0}</DetailField>

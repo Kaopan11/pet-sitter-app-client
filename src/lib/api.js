@@ -14,15 +14,16 @@ async function apiFetch(path, { method = "GET", body } = {}) {
   assertApiUrl();
 
   const token = getToken();
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   const headers = {};
-  if (body) headers["Content-Type"] = "application/json";
+  if (body && !isFormData) headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, {
     method,
     cache: "no-store",
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body ? JSON.stringify(body) : undefined,
   });
 
   const json = await res.json().catch(() => ({}));
@@ -96,10 +97,44 @@ export async function getSitter(id) {
   return json.data;
 }
 
+/** ช่วงเวลาที่ sitter ถูกจองแล้ว — ใช้ disable ปฏิทิน / เวลา */
+export async function getSitterAvailability(id) {
+  const json = await apiFetch(
+    `/api/sitters/${encodeURIComponent(id)}/availability`,
+  );
+  return json.data ?? [];
+}
+
 /** สัตว์เลี้ยงของ owner ที่ login — Day 2 booking */
 export async function getMyPets() {
   const json = await apiFetch("/api/users/me/pets");
   return json.data ?? [];
+}
+
+export async function getSitterReviews(id, { page = 1, limit = 5, rating = null } = {}) {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+  if (rating) params.set("rating", String(rating));
+
+  const json = await apiFetch(
+    `/api/sitters/${encodeURIComponent(id)}/reviews?${params.toString()}`
+  );
+  const data = json.data ?? json.reviews ?? [];
+
+  return {
+    data: Array.isArray(data) ? data : [],
+    pagination: json.pagination ?? {
+      page,
+      limit,
+      total: Array.isArray(data) ? data.length : 0,
+      totalPages: 0,
+    },
+    summary: json.summary ?? {
+      rating_avg: 0,
+      review_count: 0,
+    },
+  };
 }
 
 // สำเร็จ → { token, user } | ล้มเหลว → โยน Error จาก json.message
@@ -239,4 +274,38 @@ export async function updatePet(id, formData) {
     body: formData,
   });
   return mapPet(json.data);
+}
+export async function createConversation(otherUserId) {
+  const json = await apiFetch("/api/conversations", {
+    method: "POST",
+    body: { otherUserId, sitterId: otherUserId },
+  });
+  return json.data;
+}
+
+export async function getConversations() {
+  const json = await apiFetch("/api/conversations");
+  return json.data ?? [];
+}
+
+export async function getMessages(conversationId) {
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+  );
+  return json.data ?? [];
+}
+
+export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
+  const formData = new FormData();
+  formData.append("content", content);
+  if (imageFile) formData.append("image", imageFile);
+
+  const json = await apiFetch(
+    `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+  return json.data;
 }
