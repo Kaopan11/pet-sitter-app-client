@@ -209,9 +209,34 @@ export async function getOwnerPets() {
   return pets.map(mapPet).filter(Boolean);
 }
 
+// หน้า /owner/pets/[id] — ดึงตัวเดียวจาก API ไม่ใช้ mock
+export async function getOwnerPet(id) {
+  try {
+    const json = await apiFetch(`/api/pets/${encodeURIComponent(id)}`);
+    return mapPet(json.data);
+  } catch (error) {
+    const pets = await getOwnerPets();
+    const pet = pets.find((item) => String(item.id) === String(id)) ?? null;
+    if (pet) return pet;
+    throw error;
+  }
+}
+
 //รับ formData
 export async function createPet(formData) {
   const json = await apiFormFetch("/api/pets", { method: "POST", body: formData,});
   return mapPet(json.data);
 }
+
+export async function deletePet(id) {
+  await apiFetch(`/api/pets/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
 //apiFormFectch is to validate data from frontend and send the data to backend later (endpoint method, attached formdata)
+
+export async function updatePet(id, formData) {
+  const json = await apiFormFetch(`/api/pets/${encodeURIComponent(id)}`, {
+    method: "PUT", // หรือ PATCH ตามที่ backend ใช้
+    body: formData,
+  });
+  return mapPet(json.data);
+}

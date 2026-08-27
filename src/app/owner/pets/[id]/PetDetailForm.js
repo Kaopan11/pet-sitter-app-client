@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Plus, PawPrint } from "lucide-react";
+import { ChevronLeft, Plus, PawPrint, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { validatePetProfile } from "@/utils/validatePetProfile";
+import { deletePet, updatePet } from "@/lib/api";
+import { getToken } from "@/lib/auth";
+import DeletePetModal from "./DeletePetModal";
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 const PET_TYPES = ["Dog", "Cat", "Bird", "Rabbit"];
 
 export default function PetDetailForm({ pet }) {
+  const router = useRouter();
   const imageInputRef = useRef(null);
   const [name, setName] = useState(pet.name);
   const [petType, setPetType] = useState(pet.type);
@@ -23,6 +28,10 @@ export default function PetDetailForm({ pet }) {
   const [imageUrl, setImageUrl] = useState(pet.image);
   const [imageFile, setImageFile] = useState(null);
   const [errors, setErrors] = useState({});
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     setName(pet.name);
@@ -62,8 +71,14 @@ export default function PetDetailForm({ pet }) {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    if (isUpdating) return;
+
+    if (!getToken()) {
+      router.replace("/login/owner");
+      return;
+    }
 
     const nextErrors = validatePetProfile({
       name,
@@ -77,11 +92,76 @@ export default function PetDetailForm({ pet }) {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (imageUrl.startsWith("blob:")) {
-      URL.revokeObjectURL(imageUrl);
+    setIsUpdating(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("pet_type", petType);
+      formData.append("breed", breed.trim());
+      formData.append("sex", sex);
+      formData.append("age", age.trim());
+      formData.append("color", color.trim());
+      formData.append("weight", weight.trim());
+      formData.append("about", about.trim());
+
+      if (imageFile) {
+        formData.append("avatar", imageFile);
+      }
+
+      await updatePet(pet.id, formData);
+
+      if (imageUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(imageUrl);
+      }
+
+      toast.success("Pet updated successfully");
+      router.push("/owner/pets");
+    } catch (error) {
+      if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
+        router.replace("/login/owner");
+        return;
+      }
+      toast.error(error.message || "Failed to update pet");
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  function openDeleteModal() {
+    setDeleteError("");
+    setIsDeleteOpen(true);
+  }
+
+  function closeDeleteModal() {
+    if (isDeleting) return;
+    setIsDeleteOpen(false);
+    setDeleteError("");
+  }
+
+  async function handleDeletePet() {
+    if (!getToken()) {
+      router.replace("/login/owner");
+      return;
     }
 
-    toast.success("Pet details are mock data (not saved to the server yet)");
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deletePet(pet.id);
+      toast.success("Pet deleted successfully");
+      setIsDeleteOpen(false);
+      router.push("/owner/pets");
+    } catch (error) {
+      if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
+        router.replace("/login/owner");
+        return;
+      }
+      setDeleteError(error.message || "Failed to delete pet");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   return (
@@ -287,15 +367,36 @@ export default function PetDetailForm({ pet }) {
           />
         </label>
 
+        <button
+          type="button"
+          onClick={openDeleteModal}
+          className="flex w-fit items-center gap-2 text-body-2 font-bold text-orange-500 hover:text-orange-400"
+        >
+          <Trash2 className="size-5" strokeWidth={2} aria-hidden="true" />
+          Delete Pet
+        </button>
+
         <div className="mt-auto flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
           <Link href="/owner/pets" className="btn btn-secondary w-full sm:w-auto">
             Cancel
           </Link>
-          <button type="submit" className="btn btn-primary w-full sm:w-auto">
-            Update Pet
+          <button
+            type="submit"
+            disabled={isUpdating}
+            className="btn btn-primary w-full sm:w-auto"
+          >
+            {isUpdating ? "Updating..." : "Update Pet"}
           </button>
         </div>
       </form>
+
+      <DeletePetModal
+        open={isDeleteOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleDeletePet}
+        submitting={isDeleting}
+        error={deleteError}
+      />
     </div>
   );
 }
