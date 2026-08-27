@@ -4,101 +4,81 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
-import { getToken } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
+import { createConversation, getSitters } from "@/lib/api";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Mock data for testing/demo
-const MOCK_BOOKINGS = [
-  {
-    id: "1",
+const STATUS_CONFIG = {
+  waiting_confirm: { color: "#FA8AC0", label: "Waiting for confirm" },
+  waiting_service: { color: "#F5A623", label: "Waiting for service" },
+  in_service: { color: "#76D0FC", label: "In service" },
+  success: { color: "#1CCD83", label: "Success" },
+  cancelled: { color: "#EA1010", label: "Cancelled" },
+};
+
+const HOVER_BORDER_CLASS = {
+  waiting_confirm: "hover:border-[#FA8AC0]",
+  waiting_service: "hover:border-[#F5A623]",
+  in_service: "hover:border-[#76D0FC]",
+  success: "hover:border-[#1CCD83]",
+};
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function bookingSitterId(booking) {
+  const value =
+    booking?.sitter?.id ??
+    booking?.sitter_id ??
+    booking?.sitter?.user_id ??
+    booking?.sitterId;
+  return UUID_PATTERN.test(String(value ?? "")) ? String(value) : "";
+}
+
+function normalizeOwnerBooking(booking) {
+  const sitterId = bookingSitterId(booking);
+  return {
+    ...booking,
     sitter: {
-      name: "Happy Housel",
-      avatar_url: "https://i.pravatar.cc/150?img=1",
+      ...(booking.sitter ?? {}),
+      id: sitterId || booking.sitter?.id,
     },
-    owner_name: "Jane Maison",
-    pet: { name: "Bubba, Daisy" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 16 Aug 2023",
-    date_label: "Transaction date",
-    transaction_no: "122312",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "pending",
-    has_review: false,
-  },
-  {
-    id: "2",
-    sitter: {
-      name: "Gentle >< for all pet! (Kid friendly)",
-      avatar_url: "https://i.pravatar.cc/150?img=2",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 14 Aug 2023",
-    date_label: "Booking date",
-    transaction_no: "122313",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "ongoing",
-    has_review: false,
-  },
-  {
-    id: "3",
-    sitter: {
-      name: "We love cat and your cat",
-      avatar_url: "https://i.pravatar.cc/150?img=3",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 24 Apr 2023",
-    date_label: "Booking date",
-    transaction_no: "122314",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "completed",
-    completed_date: "2025-08-26",
-    completed_time: "11:03",
-    has_review: false,
-  },
-  {
-    id: "4",
-    sitter: {
-      name: "Happy energetic pup",
-      avatar_url: "https://i.pravatar.cc/150?img=4",
-    },
-    owner_name: "Jane Maison",
-    pet: { name: "Mr.Ham, Bingsu" },
-    booking_date: "2025-08-25",
-    transaction_date: "Tue, 16 Aug 2023",
-    date_label: "Transaction date",
-    transaction_no: "122315",
-    total: 900,
-    start_time: "07:00",
-    end_time: "10:00",
-    duration: 3,
-    status: "completed",
-    completed_date: "2025-08-13",
-    completed_time: "8:40",
-    has_review: true,
-    review: {
-      reviewer_name: "John Wick",
-      reviewer_avatar_url: "https://i.pravatar.cc/150?img=12",
-      review_date: "Tue, 13 Apr 2023",
-      rating: 5,
-      text: "",
-    },
-  },
-];
+    sitter_id: sitterId || booking.sitter_id,
+  };
+}
+
+async function attachLiveSitterIds(bookings) {
+  try {
+    const { data } = await getSitters({ limit: 20 });
+    if (!data?.length) return bookings.map(normalizeOwnerBooking);
+
+    return bookings.map((booking, index) => {
+      if (bookingSitterId(booking)) return normalizeOwnerBooking(booking);
+
+      const name = String(booking.sitter?.name ?? "").trim().toLowerCase();
+      const match =
+        data.find((sitter) => {
+          const title = String(sitter.title ?? sitter.display_name ?? sitter.sitter_name ?? "")
+            .trim()
+            .toLowerCase();
+          return name && title === name;
+        }) ?? data[index % data.length];
+
+      return normalizeOwnerBooking({
+        ...booking,
+        sitter: {
+          ...(booking.sitter ?? {}),
+          id: match.id,
+        },
+        sitter_id: match.id,
+      });
+    });
+  } catch {
+    return bookings.map(normalizeOwnerBooking);
+  }
+}
 
 export default function BookingHistoryPage() {
   const router = useRouter();
@@ -134,27 +114,27 @@ export default function BookingHistoryPage() {
           cache: "no-store",
         });
 
+        const json = await res.json().catch(() => ({}));
+
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
             router.replace("/login/owner");
             return;
           }
-          throw new Error("Failed to load bookings");
+          throw new Error(json.message || "Failed to load bookings");
         }
 
-        const json = await res.json();
+        const rows = (json.data || []).map(normalizeOwnerBooking);
+        const next = rows.some((booking) => !bookingSitterId(booking))
+          ? await attachLiveSitterIds(rows)
+          : rows;
         if (!cancelled) {
-          setBookings(json.data || []);
+          setBookings(next);
+          setLoadError("");
         }
       } catch (error) {
         if (!cancelled) {
-          // Use mock data in development
-          if (process.env.NODE_ENV === "development") {
-            setBookings(MOCK_BOOKINGS);
-            setLoadError("");
-          } else {
-            setLoadError(error.message || "Failed to load bookings");
-          }
+          setLoadError(error.message || "Failed to load bookings");
         }
       } finally {
         if (!cancelled) {
@@ -169,16 +149,25 @@ export default function BookingHistoryPage() {
     };
   }, [router]);
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { color: "#FA8AC0", label: "Waiting for confirm" },
-      confirmed: { color: "#76D0FC", label: "Confirmed" },
-      ongoing: { color: "#76D0FC", label: "In service" },
-      completed: { color: "#1CCD83", label: "Success" },
-      cancelled: { color: "#EA1010", label: "Cancelled" },
-    };
+  async function openSitterChat(event, booking) {
+    event.stopPropagation();
+    const sitterId = bookingSitterId(booking);
 
-    const config = statusConfig[status] || statusConfig.pending;
+    if (!sitterId) {
+      toast.error("Cannot open chat: this booking has no pet sitter");
+      return;
+    }
+
+    try {
+      const conversation = await createConversation(sitterId);
+      router.push(`/messages?id=${conversation.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start chat");
+    }
+  }
+
+  const getStatusBadge = (status) => {
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.waiting_confirm;
     return (
       <span
         className="inline-flex items-center gap-2 text-body-2"
@@ -210,6 +199,14 @@ export default function BookingHistoryPage() {
     return timeString.substring(0, 5);
   };
 
+  const formatTimestampTime = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const openReviewModal = (booking) => {
     setRating(0);
     setHoverRating(0);
@@ -224,29 +221,43 @@ export default function BookingHistoryPage() {
     setReviewText("");
   };
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (!reviewBooking) return;
     if (rating === 0) {
       toast.error("Please select a rating");
       return;
     }
 
-    const newReview = {
-      reviewer_name: reviewBooking.owner_name,
-      reviewer_avatar_url: null,
-      review_date: formatDate(new Date().toISOString()),
-      rating,
-      text: reviewText,
-    };
+    try {
+      const token = getToken();
+      const res = await fetch(
+        `${API_URL}/api/bookings/owner/${reviewBooking.id}/review`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ rating, text: reviewText }),
+        }
+      );
 
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === reviewBooking.id ? { ...b, has_review: true, review: newReview } : b
-      )
-    );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to submit review");
+      }
 
-    toast.success("Review submitted");
-    closeReviewModal();
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === reviewBooking.id ? { ...b, review: json.data } : b
+        )
+      );
+
+      toast.success("Review submitted");
+      closeReviewModal();
+    } catch (error) {
+      toast.error(error.message || "Failed to submit review");
+    }
   };
 
   const openReportModal = (booking) => {
@@ -261,14 +272,40 @@ export default function BookingHistoryPage() {
     setReportDescription("");
   };
 
-  const handleSubmitReport = () => {
+  const handleSubmitReport = async () => {
+    if (!reportBooking) return;
     if (!reportSubject.trim()) {
       toast.error("Please enter a subject");
       return;
     }
 
-    toast.success("Report submitted");
-    closeReportModal();
+    try {
+      const token = getToken();
+      const res = await fetch(
+        `${API_URL}/api/bookings/owner/${reportBooking.id}/report`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            subject: reportSubject,
+            description: reportDescription,
+          }),
+        }
+      );
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to submit report");
+      }
+
+      toast.success("Report submitted");
+      closeReportModal();
+    } catch (error) {
+      toast.error(error.message || "Failed to submit report");
+    }
   };
 
   return (
@@ -302,27 +339,21 @@ export default function BookingHistoryPage() {
                   key={booking.id}
                   onClick={() => setSelectedBooking(booking)}
                   className={`w-full bg-white flex flex-col p-4 sm:p-6 cursor-pointer border border-[#DCDFED] transition-colors ${
-                    booking.status === "completed"
-                      ? "hover:border-[#1CCD83]"
-                      : booking.status === "ongoing"
-                      ? "hover:border-[#76D0FC]"
-                      : booking.status === "pending"
-                      ? "hover:border-[#FA8AC0]"
-                      : ""
+                    HOVER_BORDER_CLASS[booking.status] || ""
                   }`}
                   style={{ borderRadius: "16px" }}
                 >
-                  {/* Header: Sitter info + Transaction date + Status badge */}
+                  {/* Header: Sitter info + Booking date + Status badge */}
                   <div
                     className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
                     style={{ borderBottom: "1px solid #DCDFED", paddingBottom: "16px", marginBottom: "16px" }}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative size-14 sm:size-16 overflow-hidden rounded-full bg-gray-200 shrink-0">
-                        {booking.sitter?.avatar_url ? (
+                        {booking.sitter_avatar_url ? (
                           <img
-                            src={booking.sitter.avatar_url}
-                            alt={booking.sitter.name}
+                            src={booking.sitter_avatar_url}
+                            alt={booking.sitter_name}
                             className="size-full object-cover"
                           />
                         ) : (
@@ -334,19 +365,13 @@ export default function BookingHistoryPage() {
                           className="text-h3 wrap-break-word"
                           style={{ color: "#000000", fontSize: "clamp(1.125rem, 4vw, 1.5rem)" }}
                         >
-                          {booking.sitter?.name || "Unknown"}
+                          {booking.sitter_name || "Unknown"}
                         </h3>
-                        <p
-                          className="text-body-1"
-                          style={{ color: "#000000", fontSize: "clamp(0.9375rem, 3vw, 1.125rem)" }}
-                        >
-                          By {booking.owner_name}
-                        </p>
                       </div>
                     </div>
                     <div className="text-left sm:text-right shrink-0">
                       <p className="mb-2 text-body-3" style={{ color: "#AEB1C3" }}>
-                        {booking.date_label || "Booking date"}: {booking.transaction_date}
+                        Booking date: {formatDate(booking.start_date)}
                       </p>
                       {getStatusBadge(booking.status)}
                     </div>
@@ -359,8 +384,8 @@ export default function BookingHistoryPage() {
                         Date & Time:
                       </span>
                       <span className="flex flex-wrap items-center gap-2 text-body-2" style={{ color: "#3A3B46" }}>
-                        {formatDate(booking.booking_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
-                        {booking.status === "pending" && (
+                        {formatDate(booking.start_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                        {booking.status === "waiting_confirm" && (
                           <button
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity text-body-2"
@@ -378,7 +403,7 @@ export default function BookingHistoryPage() {
                         Duration:
                       </span>
                       <span className="text-body-2" style={{ color: "#3A3B46" }}>
-                        {booking.duration} hours
+                        {booking.duration_hours} hours
                       </span>
                     </div>
 
@@ -387,14 +412,14 @@ export default function BookingHistoryPage() {
                         Pet:
                       </span>
                       <span className="text-body-2" style={{ color: "#3A3B46" }}>
-                        {booking.pet?.name}
+                        {booking.pet_names || "-"}
                       </span>
                     </div>
                   </div>
 
                   {/* Status Message Box with Actions */}
                   <div>
-                    {booking.status === "pending" && (
+                    {booking.status === "waiting_confirm" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
                         style={{ backgroundColor: "#F6F6F9", padding: "16px", borderRadius: "8px", gap: "16px", minHeight: "80px", boxSizing: "border-box" }}
@@ -404,7 +429,7 @@ export default function BookingHistoryPage() {
                         </span>
                         <div className="flex items-center gap-4">
                           <button
-                            onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
+                            onClick={(e) => openSitterChat(e, booking)}
                             className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
                             style={{ minWidth: "120px" }}
                           >
@@ -421,13 +446,40 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
-                    {booking.status === "ongoing" && (
+                    {booking.status === "confirmed" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
-                        style={{ backgroundColor: "#F6F6F9", padding: "16px", gap: "16px", borderRadius: "8px", boxSizing: "border-box" }}
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", borderRadius: "8px", gap: "16px", minHeight: "80px", boxSizing: "border-box" }}
                       >
                         <span className="text-body-3" style={{ color: "#7B7E8F" }}>
-                          Your pet is already in Pet Sitter care!
+                          Pet Sitter has confirmed your booking
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => openSitterChat(e, booking)}
+                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            style={{ minWidth: "120px" }}
+                          >
+                            Send Message
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
+                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            style={{ width: "48px", height: "48px" }}
+                            title="Call"
+                          >
+                            <Phone className="size-6" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {booking.status === "waiting_service" && (
+                      <div
+                        className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", gap: "16px", borderRadius: "8px", minHeight: "80px", boxSizing: "border-box" }}
+                      >
+                        <span className="text-body-3" style={{ color: "#7B7E8F" }}>
+                          Booking confirmed, waiting for service to start
                         </span>
                         <div className="flex items-center gap-4">
                           <button
@@ -448,7 +500,34 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
-                    {booking.status === "completed" && (
+                    {booking.status === "in_service" && (
+                      <div
+                        className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
+                        style={{ backgroundColor: "#F6F6F9", padding: "16px", gap: "16px", borderRadius: "8px", boxSizing: "border-box" }}
+                      >
+                        <span className="text-body-3" style={{ color: "#7B7E8F" }}>
+                          Your pet is already in Pet Sitter care!
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => openSitterChat(e, booking)}
+                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            style={{ minWidth: "120px" }}
+                          >
+                            Send Message
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
+                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            style={{ width: "48px", height: "48px" }}
+                            title="Call"
+                          >
+                            <Phone className="size-6" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {booking.status === "success" && (
                       <div
                         className="w-full flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between"
                         style={{ backgroundColor: "#E7FDF4", padding: "16px", borderRadius: "8px", minHeight: "80px", boxSizing: "border-box" }}
@@ -458,7 +537,7 @@ export default function BookingHistoryPage() {
                             Success date:
                           </span>
                           <span className="text-body-3" style={{ color: "#1CCD83" }}>
-                            {formatDate(booking.completed_date)} | {booking.completed_time} AM
+                            {formatDate(booking.updated_at)} | {formatTimestampTime(booking.updated_at)}
                           </span>
                         </div>
                         <div className="flex items-center gap-4">
@@ -468,7 +547,7 @@ export default function BookingHistoryPage() {
                           >
                             Report
                           </button>
-                          {booking.has_review ? (
+                          {booking.review ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); setViewReviewBooking(booking); }}
                               className="btn btn-secondary flex-1 sm:flex-none hover:text-orange-500!"
@@ -528,7 +607,7 @@ export default function BookingHistoryPage() {
 
               <div className="flex flex-col gap-1">
                 <p className="text-body-3" style={{ color: "#AEB1C3" }}>
-                  {selectedBooking.date_label || "Booking date"}: {selectedBooking.transaction_date}
+                  Booking date: {formatDate(selectedBooking.start_date)}
                 </p>
                 {selectedBooking.transaction_no && (
                   <p className="text-body-3" style={{ color: "#AEB1C3" }}>
@@ -541,7 +620,7 @@ export default function BookingHistoryPage() {
                 <div className="flex flex-col gap-1">
                   <span className="text-body-3" style={{ color: "#7B7E8F" }}>Pet Sitter:</span>
                   <span className="text-body-2" style={{ color: "#3A3B46" }}>
-                    {selectedBooking.sitter?.name} By {selectedBooking.owner_name}
+                    {selectedBooking.sitter_name}
                   </span>
                 </div>
                 <button
@@ -558,10 +637,10 @@ export default function BookingHistoryPage() {
                 <div className="flex flex-col gap-1">
                   <span className="text-body-3" style={{ color: "#7B7E8F" }}>Date & Time:</span>
                   <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>
-                    {formatDate(selectedBooking.booking_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                    {formatDate(selectedBooking.start_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
                   </span>
                 </div>
-                {selectedBooking.status === "pending" && (
+                {selectedBooking.status === "waiting_confirm" && (
                   <button
                     onClick={() => toast.info("Change booking feature coming soon")}
                     className="inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity text-body-2"
@@ -575,12 +654,12 @@ export default function BookingHistoryPage() {
 
               <div className="flex flex-col gap-1">
                 <span className="text-body-3" style={{ color: "#7B7E8F" }}>Duration:</span>
-                <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>{selectedBooking.duration} hours</span>
+                <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>{selectedBooking.duration_hours} hours</span>
               </div>
 
               <div className="flex flex-col gap-1">
                 <span className="text-body-3" style={{ color: "#7B7E8F" }}>Pet:</span>
-                <span className="text-body-2" style={{ color: "#3A3B46" }}>{selectedBooking.pet?.name}</span>
+                <span className="text-body-2" style={{ color: "#3A3B46" }}>{selectedBooking.pet_names || "-"}</span>
               </div>
             </div>
 
@@ -599,7 +678,7 @@ export default function BookingHistoryPage() {
             >
               <span className="text-body-2" style={{ color: "#000000" }}>Total</span>
               <span className="text-body-1" style={{ color: "#000000", textAlign: "right" }}>
-                {selectedBooking.total ? `${selectedBooking.total} THB` : "-"}
+                {selectedBooking.total_price ? `${selectedBooking.total_price} THB` : "-"}
               </span>
             </div>
           </div>
@@ -713,10 +792,10 @@ export default function BookingHistoryPage() {
               <div className="flex items-center justify-between gap-3" style={{ paddingBottom: "16px", borderBottom: "1px solid #DCDFED" }}>
                 <div className="flex items-center gap-3">
                   <div className="relative size-12 overflow-hidden rounded-full bg-gray-200 shrink-0">
-                    {viewReviewBooking.review?.reviewer_avatar_url ? (
+                    {getUser()?.avatarUrl || getUser()?.avatar_url ? (
                       <img
-                        src={viewReviewBooking.review.reviewer_avatar_url}
-                        alt={viewReviewBooking.review.reviewer_name}
+                        src={getUser()?.avatarUrl || getUser()?.avatar_url}
+                        alt={getUser()?.name || "You"}
                         className="size-full object-cover"
                       />
                     ) : (
@@ -725,10 +804,10 @@ export default function BookingHistoryPage() {
                   </div>
                   <div>
                     <p className="text-body-2" style={{ color: "#000000", fontWeight: 700 }}>
-                      {viewReviewBooking.review?.reviewer_name}
+                      {getUser()?.name || "You"}
                     </p>
                     <p className="text-body-3" style={{ color: "#AEB1C3" }}>
-                      {viewReviewBooking.review?.review_date}
+                      {formatDate(viewReviewBooking.review?.created_at)}
                     </p>
                   </div>
                 </div>

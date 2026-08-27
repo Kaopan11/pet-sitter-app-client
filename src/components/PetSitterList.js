@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Icon from "./Icon";
+import Pagination from "./Pagination";
 import PetSitterCard from "./PetSitterCard";
 import { getSitters } from "@/lib/api";
 
@@ -34,17 +35,6 @@ function experienceToForm(value) {
 function experienceToQuery(value) {
     if (!value) return "";
     return String(value).replace(/\s*Years$/i, "").trim();
-}
-
-function getPageNumbers(current, total) {
-    if (total <= 0) return [];
-    if (total <= 5) {
-        return Array.from({ length: total }, (_, index) => index + 1);
-    }
-
-    const start = Math.max(1, Math.min(current - 2, total - 4));
-    const end = Math.min(total, start + 4);
-    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 }
 
 function RatingStars({ count }) {
@@ -162,10 +152,8 @@ export default function PetSitterList() {
         router.push(queryString ? `/find-sitter?${queryString}` : "/find-sitter");
     };
 
-    const pageNumbers = getPageNumbers(currentPage, totalPages);
-
     return (
-        <div className="min-h-full bg-gray-100 px-4 py-8 sm:px-8">
+        <div className="min-h-full bg-[#FAFAFB] px-4 py-8 sm:px-8">
             <div className="mx-auto max-w-7xl">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-h3 font-bold text-gray-900">
@@ -350,41 +338,14 @@ export default function PetSitterList() {
                         )}
                     </div>
                 </section>
-                {pageNumbers.length > 1 && (
-                    <nav className="col-span-full mt-8 flex items-center justify-center gap-1" aria-label="Pagination">
-                        <button
-                            type="button"
-                            onClick={() => goToPage(currentPage - 1)}
-                            disabled={currentPage <= 1}
-                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="Previous page"
-                        >
-                            <Icon src="/icon/chevron-left.svg" className="h-5 w-5" />
-                        </button>
-                        {pageNumbers.map((page) => (
-                            <button
-                                key={page}
-                                type="button"
-                                onClick={() => goToPage(page)}
-                                className={`flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-body-2 font-bold transition-colors ${
-                                    currentPage === page
-                                        ? "bg-orange-100 text-orange-500"
-                                        : "text-gray-400 hover:text-orange-500"
-                                }`}
-                            >
-                                {page}
-                            </button>
-                        ))}
-                        <button
-                            type="button"
-                            onClick={() => goToPage(currentPage + 1)}
-                            disabled={currentPage >= totalPages}
-                            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
-                            aria-label="Next page"
-                        >
-                            <Icon src="/icon/chevron-right.svg" className="h-5 w-5" />
-                        </button>
-                    </nav>
+                {totalPages > 1 && (
+                    <div className="col-span-full mt-8">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={goToPage}
+                        />
+                    </div>
                 )}
                 </div>
             </div>
