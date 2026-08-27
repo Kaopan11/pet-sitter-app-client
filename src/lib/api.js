@@ -29,7 +29,10 @@ async function apiFetch(path, { method = "GET", body } = {}) {
   const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(json.message || `Request failed (${res.status})`);
+    // ติด status ไว้ให้ UI แยก 400 / 401 ได้ (เช่น reset-password)
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
   }
 
   return json;
@@ -161,6 +164,21 @@ export async function forgotPassword({ email }) {
     message:
       json.message ||
       "If an account exists for this email, a reset link has been sent.",
+  };
+}
+
+/**
+ * ตั้งรหัสใหม่จากลิงก์ในเมล (ticket 03)
+ * body: { accessToken จาก Supabase, newPassword ≥ 6 }
+ * สำเร็จ 200 → message | 401 token หมดอายุ | 400 รหัสสั้น/ไม่มี token
+ */
+export async function resetPassword({ accessToken, newPassword }) {
+  const json = await apiFetch("/api/auth/reset-password", {
+    method: "POST",
+    body: { accessToken, newPassword },
+  });
+  return {
+    message: json.message || "Password updated successfully",
   };
 }
 

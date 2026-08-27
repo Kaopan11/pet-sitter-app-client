@@ -82,15 +82,103 @@ export function getSupabaseBrowserClient() {
  * ดึง access_token จาก session ปัจจุบัน (หลัง OAuth / เปิดลิงก์ reset)
  * ใช้เป็น Bearer ตอนเรียก GET /api/auth/me หรือ POST /api/auth/reset-password
  * ยังไม่มี session → คืน null
+ * getSession พัง → คืน null (ไม่ throw) เพื่อให้ caller ไปอ่าน hash ต่อได้
  */
 export async function getSupabaseAccessToken() {
   const supabase = getSupabaseBrowserClient();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    throw error;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return null;
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** เก็บ token ชั่วคราวกัน React Strict Mode เคลียร์ hash แล้ว remount */
+const RECOVERY_TOKEN_STORAGE_KEY = "pet-sitter-recovery-access-token";
+
+/** อ่าน access_token จาก #access_token=... ใน URL (ไม่ต้องมี Supabase env) */
+export function getAccessTokenFromUrlHash() {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  try {
+    return new URLSearchParams(hash).get("access_token");
+  } catch {
+    return null;
+  }
+}
+
+function stashRecoveryToken(token) {
+  if (typeof window === "undefined" || !token) return;
+  try {
+    sessionStorage.setItem(RECOVERY_TOKEN_STORAGE_KEY, token);
+  } catch {
+    // private mode / storage เต็ม — ข้ามได้
+  }
+}
+
+function readStashedRecoveryToken() {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(RECOVERY_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearStashedRecoveryToken() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(RECOVERY_TOKEN_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * ลิงก์รีเซ็ตรหัสจากเมลมักพา token มาใน URL (#access_token=... หรือ ?code=...)
+ * ลำดับ: hash ก่อน (ไม่พึ่ง env) → sessionStorage → getSession → แลก code
+ * getSession พลาดแล้วก็ยังใช้ hash ได้
+ */
+export async function resolveRecoveryAccessToken() {
+  if (typeof window === "undefined") return null;
+
+  // 1) hash ก่อน — เคสเมล Supabase ส่วนใหญ่; ไม่ต้องรอ env / client
+  const fromHash = getAccessTokenFromUrlHash();
+  if (fromHash) {
+    stashRecoveryToken(fromHash);
+    return fromHash;
   }
 
-  return data.session?.access_token ?? null;
+  // 2) stash จากรอบ mount ก่อนหน้า (Strict Mode เคลียร์ hash ไปแล้ว)
+  const fromStash = readStashedRecoveryToken();
+  if (fromStash) return fromStash;
+
+  // 3) session ของ Supabase (ถ้า env พร้อม) — พังแล้วไปต่อ ไม่ throw
+  const fromSession = await getSupabaseAccessToken();
+  if (fromSession) {
+    stashRecoveryToken(fromSession);
+    return fromSession;
+  }
+
+  // 4) PKCE: ?code= → แลก session (ต้องมี env)
+  const code = new URLSearchParams(window.location.search).get("code");
+  if (!code) return null;
+
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return null;
+    const token = data.session?.access_token ?? null;
+    if (token) stashRecoveryToken(token);
+    return token;
+  } catch {
+    return null;
+  }
 }
