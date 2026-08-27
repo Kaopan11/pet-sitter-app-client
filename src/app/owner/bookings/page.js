@@ -371,7 +371,7 @@ export default function BookingHistoryPage() {
                     </div>
                     <div className="text-left sm:text-right shrink-0">
                       <p className="mb-2 text-body-3" style={{ color: "#AEB1C3" }}>
-                        Booking date: {formatDate(booking.booking_date)}
+                        Booking date: {formatDate(booking.start_date)}
                       </p>
                       {getStatusBadge(booking.status)}
                     </div>
@@ -384,7 +384,7 @@ export default function BookingHistoryPage() {
                         Date & Time:
                       </span>
                       <span className="flex flex-wrap items-center gap-2 text-body-2" style={{ color: "#3A3B46" }}>
-                        {formatDate(booking.booking_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                        {formatDate(booking.start_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
                         {booking.status === "waiting_confirm" && (
                           <button
                             onClick={(e) => e.stopPropagation()}
@@ -607,7 +607,7 @@ export default function BookingHistoryPage() {
 
               <div className="flex flex-col gap-1">
                 <p className="text-body-3" style={{ color: "#AEB1C3" }}>
-                  Booking date: {formatDate(selectedBooking.booking_date)}
+                  Booking date: {formatDate(selectedBooking.start_date)}
                 </p>
                 {selectedBooking.transaction_no && (
                   <p className="text-body-3" style={{ color: "#AEB1C3" }}>
@@ -637,7 +637,7 @@ export default function BookingHistoryPage() {
                 <div className="flex flex-col gap-1">
                   <span className="text-body-3" style={{ color: "#7B7E8F" }}>Date & Time:</span>
                   <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>
-                    {formatDate(selectedBooking.booking_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                    {formatDate(selectedBooking.start_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
                   </span>
                 </div>
                 {selectedBooking.status === "waiting_confirm" && (
