@@ -248,7 +248,7 @@ export default function RegisterForm({
             : "Register as Owner"}
       </button>
 
-      <SocialAuthButtons />
+      <SocialAuthButtons remember />
 
       <p className="text-center text-body-3 text-gray-500">
         {loginPrompt}{" "}

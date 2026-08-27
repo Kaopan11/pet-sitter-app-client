@@ -182,6 +182,38 @@ export async function resetPassword({ accessToken, newPassword }) {
   };
 }
 
+/**
+ * หลัง OAuth — เช็คว่ามีโปรไฟล์ในระบบเราแล้วหรือยัง (ticket 04)
+ * ใช้ Bearer จาก Supabase access_token (ยังไม่ผ่าน getToken ของแอป)
+ * 200 → { token, user } | 404 Profile incomplete | 401 token ไม่ผ่าน
+ */
+export async function getAuthMe(accessToken) {
+  assertApiUrl();
+
+  if (!accessToken) {
+    const error = new Error("Missing access token");
+    error.status = 401;
+    throw error;
+  }
+
+  const res = await fetch(`${API_URL}/api/auth/me`, {
+    method: "GET",
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(json.message || `Request failed (${res.status})`);
+    error.status = res.status;
+    throw error;
+  }
+
+  // รูปเดียวกับ login: data = { token, user }
+  return json.data;
+}
+
 // asSitter true = สร้าง sitter_profiles (pending) | false = owner
 export async function register({ name, email, phone, password, asSitter }) {
   const json = await apiFetch("/api/auth/register", {

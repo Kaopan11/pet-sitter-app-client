@@ -146,7 +146,7 @@ export default function LoginForm({
         {loading ? "Logging in..." : "Login"}
       </button>
 
-      {showSocial ? <SocialAuthButtons /> : null}
+      {showSocial ? <SocialAuthButtons remember={showRemember ? remember : true} /> : null}
 
       <p className="text-center text-body-3 text-gray-500">
         {registerPrompt}{" "}

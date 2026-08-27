@@ -182,3 +182,108 @@ export async function resolveRecoveryAccessToken() {
     return null;
   }
 }
+
+/** Remember me ข้าม redirect OAuth (sessionStorage — แท็บเดียวกัน) */
+const OAUTH_REMEMBER_KEY = "pet-sitter-oauth-remember";
+/** access_token ชั่วคราวตอนรอกรอก /complete-profile */
+const OAUTH_PENDING_TOKEN_KEY = "pet-sitter-oauth-pending-token";
+
+export function stashOAuthRemember(persist) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(OAUTH_REMEMBER_KEY, persist ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
+export function readOAuthRemember(defaultValue = true) {
+  if (typeof window === "undefined") return defaultValue;
+  try {
+    const raw = sessionStorage.getItem(OAUTH_REMEMBER_KEY);
+    if (raw === null) return defaultValue;
+    return raw === "1";
+  } catch {
+    return defaultValue;
+  }
+}
+
+export function stashOAuthPendingToken(token) {
+  if (typeof window === "undefined" || !token) return;
+  try {
+    sessionStorage.setItem(OAUTH_PENDING_TOKEN_KEY, token);
+  } catch {
+    // ignore
+  }
+}
+
+export function readOAuthPendingToken() {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(OAUTH_PENDING_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearOAuthPendingToken() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(OAUTH_PENDING_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * เริ่ม Google / Facebook ผ่าน Supabase (ticket 04)
+ * สำเร็จ → เบราว์เซอร์ถูกพาไป provider แล้วกลับ /auth/callback
+ * provider: "google" | "facebook"
+ */
+export async function signInWithOAuthProvider(provider) {
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) {
+    throw new Error(
+      "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.",
+    );
+  }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: getOAuthRedirectTo(),
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+/**
+ * หลังกลับจาก Google/Facebook — หา access_token
+ * ลำดับ: hash → getSession → ?code=
+ */
+export async function resolveOAuthAccessToken() {
+  if (typeof window === "undefined") return null;
+
+  const fromHash = getAccessTokenFromUrlHash();
+  if (fromHash) return fromHash;
+
+  const fromSession = await getSupabaseAccessToken();
+  if (fromSession) return fromSession;
+
+  const code = new URLSearchParams(window.location.search).get("code");
+  if (!code) return null;
+
+  const supabase = getSupabaseBrowserClient();
+  if (!supabase) return null;
+
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return null;
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
