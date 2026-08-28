@@ -10,9 +10,8 @@ import Link from "next/link";
 import Icon from "@/components/Icon";
 import {
   calculateBookingPreviewTotal,
-  formatBookingDate,
+  formatBookingDateTimeLabel,
   formatBookingDuration,
-  formatTimeRange,
 } from "@/lib/booking";
 
 function formatCurrency(amount) {
@@ -68,9 +67,13 @@ export default function ThankYouView({
       ? "-"
       : selectedPets.map((pet) => pet.name).join(", ");
 
-  const dateLabel = isManyDays
-    ? `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`
-    : formatBookingDate(startDate);
+  const dateTimeLabel = formatBookingDateTimeLabel({
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    isManyDays,
+  });
 
   const durationLabel = isManyDays
     ? formatBookingDuration(nights, "Day")
@@ -159,11 +162,7 @@ export default function ThankYouView({
               </div>
 
               <div className="grid grid-cols-1 gap-7 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                <DetailBlock label="Date & Time">
-                  {dateLabel}
-                  {" | "}
-                  {formatTimeRange(startTime, endTime)}
-                </DetailBlock>
+                <DetailBlock label="Date & Time">{dateTimeLabel}</DetailBlock>
                 <DetailBlock label="Duration">{durationLabel}</DetailBlock>
               </div>
 

@@ -232,6 +232,26 @@ export function formatTimeRange(startTime, endTime) {
   return `${formatTime12Hour(startTime)} - ${formatTime12Hour(endTime)}`;
 }
 
+/**
+ * ข้อความ Date & Time บน Sidebar / Thank You
+ * One day: "1 Sep, 2026 | 10 AM - 1 PM" | Many days: แค่ช่วงวัน (ไม่แสดงเวลา)
+ */
+export function formatBookingDateTimeLabel({
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  isManyDays,
+}) {
+  const dateLabel = isManyDays
+    ? `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`
+    : formatBookingDate(startDate);
+
+  if (isManyDays) return dateLabel;
+
+  return `${dateLabel} | ${formatTimeRange(startTime, endTime)}`;
+}
+
 export function normalizeBookingDate(value) {
   const text = String(value ?? "").trim();
   return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : "";

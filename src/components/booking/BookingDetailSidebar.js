@@ -1,8 +1,7 @@
 import {
   calculateBookingPreviewTotal,
-  formatBookingDate,
+  formatBookingDateTimeLabel,
   formatBookingDuration,
-  formatTimeRange,
 } from "@/lib/booking";
 
 function formatCurrency(amount) {
@@ -47,9 +46,13 @@ export default function BookingDetailSidebar({
     petCount,
   });
 
-  const dateLabel = isManyDays
-    ? `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`
-    : formatBookingDate(startDate);
+  const dateTimeLabel = formatBookingDateTimeLabel({
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    isManyDays,
+  });
 
   const durationLabel = isManyDays
     ? formatBookingDuration(nights, "Day")
@@ -66,9 +69,7 @@ export default function BookingDetailSidebar({
             {sitter.displayName} By {sitter.sitterName}
           </DetailBlock>
 
-          <DetailBlock label="Date & Time">
-            {dateLabel} | {formatTimeRange(startTime, endTime)}
-          </DetailBlock>
+          <DetailBlock label="Date & Time">{dateTimeLabel}</DetailBlock>
 
           <DetailBlock label="Duration">{durationLabel}</DetailBlock>
 
