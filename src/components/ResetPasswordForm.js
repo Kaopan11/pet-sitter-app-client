@@ -11,9 +11,7 @@ import {
 } from "@/lib/supabase";
 import PasswordInput from "@/components/PasswordInput";
 import { errorToastClassNames, successToastClassNames } from "@/lib/toastStyles";
-
-/** กฎเดียวกับ handoff BE — รหัสใหม่ ≥ 6 ตัว */
-const MIN_PASSWORD_LENGTH = 6;
+import { validatePassword } from "@/utils/validatePassword";
 
 /**
  * ฟอร์มตั้งรหัสใหม่จากลิงก์ในเมล (ticket 03)
@@ -71,8 +69,10 @@ export default function ResetPasswordForm({ loginHref = "/login/owner" }) {
     event.preventDefault();
     setFieldError("");
 
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setFieldError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    // ticket 02: กฎเดียวกับ Register — มากกว่า 8 ตัว (ผ่านเมื่อ >= 9)
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setFieldError(passwordError);
       return;
     }
     if (password !== confirmPassword) {
@@ -151,7 +151,7 @@ export default function ResetPasswordForm({ loginHref = "/login/owner" }) {
       <header className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
         <h1 className="text-h2">Set new password</h1>
         <p className="text-body-2 text-gray-400">
-          Choose a new password (at least {MIN_PASSWORD_LENGTH} characters).
+          Choose a new password (more than 8 characters).
         </p>
       </header>
 
@@ -159,18 +159,17 @@ export default function ResetPasswordForm({ loginHref = "/login/owner" }) {
         <label htmlFor="reset-password" className="text-body-3 font-bold text-black">
           New password
         </label>
+        {/* ไม่ใส่ minLength/required — ให้ validatePassword ใน handleSubmit แสดง error แดง (เหมือน Register) */}
         <PasswordInput
           id="reset-password"
           name="newPassword"
           autoComplete="new-password"
           placeholder="Enter new password"
-          minLength={MIN_PASSWORD_LENGTH}
           value={password}
           onChange={(event) => {
             setPassword(event.target.value);
             setFieldError("");
           }}
-          required
           error={Boolean(fieldError)}
         />
       </div>
@@ -187,13 +186,11 @@ export default function ResetPasswordForm({ loginHref = "/login/owner" }) {
           name="confirmPassword"
           autoComplete="new-password"
           placeholder="Confirm new password"
-          minLength={MIN_PASSWORD_LENGTH}
           value={confirmPassword}
           onChange={(event) => {
             setConfirmPassword(event.target.value);
             setFieldError("");
           }}
-          required
           error={Boolean(fieldError)}
         />
         {fieldError ? <p className="text-body-3 text-red">{fieldError}</p> : null}
