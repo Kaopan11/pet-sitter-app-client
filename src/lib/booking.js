@@ -37,44 +37,133 @@ export function calculateBookingHours(startTime, endTime) {
   return (endMinutes - startMinutes) / 60;
 }
 
-// URL contract (Entry Flow): ?sitterId=&date=&startTime=&endTime=
-const REQUIRED_PARAMS = ["sitterId", "date", "startTime", "endTime"];
+/**
+ * จำนวนคืน many-days — endDate − startDate (ไม่ inclusive)
+ * 27→29 Aug = 2 | วันเดียว (start === end) = 0
+ */
+export function calculateBookingNights(startDate, endDate) {
+  const start = normalizeBookingDate(startDate);
+  const end = normalizeBookingDate(endDate);
+  if (!start || !end) return null;
+
+  const startMs = new Date(`${start}T00:00:00`).getTime();
+  const endMs = new Date(`${end}T00:00:00`).getTime();
+  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs) return null;
+
+  return Math.round((endMs - startMs) / (24 * 60 * 60 * 1000));
+}
+
+/** endDate > startDate → many-days (per night) */
+export function isManyDayBooking(startDate, endDate) {
+  const nights = calculateBookingNights(startDate, endDate);
+  return nights !== null && nights > 0;
+}
+
+// URL: ?sitterId=&startDate=&endDate=&startTime=&endTime=
+// legacy one-day: ?sitterId=&date=&startTime=&endTime=
 
 /**
- * ตรวจ query แล้ว map เป็นค่าใช้ใน UI
+ * อ่าน query หน้าจอง — รองรับ startDate+endDate หรือ date (one-day เดิม)
  */
 export function parseBookingParams(searchParams) {
-  const values = Object.fromEntries(
-    REQUIRED_PARAMS.map((key) => [key, String(searchParams?.[key] ?? "").trim()]),
-  );
+  const sitterId = String(searchParams?.sitterId ?? "").trim();
+  const startTime = String(searchParams?.startTime ?? "").trim();
+  const endTime = String(searchParams?.endTime ?? "").trim();
 
-  const missing = REQUIRED_PARAMS.filter((key) => !values[key]);
+  let startDate = normalizeBookingDate(searchParams?.startDate);
+  let endDate = normalizeBookingDate(searchParams?.endDate);
+  const legacyDate = normalizeBookingDate(searchParams?.date);
+
+  // legacy: date เดียว → one day
+  if (!startDate && legacyDate) {
+    startDate = legacyDate;
+    endDate = legacyDate;
+  }
+  if (startDate && !endDate) {
+    endDate = startDate;
+  }
+
+  const missing = [];
+  if (!sitterId) missing.push("sitterId");
+  if (!startTime) missing.push("startTime");
+  if (!endTime) missing.push("endTime");
+  if (!startDate) {
+    missing.push(legacyDate || searchParams?.startDate ? "startDate" : "startDate or date");
+  }
+
   if (missing.length > 0) {
     return { valid: false, missing };
   }
 
-  const hours = calculateBookingHours(values.startTime, values.endTime);
-  if (hours === null) {
+  if (endDate < startDate) {
     return {
       valid: false,
-      error: "Invalid time range. End time must be after start time (HH:mm).",
+      error: "End date must be on or after start date.",
     };
+  }
+
+  const isManyDays = isManyDayBooking(startDate, endDate);
+  const nights = isManyDays ? calculateBookingNights(startDate, endDate) : null;
+
+  // one day: ต้องคิดชั่วโมงได้ | many days: เวลาเป็น check-in/out (ไม่ใช้คิดราคา)
+  let hours = null;
+  if (!isManyDays) {
+    hours = calculateBookingHours(startTime, endTime);
+    if (hours === null) {
+      return {
+        valid: false,
+        error: "Invalid time range. End time must be after start time (HH:mm).",
+      };
+    }
   }
 
   return {
     valid: true,
-    sitterId: values.sitterId,
-    date: values.date,
-    startTime: values.startTime,
-    endTime: values.endTime,
+    sitterId,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    isManyDays,
+    nights,
     hours,
+    date: startDate, // alias ให้ BookingFlow รุ่นปัจจุบัน (ticket 02 จะส่ง startDate/endDate เต็ม)
   };
 }
 
-/** ราคา preview: ตัวแรก 200/ชม. ตัวถัดไป +100/ชม. (FE เท่านั้น — POST ห้ามส่ง total) */
+/** ราคา preview one-day: ตัวแรก 200/ชม. ตัวถัดไป +100/ชม. (FE เท่านั้น — POST ห้ามส่ง total) */
 export function calculateBookingTotal(hours, petCount) {
   if (!hours || petCount < 1) return 0;
   return hours * (200 + 100 * (petCount - 1));
+}
+
+/** ราคา preview many-days: คืนละ 1000, ตัวถัดไป +500/คืน */
+export function calculateNightlyTotal(nights, petCount) {
+  if (!nights || nights < 1 || petCount < 1) return 0;
+  return nights * (1000 + 500 * (petCount - 1));
+}
+
+/** รวม preview ตามโหมด — ใช้ใน sidebar/confirm (ticket 02–03) */
+export function calculateBookingPreviewTotal({ isManyDays, hours, nights, petCount }) {
+  if (isManyDays) return calculateNightlyTotal(nights, petCount);
+  return calculateBookingTotal(hours, petCount);
+}
+
+/**
+ * แสดง duration จาก API/list — "hours" → "5 hours", "Day" → "2 nights"
+ */
+export function formatBookingDuration(duration, durationUnit) {
+  const value = Number(duration);
+  if (!Number.isFinite(value) || value < 1) return "";
+
+  const unit = String(durationUnit ?? "").trim();
+  if (unit === "Day") {
+    return value === 1 ? "1 night" : `${value} nights`;
+  }
+  if (unit === "hours") {
+    return value === 1 ? "1 hour" : `${value} hours`;
+  }
+  return `${value} ${unit}`;
 }
 
 /** "2023-08-25" → "25 Aug, 2023" */
