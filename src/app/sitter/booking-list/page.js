@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { formatBookedDateList } from "@/utils/formatDateTime";
+import { formatBookingDurationFromRecord } from "@/lib/booking";
 import Pagination from "@/components/Pagination";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -121,7 +122,7 @@ export default function BookingListPage() {
                   {booking.pet_count}
                 </td>
                 <td className="px-6 py-5 text-body-2 text-black">
-                  {Number(booking.duration_hours)} hours
+                  {formatBookingDurationFromRecord(booking)}
                 </td>
                 <td className="px-6 py-5 text-body-2 text-black">
                   {formatBookedDateList(booking)}

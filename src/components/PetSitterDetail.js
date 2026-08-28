@@ -455,7 +455,7 @@ function BookingModal({
     startDate &&
       startTime &&
       endTime &&
-      (!isManyDays || endDate) &&
+      (!isManyDays || (endDate && endDate > startDate)) &&
       !isStartOptionDisabled(startTime) &&
       !isEndOptionDisabled(endTime) &&
       isStartBeforeEnd(startDate, startTime, endDate || startDate, endTime, isManyDays) &&
@@ -1163,13 +1163,16 @@ export default function PetSitterDetail({ sitterId }) {
     setBooking((current) => ({ ...current, ...patch }));
   }
 
-  /** Continue → หน้าจอง 3 step พร้อม query ตาม contract ทีม */
+  /** Continue → หน้าจอง 3 step (one day | many days ส่ง startDate+endDate) */
   function handleBookingContinue(event) {
     event.preventDefault();
     if (!booking.startDate || !booking.startTime || !booking.endTime) return;
+    const resolvedEndDate = booking.endDate || booking.startDate;
+    const isManyDaysBooking = resolvedEndDate > booking.startDate;
+    if (isManyDaysBooking && !booking.endDate) return;
     if (!isAtLeastThreeHoursAhead(booking.startDate, booking.startTime)) return;
-    const endDate = booking.endDate || booking.startDate;
-    if (!isStartBeforeEnd(booking.startDate, booking.startTime, endDate, booking.endTime, endDate !== booking.startDate)) {
+    const endDate = resolvedEndDate;
+    if (!isStartBeforeEnd(booking.startDate, booking.startTime, endDate, booking.endTime, isManyDaysBooking)) {
       return;
     }
     if (
@@ -1184,12 +1187,10 @@ export default function PetSitterDetail({ sitterId }) {
       toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
-    if (!booking.endDate) {
-      setBooking((current) => ({ ...current, endDate: current.startDate }));
-    }
     const params = new URLSearchParams({
       sitterId: String(sitter.id ?? sitterId),
-      date: endDate,
+      startDate: booking.startDate,
+      endDate: resolvedEndDate,
       startTime: booking.startTime,
       endTime: booking.endTime,
     });

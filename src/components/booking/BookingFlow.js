@@ -28,8 +28,8 @@ import {
   normalizeBookingPet,
   normalizeBookingSitter,
   normalizeBookedSlots,
-  slotOverlapsBooked,
-  calculateBookingTotal,
+  bookingSelectionOverlapsBooked,
+  calculateBookingPreviewTotal,
 } from "@/lib/booking";
 
 const TOTAL_STEPS = 3;
@@ -48,10 +48,13 @@ function toApiPaymentMethod(uiMethod) {
 
 export default function BookingFlow({
   sitterId,
-  date,
+  startDate,
+  endDate,
   startTime,
   endTime,
   hours,
+  isManyDays = false,
+  nights = null,
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -105,9 +108,25 @@ export default function BookingFlow({
           bookedSlots = [];
         }
 
-        if (slotOverlapsBooked(date, startTime, endTime, bookedSlots)) {
+        if (
+          bookingSelectionOverlapsBooked({
+            startDate,
+            endDate,
+            startTime,
+            endTime,
+            isManyDays,
+            bookedSlots,
+          })
+        ) {
           throw new Error(
             "This date and time is already booked. Please choose another slot.",
+          );
+        }
+
+        // ticket 03: many days ต้องมีอย่างน้อย 1 คืน
+        if (isManyDays && (!nights || nights < 1)) {
+          throw new Error(
+            "Invalid booking link. Many-day bookings need at least one night.",
           );
         }
 
@@ -135,7 +154,7 @@ export default function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [sitterId, date, startTime, endTime, router]);
+  }, [sitterId, startDate, endDate, startTime, endTime, isManyDays, nights, router]);
 
   const selectedPets = useMemo(
     () => pets.filter((pet) => selectedPetIds.includes(pet.id)),
@@ -195,7 +214,13 @@ export default function BookingFlow({
       return;
     }
 
-    if (!Number.isInteger(hours) || hours <= 0) {
+    // ticket 03: many days ใช้ nights (เวลาเป็น check-in/out ไม่คิดราคา)
+    if (isManyDays) {
+      if (!nights || nights < 1) {
+        setConfirmError("Many-day bookings need at least one night.");
+        return;
+      }
+    } else if (!Number.isInteger(hours) || hours <= 0) {
       setConfirmError(
         "Booking duration must be whole hours (for example 10:00–13:00).",
       );
@@ -217,7 +242,8 @@ export default function BookingFlow({
     try {
       const data = await createBooking({
         sitterId,
-        date,
+        startDate,
+        endDate,
         startTime,
         endTime,
         petIds,
@@ -272,16 +298,25 @@ export default function BookingFlow({
   const canGoNext = step === 1 ? hasEligibleSelection : true;
 
   const previewTotal = useMemo(
-    () => calculateBookingTotal(hours, selectedPets.length),
-    [hours, selectedPets.length],
+    () =>
+      calculateBookingPreviewTotal({
+        isManyDays,
+        hours,
+        nights,
+        petCount: selectedPets.length,
+      }),
+    [isManyDays, hours, nights, selectedPets.length],
   );
 
   const detailProps = {
     sitter,
-    date,
+    startDate,
+    endDate,
     startTime,
     endTime,
     hours,
+    isManyDays,
+    nights,
     selectedPets,
   };
 
@@ -372,10 +407,13 @@ export default function BookingFlow({
     return (
       <ThankYouView
         sitter={sitter}
-        date={date}
+        startDate={startDate}
+        endDate={endDate}
         startTime={startTime}
         endTime={endTime}
         hours={hours}
+        isManyDays={isManyDays}
+        nights={nights}
         selectedPets={selectedPets}
         transactionNo={
           bookingResult?.bookingId != null

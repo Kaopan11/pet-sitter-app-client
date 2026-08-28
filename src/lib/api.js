@@ -273,13 +273,13 @@ export async function getProfile() {
 }
 
 /**
- * สร้าง booking — cash | stripe (Day 4–5)
- * ห้ามส่ง totalPrice — BE คำนวณเอง
- * petIds ต้องเป็น number จาก GET /api/users/me/pets
- * stripe → data.clientSecret สำหรับ Payment Element
+ * สร้าง booking — cash | stripe
+ * ส่ง startDate + endDate (one day = วันเดียวกัน) · date legacy ยัง map ได้
  */
 export async function createBooking({
   sitterId,
+  startDate,
+  endDate,
   date,
   startTime,
   endTime,
@@ -287,9 +287,13 @@ export async function createBooking({
   message,
   paymentMethod = "cash",
 }) {
+  const resolvedStart = startDate ?? date;
+  const resolvedEnd = endDate ?? date ?? resolvedStart;
+
   const body = {
     sitterId,
-    date,
+    startDate: resolvedStart,
+    endDate: resolvedEnd,
     startTime,
     endTime,
     petIds,

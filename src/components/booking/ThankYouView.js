@@ -9,9 +9,9 @@ import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/Icon";
 import {
-  calculateBookingTotal,
-  formatBookingDate,
-  formatTimeRange,
+  calculateBookingPreviewTotal,
+  formatBookingDateTimeLabel,
+  formatBookingDuration,
 } from "@/lib/booking";
 
 function formatCurrency(amount) {
@@ -43,21 +43,41 @@ function DetailBlock({ label, children }) {
 
 export default function ThankYouView({
   sitter,
-  date,
+  startDate,
+  endDate,
   startTime,
   endTime,
   hours,
+  isManyDays = false,
+  nights = null,
   selectedPets,
   transactionNo = "",
   totalPrice,
 }) {
-  const previewTotal = calculateBookingTotal(hours, selectedPets.length);
+  const previewTotal = calculateBookingPreviewTotal({
+    isManyDays,
+    hours,
+    nights,
+    petCount: selectedPets.length,
+  });
   const parsedTotal = Number(totalPrice);
   const total = Number.isFinite(parsedTotal) ? parsedTotal : previewTotal;
   const petNames =
     selectedPets.length === 0
       ? "-"
       : selectedPets.map((pet) => pet.name).join(", ");
+
+  const dateTimeLabel = formatBookingDateTimeLabel({
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    isManyDays,
+  });
+
+  const durationLabel = isManyDays
+    ? formatBookingDuration(nights, "Day")
+    : formatBookingDuration(hours, "hours");
 
   return (
     <div
@@ -142,14 +162,8 @@ export default function ThankYouView({
               </div>
 
               <div className="grid grid-cols-1 gap-7 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-                <DetailBlock label="Date & Time">
-                  {formatBookingDate(date)}
-                  {" | "}
-                  {formatTimeRange(startTime, endTime)}
-                </DetailBlock>
-                <DetailBlock label="Duration">
-                  {hours} hour{hours !== 1 ? "s" : ""}
-                </DetailBlock>
+                <DetailBlock label="Date & Time">{dateTimeLabel}</DetailBlock>
+                <DetailBlock label="Duration">{durationLabel}</DetailBlock>
               </div>
 
               <DetailBlock label="Pet">{petNames}</DetailBlock>

@@ -6,6 +6,7 @@ import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken, getUser } from "@/lib/auth";
 import { createConversation, getSitters } from "@/lib/api";
+import { formatBookingDurationFromRecord } from "@/lib/booking";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -403,7 +404,7 @@ export default function BookingHistoryPage() {
                         Duration:
                       </span>
                       <span className="text-body-2" style={{ color: "#3A3B46" }}>
-                        {booking.duration_hours} hours
+                        {formatBookingDurationFromRecord(booking)}
                       </span>
                     </div>
 
@@ -654,7 +655,7 @@ export default function BookingHistoryPage() {
 
               <div className="flex flex-col gap-1">
                 <span className="text-body-3" style={{ color: "#7B7E8F" }}>Duration:</span>
-                <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>{selectedBooking.duration_hours} hours</span>
+                <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>{formatBookingDurationFromRecord(selectedBooking)}</span>
               </div>
 
               <div className="flex flex-col gap-1">

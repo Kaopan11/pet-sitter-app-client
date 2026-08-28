@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatBookedDateDetail, formatDate } from "@/utils/formatDateTime";
+import { formatBookingDurationFromRecord } from "@/lib/booking";
 import { createConversation } from "@/lib/api";
 import {
   errorToastClassNames,
@@ -231,7 +232,7 @@ export default function BookingDetailPage() {
         </section>
 
         <DetailField label="Duration">
-          {booking?.duration_hours != null ? `${Number(booking.duration_hours)} hours` : "—"}
+          {formatBookingDurationFromRecord(booking)}
         </DetailField>
         <DetailField label="Booking Date">
           {booking ? formatBookedDateDetail(booking) : "—"}

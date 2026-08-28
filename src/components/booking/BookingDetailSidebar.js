@@ -1,7 +1,7 @@
 import {
-  calculateBookingTotal,
-  formatBookingDate,
-  formatTimeRange,
+  calculateBookingPreviewTotal,
+  formatBookingDateTimeLabel,
+  formatBookingDuration,
 } from "@/lib/booking";
 
 function formatCurrency(amount) {
@@ -28,15 +28,35 @@ function DetailBlock({ label, children }) {
  */
 export default function BookingDetailSidebar({
   sitter,
-  date,
+  startDate,
+  endDate,
   startTime,
   endTime,
   hours,
+  isManyDays = false,
+  nights = null,
   selectedPets,
   hideTotal = false,
 }) {
   const petCount = selectedPets.length;
-  const total = calculateBookingTotal(hours, petCount);
+  const total = calculateBookingPreviewTotal({
+    isManyDays,
+    hours,
+    nights,
+    petCount,
+  });
+
+  const dateTimeLabel = formatBookingDateTimeLabel({
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+    isManyDays,
+  });
+
+  const durationLabel = isManyDays
+    ? formatBookingDuration(nights, "Day")
+    : formatBookingDuration(hours, "hours");
 
   return (
     <aside className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-(--shadow-card) md:h-full md:w-82 md:shrink-0">
@@ -49,13 +69,9 @@ export default function BookingDetailSidebar({
             {sitter.displayName} By {sitter.sitterName}
           </DetailBlock>
 
-          <DetailBlock label="Date & Time">
-            {formatBookingDate(date)} | {formatTimeRange(startTime, endTime)}
-          </DetailBlock>
+          <DetailBlock label="Date & Time">{dateTimeLabel}</DetailBlock>
 
-          <DetailBlock label="Duration">
-            {hours} hour{hours !== 1 ? "s" : ""}
-          </DetailBlock>
+          <DetailBlock label="Duration">{durationLabel}</DetailBlock>
 
           <DetailBlock label="Pet">
             {petCount === 0
