@@ -127,7 +127,7 @@ export function parseBookingParams(searchParams) {
     isManyDays,
     nights,
     hours,
-    date: startDate, // alias ให้ BookingFlow รุ่นปัจจุบัน (ticket 02 จะส่ง startDate/endDate เต็ม)
+    date: startDate, // legacy alias (parse จาก ?date=)
   };
 }
 

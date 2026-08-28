@@ -1184,12 +1184,11 @@ export default function PetSitterDetail({ sitterId }) {
       toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
-    if (!booking.endDate) {
-      setBooking((current) => ({ ...current, endDate: current.startDate }));
-    }
+    const resolvedEndDate = booking.endDate || booking.startDate;
     const params = new URLSearchParams({
       sitterId: String(sitter.id ?? sitterId),
-      date: endDate,
+      startDate: booking.startDate,
+      endDate: resolvedEndDate,
       startTime: booking.startTime,
       endTime: booking.endTime,
     });

@@ -29,7 +29,7 @@ import {
   normalizeBookingSitter,
   normalizeBookedSlots,
   slotOverlapsBooked,
-  calculateBookingTotal,
+  calculateBookingPreviewTotal,
 } from "@/lib/booking";
 
 const TOTAL_STEPS = 3;
@@ -48,10 +48,13 @@ function toApiPaymentMethod(uiMethod) {
 
 export default function BookingFlow({
   sitterId,
-  date,
+  startDate,
+  endDate,
   startTime,
   endTime,
   hours,
+  isManyDays = false,
+  nights = null,
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -105,7 +108,7 @@ export default function BookingFlow({
           bookedSlots = [];
         }
 
-        if (slotOverlapsBooked(date, startTime, endTime, bookedSlots)) {
+        if (slotOverlapsBooked(startDate, startTime, endTime, bookedSlots)) {
           throw new Error(
             "This date and time is already booked. Please choose another slot.",
           );
@@ -135,7 +138,7 @@ export default function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [sitterId, date, startTime, endTime, router]);
+  }, [sitterId, startDate, startTime, endTime, router]);
 
   const selectedPets = useMemo(
     () => pets.filter((pet) => selectedPetIds.includes(pet.id)),
@@ -195,7 +198,11 @@ export default function BookingFlow({
       return;
     }
 
-    if (!Number.isInteger(hours) || hours <= 0) {
+    // ticket 02: one day ต้องมีชั่วโมงเต็ม — many days จะ validate ใน ticket 03
+    if (
+      !isManyDays &&
+      (!Number.isInteger(hours) || hours <= 0)
+    ) {
       setConfirmError(
         "Booking duration must be whole hours (for example 10:00–13:00).",
       );
@@ -217,7 +224,8 @@ export default function BookingFlow({
     try {
       const data = await createBooking({
         sitterId,
-        date,
+        startDate,
+        endDate,
         startTime,
         endTime,
         petIds,
@@ -272,16 +280,25 @@ export default function BookingFlow({
   const canGoNext = step === 1 ? hasEligibleSelection : true;
 
   const previewTotal = useMemo(
-    () => calculateBookingTotal(hours, selectedPets.length),
-    [hours, selectedPets.length],
+    () =>
+      calculateBookingPreviewTotal({
+        isManyDays,
+        hours,
+        nights,
+        petCount: selectedPets.length,
+      }),
+    [isManyDays, hours, nights, selectedPets.length],
   );
 
   const detailProps = {
     sitter,
-    date,
+    startDate,
+    endDate,
     startTime,
     endTime,
     hours,
+    isManyDays,
+    nights,
     selectedPets,
   };
 
@@ -372,10 +389,13 @@ export default function BookingFlow({
     return (
       <ThankYouView
         sitter={sitter}
-        date={date}
+        startDate={startDate}
+        endDate={endDate}
         startTime={startTime}
         endTime={endTime}
         hours={hours}
+        isManyDays={isManyDays}
+        nights={nights}
         selectedPets={selectedPets}
         transactionNo={
           bookingResult?.bookingId != null

@@ -39,10 +39,13 @@ export default async function OwnerBookingPage({ searchParams }) {
   return (
     <BookingFlow
       sitterId={booking.sitterId}
-      date={booking.date}
+      startDate={booking.startDate}
+      endDate={booking.endDate}
       startTime={booking.startTime}
       endTime={booking.endTime}
       hours={booking.hours}
+      isManyDays={booking.isManyDays}
+      nights={booking.nights}
     />
   );
 }

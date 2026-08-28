@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Icon from "@/components/Icon";
 import {
-  calculateBookingTotal,
+  calculateBookingPreviewTotal,
   formatBookingDate,
   formatTimeRange,
 } from "@/lib/booking";
@@ -43,21 +43,37 @@ function DetailBlock({ label, children }) {
 
 export default function ThankYouView({
   sitter,
-  date,
+  startDate,
+  endDate,
   startTime,
   endTime,
   hours,
+  isManyDays = false,
+  nights = null,
   selectedPets,
   transactionNo = "",
   totalPrice,
 }) {
-  const previewTotal = calculateBookingTotal(hours, selectedPets.length);
+  const previewTotal = calculateBookingPreviewTotal({
+    isManyDays,
+    hours,
+    nights,
+    petCount: selectedPets.length,
+  });
   const parsedTotal = Number(totalPrice);
   const total = Number.isFinite(parsedTotal) ? parsedTotal : previewTotal;
   const petNames =
     selectedPets.length === 0
       ? "-"
       : selectedPets.map((pet) => pet.name).join(", ");
+
+  const dateLabel = isManyDays
+    ? `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`
+    : formatBookingDate(startDate);
+
+  const durationLabel = isManyDays
+    ? `${nights} night${nights !== 1 ? "s" : ""}`
+    : `${hours} hour${hours !== 1 ? "s" : ""}`;
 
   return (
     <div
@@ -143,13 +159,11 @@ export default function ThankYouView({
 
               <div className="grid grid-cols-1 gap-7 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
                 <DetailBlock label="Date & Time">
-                  {formatBookingDate(date)}
+                  {dateLabel}
                   {" | "}
                   {formatTimeRange(startTime, endTime)}
                 </DetailBlock>
-                <DetailBlock label="Duration">
-                  {hours} hour{hours !== 1 ? "s" : ""}
-                </DetailBlock>
+                <DetailBlock label="Duration">{durationLabel}</DetailBlock>
               </div>
 
               <DetailBlock label="Pet">{petNames}</DetailBlock>
