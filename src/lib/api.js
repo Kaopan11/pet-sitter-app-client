@@ -169,7 +169,7 @@ export async function forgotPassword({ email }) {
 
 /**
  * ตั้งรหัสใหม่จากลิงก์ในเมล (ticket 03)
- * body: { accessToken จาก Supabase, newPassword ≥ 6 }
+ * body: { accessToken จาก Supabase, newPassword > 8 ตัว }
  * สำเร็จ 200 → message | 401 token หมดอายุ | 400 รหัสสั้น/ไม่มี token
  */
 export async function resetPassword({ accessToken, newPassword }) {
