@@ -11,6 +11,7 @@ import Icon from "@/components/Icon";
 import {
   calculateBookingPreviewTotal,
   formatBookingDate,
+  formatBookingDuration,
   formatTimeRange,
 } from "@/lib/booking";
 
@@ -72,8 +73,8 @@ export default function ThankYouView({
     : formatBookingDate(startDate);
 
   const durationLabel = isManyDays
-    ? `${nights} night${nights !== 1 ? "s" : ""}`
-    : `${hours} hour${hours !== 1 ? "s" : ""}`;
+    ? formatBookingDuration(nights, "Day")
+    : formatBookingDuration(hours, "hours");
 
   return (
     <div

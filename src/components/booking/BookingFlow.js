@@ -28,7 +28,7 @@ import {
   normalizeBookingPet,
   normalizeBookingSitter,
   normalizeBookedSlots,
-  slotOverlapsBooked,
+  bookingSelectionOverlapsBooked,
   calculateBookingPreviewTotal,
 } from "@/lib/booking";
 
@@ -108,9 +108,25 @@ export default function BookingFlow({
           bookedSlots = [];
         }
 
-        if (slotOverlapsBooked(startDate, startTime, endTime, bookedSlots)) {
+        if (
+          bookingSelectionOverlapsBooked({
+            startDate,
+            endDate,
+            startTime,
+            endTime,
+            isManyDays,
+            bookedSlots,
+          })
+        ) {
           throw new Error(
             "This date and time is already booked. Please choose another slot.",
+          );
+        }
+
+        // ticket 03: many days ต้องมีอย่างน้อย 1 คืน
+        if (isManyDays && (!nights || nights < 1)) {
+          throw new Error(
+            "Invalid booking link. Many-day bookings need at least one night.",
           );
         }
 
@@ -138,7 +154,7 @@ export default function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [sitterId, startDate, startTime, endTime, router]);
+  }, [sitterId, startDate, endDate, startTime, endTime, isManyDays, nights, router]);
 
   const selectedPets = useMemo(
     () => pets.filter((pet) => selectedPetIds.includes(pet.id)),
@@ -198,11 +214,13 @@ export default function BookingFlow({
       return;
     }
 
-    // ticket 02: one day ต้องมีชั่วโมงเต็ม — many days จะ validate ใน ticket 03
-    if (
-      !isManyDays &&
-      (!Number.isInteger(hours) || hours <= 0)
-    ) {
+    // ticket 03: many days ใช้ nights (เวลาเป็น check-in/out ไม่คิดราคา)
+    if (isManyDays) {
+      if (!nights || nights < 1) {
+        setConfirmError("Many-day bookings need at least one night.");
+        return;
+      }
+    } else if (!Number.isInteger(hours) || hours <= 0) {
       setConfirmError(
         "Booking duration must be whole hours (for example 10:00–13:00).",
       );

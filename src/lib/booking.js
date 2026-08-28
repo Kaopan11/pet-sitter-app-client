@@ -115,6 +115,21 @@ export function parseBookingParams(searchParams) {
         error: "Invalid time range. End time must be after start time (HH:mm).",
       };
     }
+  } else {
+    if (!nights || nights < 1) {
+      return {
+        valid: false,
+        error: "Many-day bookings need at least one night between start and end date.",
+      };
+    }
+    const proposedStart = combineBookingDateTime(startDate, startTime);
+    const proposedEnd = combineBookingDateTime(endDate, endTime);
+    if (!proposedStart || !proposedEnd || proposedEnd <= proposedStart) {
+      return {
+        valid: false,
+        error: "Check-out must be after check-in.",
+      };
+    }
   }
 
   return {
@@ -319,6 +334,27 @@ export function bookingRangeOverlapsBooked(
 
 export function slotOverlapsBooked(date, startTime, endTime, bookedSlots) {
   return bookingRangeOverlapsBooked(date, date, startTime, endTime, bookedSlots);
+}
+
+/** Overlap ตามโหมด — one day เช็ควันเดียว, many days เช็คทั้งช่วง */
+export function bookingSelectionOverlapsBooked({
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+  isManyDays,
+  bookedSlots,
+}) {
+  if (isManyDays) {
+    return bookingRangeOverlapsBooked(
+      startDate,
+      endDate,
+      startTime,
+      endTime,
+      bookedSlots,
+    );
+  }
+  return slotOverlapsBooked(startDate, startTime, endTime, bookedSlots);
 }
 
 /** True when every possible time span from startDate to endDate would hit a booked slot */

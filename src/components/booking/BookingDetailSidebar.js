@@ -1,6 +1,7 @@
 import {
   calculateBookingPreviewTotal,
   formatBookingDate,
+  formatBookingDuration,
   formatTimeRange,
 } from "@/lib/booking";
 
@@ -51,8 +52,8 @@ export default function BookingDetailSidebar({
     : formatBookingDate(startDate);
 
   const durationLabel = isManyDays
-    ? `${nights} night${nights !== 1 ? "s" : ""}`
-    : `${hours} hour${hours !== 1 ? "s" : ""}`;
+    ? formatBookingDuration(nights, "Day")
+    : formatBookingDuration(hours, "hours");
 
   return (
     <aside className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl bg-white shadow-(--shadow-card) md:h-full md:w-82 md:shrink-0">
