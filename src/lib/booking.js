@@ -181,6 +181,26 @@ export function formatBookingDuration(duration, durationUnit) {
   return `${value} ${unit}`;
 }
 
+/**
+ * ticket 04: อ่าน duration จาก list/detail API (snake_case)
+ * ใหม่: duration + duration_unit | legacy: duration_hours → "hours"
+ */
+export function formatBookingDurationFromRecord(booking) {
+  if (!booking || typeof booking !== "object") return "—";
+
+  const hasNewFields =
+    booking.duration != null && String(booking.duration_unit ?? "").trim() !== "";
+  const duration = hasNewFields ? booking.duration : booking.duration_hours;
+  const durationUnit = hasNewFields
+    ? booking.duration_unit
+    : booking.duration_hours != null
+      ? "hours"
+      : "";
+
+  const formatted = formatBookingDuration(duration, durationUnit);
+  return formatted || "—";
+}
+
 /** "2023-08-25" → "25 Aug, 2023" */
 export function formatBookingDate(dateStr) {
   const date = new Date(`${dateStr}T00:00:00`);
