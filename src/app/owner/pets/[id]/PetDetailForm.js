@@ -55,7 +55,10 @@ export default function PetDetailForm({ pet }) {
     event.target.value = "";
     if (!file) return;
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type) || file.size > MAX_IMAGE_SIZE) {
+    if (
+      !ALLOWED_IMAGE_TYPES.includes(file.type) ||
+      file.size > MAX_IMAGE_SIZE
+    ) {
       setErrors((prev) => ({
         ...prev,
         image: "Pet image must be .jpg, .jpeg, or .png and 2MB or smaller",
@@ -170,7 +173,11 @@ export default function PetDetailForm({ pet }) {
         href="/owner/pets"
         className="flex w-fit items-center gap-2 text-h3"
       >
-        <ChevronLeft className="size-6 shrink-0 text-gray-400" strokeWidth={2.5} aria-hidden="true" />
+        <ChevronLeft
+          className="size-6 shrink-0 text-gray-400"
+          strokeWidth={2.5}
+          aria-hidden="true"
+        />
         <span className="text-black">Your Pet</span>
       </Link>
 
@@ -370,14 +377,17 @@ export default function PetDetailForm({ pet }) {
         <button
           type="button"
           onClick={openDeleteModal}
-          className="flex w-fit items-center gap-2 text-body-2 font-bold text-orange-500 hover:text-orange-400"
+          className="flex w-fit cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500 hover:text-orange-400"
         >
           <Trash2 className="size-5" strokeWidth={2} aria-hidden="true" />
           Delete Pet
         </button>
 
         <div className="mt-auto flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
-          <Link href="/owner/pets" className="btn btn-secondary w-full sm:w-auto">
+          <Link
+            href="/owner/pets"
+            className="btn btn-secondary w-full sm:w-auto"
+          >
             Cancel
           </Link>
           <button
