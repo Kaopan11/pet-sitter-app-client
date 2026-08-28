@@ -403,6 +403,22 @@ export function dateSpanMustOverlapBooked(startDate, endDate, bookedSlots) {
   return bookingRangeOverlapsBooked(startDate, endDate, "23:00", "00:00", bookedSlots);
 }
 
+/** Many-days (date only): occupy 00:00 on start through end of endDate */
+export function dateRangeOverlapsBooked(startDate, endDate, bookedSlots) {
+  if (!startDate) return false;
+  return bookingRangeOverlapsBooked(
+    startDate,
+    endDate || startDate,
+    "00:00",
+    "24:00",
+    bookedSlots,
+  );
+}
+
+export function dateHasBookedSlot(dateKey, bookedSlots) {
+  return (bookedSlots ?? []).some((slot) => slot.date === dateKey);
+}
+
 /** GET /api/sitters/:id → รูปทรง sidebar / eligibility */
 export function normalizeBookingSitter(raw) {
   if (!raw || typeof raw !== "object") return null;
