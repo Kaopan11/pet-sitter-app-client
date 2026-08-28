@@ -7,6 +7,7 @@ import { register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
+import { validatePassword } from "@/utils/validatePassword";
 
 // หน้าสมัครเดียว — toggle Owner/Sitter ส่ง asSitter ให้ backend
 export default function RegisterForm({
@@ -82,10 +83,10 @@ export default function RegisterForm({
       newErrors.phone = "Phone number must be 10 digits and start with 0";
     }
 
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length <= 8) {
-      newErrors.password = "Password must be more than 8 characters";
+    // ticket 01: กฎความยาวรหัสผ่านอยู่ที่ validatePassword (ใช้ร่วมกับ Reset password ใน ticket 02)
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     setErrors(newErrors);
