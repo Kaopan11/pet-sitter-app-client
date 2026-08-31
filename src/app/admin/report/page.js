@@ -1,19 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getReports } from "@/lib/api";
 
 export default function AdminReportPage() {
   const [search, setSearch] = useState("");
+  const [reports, setReports] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const reports = [
-    { id: 1, reporter: "John Wick", target: "Jane Cooper", issue: "Late response", date: "2026-08-10", status: "Resolved" },
-    { id: 2, reporter: "Wade Warren", target: "System", issue: "Payment processing error", date: "2026-08-12", status: "Pending" },
-  ];
+  useEffect(() => {
+    let cancelled = false;
 
+    async function fetchReports() {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const rows = await getReports();
+        if (!cancelled) setReports(rows);
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(error.message || "Failed to load reports");
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchReports();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (loadError) {
+    return <div>Error: {loadError}</div>;
+  }
+
+  const query = search.toLowerCase();
   const filteredReports = reports.filter(
     (report) =>
-      report.reporter.toLowerCase().includes(search.toLowerCase()) ||
-      report.issue.toLowerCase().includes(search.toLowerCase())
+      report.reporter.toLowerCase().includes(query) ||
+      report.issue.toLowerCase().includes(query) ||
+      report.target.toLowerCase().includes(query)
   );
 
   return (
@@ -57,7 +90,14 @@ export default function AdminReportPage() {
               <tr key={report.id} className="hover:bg-gray-50/80 transition-colors">
                 <td className="py-3.5 px-6 font-medium text-gray-900">{report.reporter}</td>
                 <td className="py-3.5 px-6 text-gray-700">{report.target}</td>
-                <td className="py-3.5 px-6 text-gray-900 font-medium">{report.issue}</td>
+                <td className="py-3.5 px-6 text-gray-900 font-medium">
+                  <Link
+                    href={`/admin/report/${report.id}`}
+                    className="hover:text-[#FF7037] hover:underline"
+                  >
+                    {report.issue}
+                  </Link>
+                </td>
                 <td className="py-3.5 px-6 text-gray-500 text-xs font-mono">{report.date}</td>
                 <td className="py-3.5 px-6 font-medium">
                   {report.status === "Resolved" ? (

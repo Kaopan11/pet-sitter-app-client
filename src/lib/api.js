@@ -429,3 +429,74 @@ export async function sendMessage(conversationId, { content = "", imageFile } = 
   );
   return json.data;
 }
+
+function formatReportDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatReportStatus(value) {
+  const status = String(value ?? "").trim().toLowerCase();
+  if (status === "resolved") return "Resolved";
+  if (status === "cancelled" || status === "canceled") return "Cancelled";
+  return "Pending";
+}
+
+/** Map `reports` table / API row → admin list & detail fields */
+export function mapAdminReport(row) {
+  if (!row || typeof row !== "object") return null;
+
+  const reporter =
+    row.reporter ??
+    row.reporter_name ??
+    row.reported_by ??
+    row.reporterName ??
+    "";
+  const target =
+    row.target ??
+    row.target_name ??
+    row.reported_person ??
+    row.sitter_name ??
+    row.sitterName ??
+    "";
+
+  return {
+    id: row.id,
+    reporter: String(reporter),
+    target: String(target),
+    issue: String(row.issue ?? row.subject ?? ""),
+    description: String(row.description ?? ""),
+    date: formatReportDate(row.date ?? row.created_at ?? row.createdAt),
+    status: formatReportStatus(row.status),
+  };
+}
+
+export async function getReports() {
+  const json = await apiFetch("/api/reports");
+  const rows = Array.isArray(json.data) ? json.data : [];
+  return rows.map(mapAdminReport).filter(Boolean);
+}
+
+export async function getReport(id) {
+  const json = await apiFetch(`/api/reports/${encodeURIComponent(id)}`);
+  return mapAdminReport(json.data);
+}
+
+
+
+// export async function createPetReport(id, { content = "", imageFile } = {}) {
+//   const formData = new FormData();
+//   formData.append("content", content);
+//   if (imageFile) formData.append("image", imageFile);
+
+//   const json = await apiFetch(`/api/pets/${encodeURIComponent(id)}/reports`, {
+//     method: "POST",
+//     body: formData,
+//   });
+// }
