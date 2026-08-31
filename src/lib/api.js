@@ -488,7 +488,14 @@ export async function getReport(id) {
   return mapAdminReport(json.data);
 }
 
-
+//Update report status
+export async function updateReportStatus(id, status) {
+  const json = await apiFetch(`/api/reports/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    body: { status },
+  });
+  return mapAdminReport(json.data);
+}
 
 // export async function createPetReport(id, { content = "", imageFile } = {}) {
 //   const formData = new FormData();

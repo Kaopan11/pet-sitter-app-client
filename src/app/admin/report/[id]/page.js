@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { getReport } from "@/lib/api";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { getReport, updateReportStatus } from "@/lib/api";
 
 export default function AdminReportDetailPage() {
   const { id } = useParams();
+  const router = useRouter();
   const [report, setReport] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +38,23 @@ export default function AdminReportDetailPage() {
       cancelled = true;
     };
   }, [id]);
+
+  async function handleUpdateStatus(status) {
+    if (!id || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const updated = await updateReportStatus(id, status);
+      setReport(updated);
+      toast.success(
+        status === "resolved" ? "Report resolved" : "Report cancelled",
+      );
+      router.push("/admin/report");
+    } catch (error) {
+      toast.error(error.message || "Failed to update report");
+    } finally {
+      setIsUpdating(false);
+    }
+  }
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -62,6 +82,8 @@ export default function AdminReportDetailPage() {
       : report.status === "Cancelled"
         ? "bg-gray-400"
         : "bg-[#76D0FC]";
+
+  const isPending = report.status === "Pending";
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-12">
@@ -95,14 +117,26 @@ export default function AdminReportDetailPage() {
           </span>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <button type="button" className="btn btn-ghost w-auto">
-            Cancel Report
-          </button>
-          <button type="button" className="btn btn-primary w-auto">
-            Resolve
-          </button>
-        </div>
+        {isPending ? (
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              className="btn btn-ghost w-auto"
+              disabled={isUpdating}
+              onClick={() => handleUpdateStatus("cancelled")}
+            >
+              Cancel Report
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary w-auto"
+              disabled={isUpdating}
+              onClick={() => handleUpdateStatus("resolved")}
+            >
+              Resolve
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <section className="rounded-2xl bg-white p-6 shadow-xs sm:p-8">
