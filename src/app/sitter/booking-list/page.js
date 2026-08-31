@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { formatBookedDateList } from "@/utils/formatDateTime";
 import { formatBookingDurationFromRecord } from "@/lib/booking";
+import LoadingState from "@/components/LoadingState";
 import Pagination from "@/components/Pagination";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -32,14 +33,20 @@ export default function BookingListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   const getBookingData = async (page) => {
-    const response = await axios.get(`${API_BASE_URL}/api/sitters/bookings`, {
-      params: { status, search, page, limit: 7 },
-    });
-    setBookingData(response.data.data ?? []);
-    setCurrentPage(response.data.currentPage ?? page);
-    setTotalPages(response.data.totalPages ?? 1);
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/sitters/bookings`, {
+        params: { status, search, page, limit: 7 },
+      });
+      setBookingData(response.data.data ?? []);
+      setCurrentPage(response.data.currentPage ?? page);
+      setTotalPages(response.data.totalPages ?? 1);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -88,67 +95,73 @@ export default function BookingListPage() {
         </div>
       </header>
 
-      <div className="overflow-hidden rounded-2xl bg-white">
-        <table className="w-full border-collapse text-left">
-          <caption className="sr-only">Pet sitter booking list</caption>
-          <thead className="bg-black text-white">
-            <tr>
-              <th className="border-0 px-6 py-4 text-body-3 font-medium">Pet Owner Name</th>
-              <th className="border-0 px-6 py-4 text-body-3 font-medium">Pet(s)</th>
-              <th className="border-0 px-6 py-4 text-body-3 font-medium">Duration</th>
-              <th className="border-0 px-6 py-4 text-body-3 font-medium">Booked Date</th>
-              <th className="border-0 px-6 py-4 text-body-3 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookingData.map((booking) => (
-              <tr
-                key={booking.id}
-                className="h-19 cursor-pointer border-b border-gray-200 last:border-b-0 hover:bg-gray-100"
-                onClick={() => router.push(`/sitter/booking-list/${booking.id}`)}
-              >
-                <td className="px-6 py-5 text-body-2 text-black">
-                  <span className="flex items-center gap-2">
-                    {booking.isNew ? (
-                      <span
-                        className="h-2 w-2 shrink-0 rounded-full bg-orange-500"
-                        aria-label="New booking"
-                      />
-                    ) : null}
-                    {booking.pet_owner_name}
-                  </span>
-                </td>
-                <td className="px-6 py-5 text-body-2 text-black">
-                  {booking.pet_count}
-                </td>
-                <td className="px-6 py-5 text-body-2 text-black">
-                  {formatBookingDurationFromRecord(booking)}
-                </td>
-                <td className="px-6 py-5 text-body-2 text-black">
-                  {formatBookedDateList(booking)}
-                </td>
-                <td className="px-6 py-5 text-body-2">
-                  <span
-                    className={`flex items-center gap-2 ${STATUS[booking.status]?.text}`}
+      {isLoading ? (
+        <LoadingState />
+      ) : (
+        <>
+          <div className="overflow-hidden rounded-2xl bg-white">
+            <table className="w-full border-collapse text-left">
+              <caption className="sr-only">Pet sitter booking list</caption>
+              <thead className="bg-black text-white">
+                <tr>
+                  <th className="border-0 px-6 py-4 text-body-3 font-medium">Pet Owner Name</th>
+                  <th className="border-0 px-6 py-4 text-body-3 font-medium">Pet(s)</th>
+                  <th className="border-0 px-6 py-4 text-body-3 font-medium">Duration</th>
+                  <th className="border-0 px-6 py-4 text-body-3 font-medium">Booked Date</th>
+                  <th className="border-0 px-6 py-4 text-body-3 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookingData.map((booking) => (
+                  <tr
+                    key={booking.id}
+                    className="h-19 cursor-pointer border-b border-gray-200 last:border-b-0 hover:bg-gray-100"
+                    onClick={() => router.push(`/sitter/booking-list/${booking.id}`)}
                   >
-                    <span
-                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS[booking.status]?.dot}`}
-                      aria-hidden="true"
-                    />
-                    {STATUS[booking.status]?.label}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    <td className="px-6 py-5 text-body-2 text-black">
+                      <span className="flex items-center gap-2">
+                        {booking.isNew ? (
+                          <span
+                            className="h-2 w-2 shrink-0 rounded-full bg-orange-500"
+                            aria-label="New booking"
+                          />
+                        ) : null}
+                        {booking.pet_owner_name}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-body-2 text-black">
+                      {booking.pet_count}
+                    </td>
+                    <td className="px-6 py-5 text-body-2 text-black">
+                      {formatBookingDurationFromRecord(booking)}
+                    </td>
+                    <td className="px-6 py-5 text-body-2 text-black">
+                      {formatBookedDateList(booking)}
+                    </td>
+                    <td className="px-6 py-5 text-body-2">
+                      <span
+                        className={`flex items-center gap-2 ${STATUS[booking.status]?.text}`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS[booking.status]?.dot}`}
+                          aria-hidden="true"
+                        />
+                        {STATUS[booking.status]?.label}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={goToPage}
-      />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
+        </>
+      )}
     </section>
   );
 }
