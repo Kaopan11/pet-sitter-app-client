@@ -36,9 +36,22 @@ export function formatMessageTime(value) {
   });
 }
 
-/** 24 Aug, 7 AM - 10 AM */
+function isNightBooking(booking) {
+  return String(booking?.duration_unit ?? "").trim() === "Day";
+}
+
+/** 24 Aug, 7 AM - 10 AM · รายคืน: 4 Sept - 6 Sept */
 export function formatBookedDateList(booking) {
   if (!booking?.start_date) return "—";
+
+  if (isNightBooking(booking)) {
+    const start = formatDay(booking.start_date);
+    if (booking.end_date && booking.end_date !== booking.start_date) {
+      return `${start} - ${formatDay(booking.end_date)}`;
+    }
+    return start;
+  }
+
   const startDateAndTime = `${formatDay(booking.start_date)}, ${formatTime(booking.start_time)}`;
   const endTime = formatTime(booking.end_time);
   if (booking.end_date && booking.end_date !== booking.start_date) {
@@ -47,15 +60,22 @@ export function formatBookedDateList(booking) {
   return `${startDateAndTime} - ${endTime}`;
 }
 
-/** 16 Oct 2022 | 7 AM - 10 AM */
+/** 16 Oct 2022 | 7 AM - 10 AM · รายคืน: ไม่โชว์เวลา */
 export function formatBookedDateDetail(booking) {
   if (!booking?.start_date) return "—";
+
   const startDate = formatDate(booking.start_date);
+  if (isNightBooking(booking)) {
+    if (booking.end_date && booking.end_date !== booking.start_date) {
+      return `${startDate} - ${formatDate(booking.end_date)}`;
+    }
+    return startDate;
+  }
+
   const startTime = formatTime(booking.start_time);
   const endTime = formatTime(booking.end_time);
-  const endDate = formatDate(booking.end_date);
   if (booking.end_date && booking.end_date !== booking.start_date) {
-    return `${startDate} | ${startTime} - ${endDate} | ${endTime}`;
+    return `${startDate} | ${startTime} - ${formatDate(booking.end_date)} | ${endTime}`;
   }
   return `${startDate} | ${startTime} - ${endTime}`;
 }
