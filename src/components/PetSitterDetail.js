@@ -242,7 +242,7 @@ function TimeDropdown({ name, value, open, onToggle, onSelect, isOptionDisabled 
         {selected?.label ?? "Select time"}
       </button>
       {open ? (
-        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-[var(--shadow-dropdown)]">
+        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-(--shadow-dropdown)">
           {HOURLY_TIMES.map((time) => {
             const disabled = Boolean(isOptionDisabled?.(time.value));
             return (
@@ -284,7 +284,7 @@ function LoginRequiredModal({ onClose, onLogin }) {
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -292,7 +292,7 @@ function LoginRequiredModal({ onClose, onLogin }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-required-title"
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-(--shadow-card)"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
@@ -868,7 +868,7 @@ function Gallery({ photos, title }) {
           {slides.map((src, slideIndex) => (
             <div
               key={`${src}-${slideIndex}`}
-              className="relative h-80 shrink-0 px-1 lg:h-[28rem]"
+              className="relative h-80 shrink-0 px-1 lg:h-112"
               style={{ width: `${100 / slides.length}%` }}
             >
               <div className="relative h-full overflow-hidden">
@@ -891,7 +891,7 @@ function Gallery({ photos, title }) {
             <button
               type="button"
               onClick={() => go(-1)}
-              className="absolute top-1/2 left-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:left-6"
+              className="absolute top-1/2 left-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:left-6"
               aria-label="Previous photo"
             >
               <Icon src="/icon/chevron-left.svg" className="h-6 w-6" />
@@ -899,7 +899,7 @@ function Gallery({ photos, title }) {
             <button
               type="button"
               onClick={() => go(1)}
-              className="absolute top-1/2 right-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:right-6"
+              className="absolute top-1/2 right-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:right-6"
               aria-label="Next photo"
             >
               <Icon src="/icon/chevron-right.svg" className="h-6 w-6" />
@@ -1262,43 +1262,56 @@ export default function PetSitterDetail({ sitterId }) {
     setBooking((current) => ({ ...current, ...patch }));
   }
 
-  /** Continue → หน้าจอง 3 step (one day | many days ส่ง startDate+endDate) */
+  /** Continue → /owner/booking — many days ส่งแค่วัน · one day ส่งวัน+เวลา */
   function handleBookingContinue(event) {
     event.preventDefault();
-    const endDate = booking.endDate || booking.startDate;
-    const isManyDayRange = Boolean(
-      booking.startDate && endDate && endDate > booking.startDate,
-    );
-    const startTime = isManyDayRange ? "00:00" : booking.startTime;
-    const endTime = isManyDayRange ? "23:00" : booking.endTime;
 
-    if (!booking.startDate || !startTime || !endTime) return;
-    if (isManyDayRange && !endDate) return;
-    if (!isManyDayRange && !isAtLeastThreeHoursAhead(booking.startDate, startTime)) return;
-    if (!isStartBeforeEnd(booking.startDate, startTime, endDate, endTime, isManyDayRange)) {
+    const { startDate, endDate: bookingEndDate, startTime, endTime } = booking;
+    const endDate = bookingEndDate || startDate;
+    const isManyDayRange = Boolean(startDate && endDate && endDate > startDate);
+
+    if (!startDate) return;
+
+    if (isManyDayRange) {
+      // Step 1a: many days — เช็คแค่วันที่ (ไม่ใช้ time)
+      if (!bookingEndDate || bookingEndDate <= startDate) return;
+
+      if (dateRangeOverlapsBooked(startDate, endDate, bookedSlots)) {
+        toast.error("This date and time is already booked. Please choose another slot.");
+        return;
+      }
+
+      // Step 2a: query เฉพาะ sitterId + startDate + endDate
+      const params = new URLSearchParams({
+        sitterId: String(sitter.id ?? sitterId),
+        startDate,
+        endDate,
+      });
+      setBookingOpen(false);
+      router.push(`/owner/booking?${params.toString()}`);
       return;
     }
+
+    // Step 1b: one day — ต้องมีเวลา + กฎเดิม
+    if (!startTime || !endTime) return;
+    if (!isAtLeastThreeHoursAhead(startDate, startTime)) return;
+    if (!isStartBeforeEnd(startDate, startTime, endDate, endTime, false)) return;
+
     if (
-      isManyDayRange
-        ? dateRangeOverlapsBooked(booking.startDate, endDate, bookedSlots)
-        : bookingRangeOverlapsBooked(
-            booking.startDate,
-            endDate,
-            startTime,
-            endTime,
-            bookedSlots,
-          )
+      bookingRangeOverlapsBooked(startDate, endDate, startTime, endTime, bookedSlots)
     ) {
       toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
+
+    // Step 2b: one day — startDate/endDate เท่ากัน + time (parseBookingParams รองรับ legacy ?date= ด้วย)
     const params = new URLSearchParams({
       sitterId: String(sitter.id ?? sitterId),
-      date: isManyDayRange ? booking.startDate : endDate,
+      startDate,
+      endDate: startDate,
       startTime,
       endTime,
     });
-    if (isManyDayRange) params.set("endDate", endDate);
     setBookingOpen(false);
     router.push(`/owner/booking?${params.toString()}`);
   }
@@ -1372,7 +1385,7 @@ export default function PetSitterDetail({ sitterId }) {
         </div>
 
         <aside className="z-10 lg:sticky lg:top-28 lg:self-start">
-          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-[var(--shadow-card)]">
+          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-(--shadow-card)">
             {sitter.avatarUrl ? (
               <Image
                 src={sitter.avatarUrl}
