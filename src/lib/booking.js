@@ -204,6 +204,33 @@ export function formatBookingDurationFromRecord(booking) {
   return formatted || "—";
 }
 
+/**
+ * ticket 04: รู้โหมดจาก list API
+ * ลำดับ: duration_unit "Day" → ไม่งั้นดู end_date > start_date
+ */
+export function isManyDayBookingRecord(booking) {
+  if (!booking || typeof booking !== "object") return false;
+
+  const unit = String(booking.duration_unit ?? booking.durationUnit ?? "").trim();
+  if (unit === "Day") return true;
+
+  const start = normalizeBookingDate(booking.start_date ?? booking.startDate);
+  const end = normalizeBookingDate(booking.end_date ?? booking.endDate);
+  return isManyDayBooking(start, end);
+}
+
+/**
+ * ticket 04: many days history — ช่วงวันอย่างเดียว (ไม่มี time)
+ */
+export function formatBookingDateRangeFromRecord(booking) {
+  const start = normalizeBookingDate(booking?.start_date ?? booking?.startDate);
+  const end =
+    normalizeBookingDate(booking?.end_date ?? booking?.endDate) || start;
+  if (!start) return "—";
+  if (!end || end === start) return formatBookingDate(start);
+  return `${formatBookingDate(start)} - ${formatBookingDate(end)}`;
+}
+
 /** "2023-08-25" → "25 Aug, 2023" */
 export function formatBookingDate(dateStr) {
   const date = new Date(`${dateStr}T00:00:00`);

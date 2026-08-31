@@ -6,7 +6,7 @@ import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken, getUser } from "@/lib/auth";
 import { createConversation, getSitters } from "@/lib/api";
-import { formatBookingDurationFromRecord } from "@/lib/booking";
+import { formatBookingDurationFromRecord, formatBookingDateRangeFromRecord, isManyDayBookingRecord } from "@/lib/booking";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -208,6 +208,22 @@ export default function BookingHistoryPage() {
     });
   };
 
+  // ticket 04: many days = ช่วงวัน · one day = วัน | เวลา
+  function formatHistoryDateTime(booking) {
+    if (isManyDayBookingRecord(booking)) {
+      return formatBookingDateRangeFromRecord(booking);
+    }
+    return `${formatDate(booking.start_date)} | ${formatTime(booking.start_time)} - ${formatTime(booking.end_time)}`;
+  }
+
+  // ticket 04: หัวการ์ด "Booking date" — many days แสดงช่วง
+  function formatHistoryBookingDate(booking) {
+    if (isManyDayBookingRecord(booking)) {
+      return formatBookingDateRangeFromRecord(booking);
+    }
+    return formatDate(booking.start_date);
+  }
+
   const openReviewModal = (booking) => {
     setRating(0);
     setHoverRating(0);
@@ -372,7 +388,7 @@ export default function BookingHistoryPage() {
                     </div>
                     <div className="text-left sm:text-right shrink-0">
                       <p className="mb-2 text-body-3" style={{ color: "#AEB1C3" }}>
-                        Booking date: {formatDate(booking.start_date)}
+                        Booking date: {formatHistoryBookingDate(booking)}
                       </p>
                       {getStatusBadge(booking.status)}
                     </div>
@@ -385,7 +401,7 @@ export default function BookingHistoryPage() {
                         Date & Time:
                       </span>
                       <span className="flex flex-wrap items-center gap-2 text-body-2" style={{ color: "#3A3B46" }}>
-                        {formatDate(booking.start_date)} | {formatTime(booking.start_time)} - {formatTime(booking.end_time)}
+                        {formatHistoryDateTime(booking)}
                         {booking.status === "waiting_confirm" && (
                           <button
                             onClick={(e) => e.stopPropagation()}
@@ -608,7 +624,7 @@ export default function BookingHistoryPage() {
 
               <div className="flex flex-col gap-1">
                 <p className="text-body-3" style={{ color: "#AEB1C3" }}>
-                  Booking date: {formatDate(selectedBooking.start_date)}
+                  Booking date: {formatHistoryBookingDate(selectedBooking)}
                 </p>
                 {selectedBooking.transaction_no && (
                   <p className="text-body-3" style={{ color: "#AEB1C3" }}>
@@ -638,7 +654,7 @@ export default function BookingHistoryPage() {
                 <div className="flex flex-col gap-1">
                   <span className="text-body-3" style={{ color: "#7B7E8F" }}>Date & Time:</span>
                   <span className="text-body-2" style={{ color: "#3A3B46", fontWeight: 700 }}>
-                    {formatDate(selectedBooking.start_date)} | {formatTime(selectedBooking.start_time)} - {formatTime(selectedBooking.end_time)}
+                    {formatHistoryDateTime(selectedBooking)}
                   </span>
                 </div>
                 {selectedBooking.status === "waiting_confirm" && (
