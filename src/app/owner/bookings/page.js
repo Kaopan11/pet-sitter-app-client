@@ -405,7 +405,7 @@ export default function BookingHistoryPage() {
                         {booking.status === "waiting_confirm" && (
                           <button
                             onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity text-body-2"
+                            className="inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity text-body-2"
                             style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                           >
                             <SquarePen style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
@@ -613,7 +613,7 @@ export default function BookingHistoryPage() {
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>
                 Booking Detail
               </h3>
-              <button onClick={() => setSelectedBooking(null)} aria-label="Close" className="hover:opacity-70 transition-opacity">
+              <button onClick={() => setSelectedBooking(null)} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
                 <X className="size-5" style={{ color: "#3A3B46" }} />
               </button>
             </div>
@@ -642,7 +642,7 @@ export default function BookingHistoryPage() {
                 </div>
                 <button
                   onClick={() => toast.info("Map feature coming soon")}
-                  className="inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity text-body-2"
+                  className="inline-flex items-center gap-1 shrink-0 cursor-pointer hover:opacity-80 transition-opacity text-body-2"
                   style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                 >
                   <MapPin style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
@@ -660,7 +660,7 @@ export default function BookingHistoryPage() {
                 {selectedBooking.status === "waiting_confirm" && (
                   <button
                     onClick={() => toast.info("Change booking feature coming soon")}
-                    className="inline-flex items-center gap-1 shrink-0 hover:opacity-80 transition-opacity text-body-2"
+                    className="inline-flex items-center gap-1 shrink-0 cursor-pointer hover:opacity-80 transition-opacity text-body-2"
                     style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                   >
                     <SquarePen style={{ width: "20.01px", height: "20.01px", color: "#FF7037" }} />
@@ -722,7 +722,7 @@ export default function BookingHistoryPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Rating &amp; Review</h3>
-              <button onClick={closeReviewModal} aria-label="Close" className="hover:opacity-70 transition-opacity">
+              <button onClick={closeReviewModal} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
                 <X className="size-5" style={{ color: "#3A3B46" }} />
               </button>
             </div>
@@ -740,6 +740,7 @@ export default function BookingHistoryPage() {
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
                       aria-label={`Rate ${star} star`}
+                      className="cursor-pointer"
                     >
                       <Star
                         className="size-8"
@@ -799,7 +800,7 @@ export default function BookingHistoryPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Your Rating and Review</h3>
-              <button onClick={() => setViewReviewBooking(null)} aria-label="Close" className="hover:opacity-70 transition-opacity">
+              <button onClick={() => setViewReviewBooking(null)} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
                 <X className="size-5" style={{ color: "#3A3B46" }} />
               </button>
             </div>
@@ -882,7 +883,7 @@ export default function BookingHistoryPage() {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Report</h3>
-              <button onClick={closeReportModal} aria-label="Close" className="hover:opacity-70 transition-opacity">
+              <button onClick={closeReportModal} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
                 <X className="size-5" style={{ color: "#3A3B46" }} />
               </button>
             </div>
