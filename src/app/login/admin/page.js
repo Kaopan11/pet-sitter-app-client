@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
       // Save auth token & admin info
       saveAuth({
         token: "admin-session-token",
-        user: { username, role: "admin", name: "Administrator" },
+        user: { username, role: "admin", isAdmin: true, name: "Administrator" },
       });
 
       // Redirect to Admin Navigation dashboard

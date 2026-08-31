@@ -1,13 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
+import { getUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
 
+function isAdminUser(user) {
+  return Boolean(user?.isAdmin);
+}
+
 export default function AdminLayout({ children }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const user = getUser();
+    if (!isAdminUser(user)) {
+      router.replace(user ? "/" : "/login/admin");
+      return;
+    }
+    setIsAdmin(true);
+  }, [router]);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
