@@ -11,7 +11,8 @@ import { createConversation, getSitter, getSitterAvailability, getSitterReviews 
 import { getToken, getUser } from "@/lib/auth";
 import {
   bookingRangeOverlapsBooked,
-  dateSpanMustOverlapBooked,
+  dateHasBookedSlot,
+  dateRangeOverlapsBooked,
   isTimeInsideBookedSlot,
   normalizeBookedSlots,
 } from "@/lib/booking";
@@ -152,12 +153,6 @@ function formatBookingDate(value) {
   return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}, ${date.getFullYear()}`;
 }
 
-function formatBookingRange(startDate, endDate) {
-  if (!startDate) return "";
-  if (!endDate || endDate === startDate) return formatBookingDate(startDate);
-  return `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`;
-}
-
 function getCalendarDays(year, month) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -247,7 +242,7 @@ function TimeDropdown({ name, value, open, onToggle, onSelect, isOptionDisabled 
         {selected?.label ?? "Select time"}
       </button>
       {open ? (
-        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-[var(--shadow-dropdown)]">
+        <div className="absolute top-[calc(100%+4px)] z-30 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-(--shadow-dropdown)">
           {HOURLY_TIMES.map((time) => {
             const disabled = Boolean(isOptionDisabled?.(time.value));
             return (
@@ -289,7 +284,7 @@ function LoginRequiredModal({ onClose, onLogin }) {
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -297,7 +292,7 @@ function LoginRequiredModal({ onClose, onLogin }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="login-required-title"
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-[var(--shadow-card)]"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-(--shadow-card)"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
@@ -327,6 +322,95 @@ function LoginRequiredModal({ onClose, onLogin }) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function DateField({ value, placeholder, open, onToggle }) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className={`input min-w-0 flex-1 cursor-pointer text-left ${
+        value ? "text-black" : "text-gray-400"
+      }`}
+    >
+      {formatBookingDate(value) || placeholder}
+    </button>
+  );
+}
+
+function BookingCalendar({
+  viewYear,
+  viewMonth,
+  calendarDays,
+  onShiftMonth,
+  isDateUnavailable,
+  isHighlighted,
+  isInRange,
+  onSelect,
+  hint,
+}) {
+  return (
+    <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onShiftMonth(-1)}
+          className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
+          aria-label="Previous month"
+        >
+          <Icon src="/icon/chevron-left.svg" className="h-4 w-4" />
+        </button>
+        <p className="text-body-2 font-bold text-black">
+          {MONTHS[viewMonth]} {viewYear}
+        </p>
+        <button
+          type="button"
+          onClick={() => onShiftMonth(1)}
+          className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
+          aria-label="Next month"
+        >
+          <Icon src="/icon/chevron-right.svg" className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mb-1 grid grid-cols-7 text-center text-body-3 text-gray-400">
+        {WEEKDAYS.map((day, index) => (
+          <span key={`${day}-${index}`}>{day}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {calendarDays.map((item) => {
+          const key = toDateKey(item.date);
+          const unavailable = isDateUnavailable(key, item);
+          const highlighted = isHighlighted(key);
+          const inRange = isInRange(key);
+
+          return (
+            <button
+              key={item.key}
+              type="button"
+              disabled={unavailable}
+              onClick={() => onSelect(item.date)}
+              className={`mx-auto flex size-9 items-center justify-center rounded-full text-body-3 ${
+                highlighted
+                  ? "bg-orange-500 font-bold text-white"
+                  : inRange
+                    ? "bg-orange-100 font-medium text-orange-500"
+                    : unavailable
+                      ? "cursor-not-allowed text-gray-300"
+                      : item.outside
+                        ? "cursor-pointer text-gray-300 hover:bg-orange-100"
+                        : "cursor-pointer text-black hover:bg-orange-100"
+              }`}
+            >
+              {item.date.getDate()}
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="mt-3 text-center text-body-3 text-gray-400">{hint}</p> : null}
     </div>
   );
 }
@@ -377,11 +461,12 @@ function BookingModal({
   }
 
   useEffect(() => {
+    if (isManyDays) return;
     const patch = {};
     if (startTime && isStartOptionDisabled(startTime)) patch.startTime = "";
     if (endTime && isEndOptionDisabled(endTime)) patch.endTime = "";
     if (Object.keys(patch).length) onChange(patch);
-  }, [startDate, endDate, startTime, endTime, sameDay, bookedSlots, onChange]);
+  }, [startDate, endDate, startTime, endTime, sameDay, bookedSlots, onChange, isManyDays]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -422,9 +507,20 @@ function BookingModal({
       return;
     }
 
-    if (endDate === startDate) {
-      onChange({ endDate: "" });
-    }
+    onChange({
+      endDate: endDate === startDate ? "" : endDate,
+      startTime: "",
+      endTime: "",
+    });
+  }
+
+  function openDatePicker(nextPicker) {
+    const key =
+      nextPicker === "endDate" ? endDate || startDate : startDate || endDate;
+    const base = key ? new Date(`${key}T00:00:00`) : startOfToday();
+    setViewYear(base.getFullYear());
+    setViewMonth(base.getMonth());
+    setOpenPicker(openPicker === nextPicker ? null : nextPicker);
   }
 
   function selectDate(nextDate) {
@@ -436,37 +532,62 @@ function BookingModal({
       return;
     }
 
-    if (!startDate || (startDate && endDate)) {
-      onChange({ startDate: key, endDate: "" });
+    if (openPicker === "endDate") {
+      onChange({ endDate: key });
+      setOpenPicker(null);
       return;
     }
 
-    if (key < startDate) {
-      onChange({ startDate: key, endDate: startDate });
-    } else {
-      onChange({ endDate: key });
-    }
+    onChange({
+      startDate: key,
+      endDate: endDate && endDate > key ? endDate : "",
+    });
     setOpenPicker(null);
   }
 
   const today = startOfToday();
   const calendarDays = getCalendarDays(viewYear, viewMonth);
-  const canContinue = Boolean(
-    startDate &&
-      startTime &&
-      endTime &&
-      (!isManyDays || (endDate && endDate > startDate)) &&
-      !isStartOptionDisabled(startTime) &&
-      !isEndOptionDisabled(endTime) &&
-      isStartBeforeEnd(startDate, startTime, endDate || startDate, endTime, isManyDays) &&
-      !bookingRangeOverlapsBooked(
-        startDate,
-        endDate || startDate,
-        startTime,
-        endTime,
-        bookedSlots,
+
+  function isManyStartUnavailable(key, item) {
+    if (item.date < today || dateHasBookedSlot(key, bookedSlots)) return true;
+    if (endDate && key < endDate && dateRangeOverlapsBooked(key, endDate, bookedSlots)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isManyEndUnavailable(key, item) {
+    if (item.date < today || dateHasBookedSlot(key, bookedSlots)) return true;
+    if (startDate && key <= startDate) return true;
+    if (startDate && dateRangeOverlapsBooked(startDate, key, bookedSlots)) return true;
+    return false;
+  }
+
+  function isOneDayUnavailable(key, item) {
+    return item.date < today || !dateHasBookableStart(key, bookedSlots);
+  }
+  const canContinue = isManyDays
+    ? Boolean(
+        startDate &&
+          endDate &&
+          endDate > startDate &&
+          !dateRangeOverlapsBooked(startDate, endDate, bookedSlots),
       )
-  );
+    : Boolean(
+        startDate &&
+          startTime &&
+          endTime &&
+          !isStartOptionDisabled(startTime) &&
+          !isEndOptionDisabled(endTime) &&
+          isStartBeforeEnd(startDate, startTime, endDate || startDate, endTime, false) &&
+          !bookingRangeOverlapsBooked(
+            startDate,
+            endDate || startDate,
+            startTime,
+            endTime,
+            bookedSlots,
+          ),
+      );
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -504,7 +625,7 @@ function BookingModal({
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 px-6 py-6">
           <p className="text-body-2 text-gray-500">
             {isManyDays
-              ? "Select dates and time you want to schedule the service."
+              ? "Select a start date and an end date for the service."
               : "Select date and time you want to schedule the service."}
           </p>
 
@@ -543,106 +664,69 @@ function BookingModal({
 
           <div ref={pickerRef} className="flex flex-col gap-6">
             <div className="relative flex items-center gap-4">
-              <Icon src="/icon/calendar.svg" className="h-6 w-6 text-gray-400" />
-              <button
-                type="button"
-                onClick={() => setOpenPicker(openPicker === "date" ? null : "date")}
-                className={`input w-full cursor-pointer text-left ${
-                  startDate ? "text-black" : "text-gray-400"
-                }`}
-              >
-                {(isManyDays
-                  ? formatBookingRange(startDate, endDate)
-                  : formatBookingDate(startDate)) || "Select date"}
-              </button>
-              {openPicker === "date" ? (
-                <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
-                  <div className="mb-3 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => shiftMonth(-1)}
-                      className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
-                      aria-label="Previous month"
-                    >
-                      <Icon src="/icon/chevron-left.svg" className="h-4 w-4" />
-                    </button>
-                    <p className="text-body-2 font-bold text-black">
-                      {MONTHS[viewMonth]} {viewYear}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => shiftMonth(1)}
-                      className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
-                      aria-label="Next month"
-                    >
-                      <Icon src="/icon/chevron-right.svg" className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mb-1 grid grid-cols-7 text-center text-body-3 text-gray-400">
-                    {WEEKDAYS.map((day, index) => (
-                      <span key={`${day}-${index}`}>{day}</span>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7">
-                    {calendarDays.map((item) => {
-                      const key = toDateKey(item.date);
-                      const spanFrom =
-                        isManyDays && startDate && !endDate && key !== startDate
-                          ? key < startDate
-                            ? key
-                            : startDate
-                          : "";
-                      const spanTo = spanFrom ? (key < startDate ? startDate : key) : "";
-                      const isUnavailable =
-                        item.date < today ||
-                        !dateHasBookableStart(key, bookedSlots) ||
-                        Boolean(
-                          spanFrom &&
-                            spanTo &&
-                            dateSpanMustOverlapBooked(spanFrom, spanTo, bookedSlots),
-                        );
-                      const isStart = key === startDate;
-                      const isEnd = isManyDays && Boolean(endDate) && key === endDate;
-                      const inRange =
-                        isManyDays &&
-                        Boolean(startDate && endDate && startDate !== endDate) &&
-                        key > startDate &&
-                        key < endDate;
-
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          disabled={isUnavailable}
-                          onClick={() => selectDate(item.date)}
-                          className={`mx-auto flex size-9 items-center justify-center rounded-full text-body-3 ${
-                            isStart || isEnd
-                              ? "bg-orange-500 font-bold text-white"
-                              : inRange
-                                ? "bg-orange-100 font-medium text-orange-500"
-                                : isUnavailable
-                                  ? "cursor-not-allowed text-gray-300"
-                                  : item.outside
-                                    ? "cursor-pointer text-gray-300 hover:bg-orange-100"
-                                    : "cursor-pointer text-black hover:bg-orange-100"
-                          }`}
-                        >
-                          {item.date.getDate()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {isManyDays ? (
-                    <p className="mt-3 text-center text-body-3 text-gray-400">
-                      {startDate && !endDate
-                        ? "Select an end date"
-                        : "Select a start and end date"}
-                    </p>
-                  ) : null}
+              <Icon src="/icon/calendar.svg" className="h-6 w-6 shrink-0 text-gray-400" />
+              {isManyDays ? (
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <DateField
+                    value={startDate}
+                    placeholder="Start date"
+                    open={openPicker === "startDate"}
+                    onToggle={() => openDatePicker("startDate")}
+                  />
+                  <span className="text-body-2 text-gray-400">-</span>
+                  <DateField
+                    value={endDate}
+                    placeholder="End date"
+                    open={openPicker === "endDate"}
+                    onToggle={() => openDatePicker("endDate")}
+                  />
                 </div>
+              ) : (
+                <DateField
+                  value={startDate}
+                  placeholder="Select date"
+                  open={openPicker === "date"}
+                  onToggle={() => openDatePicker("date")}
+                />
+              )}
+              {(openPicker === "date" ||
+              openPicker === "startDate" ||
+              openPicker === "endDate") ? (
+                <BookingCalendar
+                  viewYear={viewYear}
+                  viewMonth={viewMonth}
+                  calendarDays={calendarDays}
+                  onShiftMonth={shiftMonth}
+                  isDateUnavailable={
+                    openPicker === "endDate"
+                      ? isManyEndUnavailable
+                      : openPicker === "startDate"
+                        ? isManyStartUnavailable
+                        : isOneDayUnavailable
+                  }
+                  isHighlighted={(key) => key === startDate || key === endDate}
+                  isInRange={(key) =>
+                    Boolean(
+                      startDate &&
+                        endDate &&
+                        startDate !== endDate &&
+                        key > startDate &&
+                        key < endDate,
+                    )
+                  }
+                  onSelect={selectDate}
+                  hint={
+                    isManyDays
+                      ? openPicker === "endDate"
+                        ? "Select an end date"
+                        : "Select a start date"
+                      : ""
+                  }
+                />
               ) : null}
             </div>
 
+            {!isManyDays ? (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4">
                 <Icon src="/icon/clock.svg" className="h-6 w-6 text-gray-400" />
@@ -680,6 +764,11 @@ function BookingModal({
                 Book at least 3 hours in advance. Grayed-out times are already booked.
               </p>
             </div>
+            ) : (
+              <p className="text-body-3 text-gray-400">
+                Grayed-out dates are in the past or already booked.
+              </p>
+            )}
           </div>
 
           <button
@@ -693,6 +782,15 @@ function BookingModal({
       </div>
     </div>
   );
+}
+
+function wrapPhotos(photos, start, count) {
+  const length = photos.length;
+  if (!length || count <= 0) return [];
+  return Array.from({ length: count }, (_, index) => {
+    const next = ((start + index) % length + length) % length;
+    return photos[next];
+  });
 }
 
 function Gallery({ photos, title }) {
@@ -710,13 +808,18 @@ function Gallery({ photos, title }) {
     return () => media.removeEventListener("change", sync);
   }, []);
 
-  const visibleCount = isLg ? Math.min(3, Math.max(total, 1)) : 1;
-  const cloneCount = total > 1 ? visibleCount : 0;
+  const visibleCount = isLg ? 3 : 1;
+  const canLoop = total > 1 && total >= visibleCount;
+  const cloneCount = canLoop ? visibleCount : 0;
   const start = cloneCount;
-  const slides =
-    total > 1
-      ? [...photos.slice(-cloneCount), ...photos, ...photos.slice(0, cloneCount)]
-      : photos;
+  const slides = canLoop
+    ? [
+        ...wrapPhotos(photos, total - cloneCount, cloneCount),
+        ...photos,
+        ...wrapPhotos(photos, 0, cloneCount),
+      ]
+    : photos;
+  const centered = isLg && total > 0 && total < visibleCount;
 
   useEffect(() => {
     setAnimated(false);
@@ -724,16 +827,10 @@ function Gallery({ photos, title }) {
     locked.current = false;
   }, [start]);
 
-  if (total === 0) {
-    return (
-      <div className="w-full bg-[#FAFAFB] pt-6 sm:pt-8">
-        <div className="h-80 w-full lg:h-[28rem]" />
-      </div>
-    );
-  }
+  if (total === 0) return null;
 
   const go = (step) => {
-    if (total <= 1 || locked.current) return;
+    if (!canLoop || locked.current) return;
     locked.current = true;
     setAnimated(true);
     setOffset((value) => value + step);
@@ -741,7 +838,7 @@ function Gallery({ photos, title }) {
 
   const handleTransitionEnd = (event) => {
     if (event.target !== event.currentTarget) return;
-    if (total <= 1) {
+    if (!canLoop) {
       locked.current = false;
       return;
     }
@@ -759,17 +856,19 @@ function Gallery({ photos, title }) {
     <div className="relative w-full bg-[#FAFAFB] pt-6 sm:pt-8">
       <div className="relative overflow-hidden">
         <div
-          className={`flex ${animated ? "transition-transform duration-500 ease-out" : ""}`}
+          className={`flex ${animated ? "transition-transform duration-500 ease-out" : ""} ${
+            centered ? "mx-auto" : ""
+          }`}
           style={{
             width: `${(slides.length / visibleCount) * 100}%`,
-            transform: `translateX(-${(offset / slides.length) * 100}%)`,
+            transform: canLoop ? `translateX(-${(offset / slides.length) * 100}%)` : undefined,
           }}
           onTransitionEnd={handleTransitionEnd}
         >
           {slides.map((src, slideIndex) => (
             <div
               key={`${src}-${slideIndex}`}
-              className="relative h-80 shrink-0 px-1 lg:h-[28rem]"
+              className="relative h-80 shrink-0 px-1 lg:h-112"
               style={{ width: `${100 / slides.length}%` }}
             >
               <div className="relative h-full overflow-hidden">
@@ -787,12 +886,12 @@ function Gallery({ photos, title }) {
           ))}
         </div>
 
-        {total > 1 && (
+        {canLoop && (
           <>
             <button
               type="button"
               onClick={() => go(-1)}
-              className="absolute top-1/2 left-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:left-6"
+              className="absolute top-1/2 left-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:left-6"
               aria-label="Previous photo"
             >
               <Icon src="/icon/chevron-left.svg" className="h-6 w-6" />
@@ -800,7 +899,7 @@ function Gallery({ photos, title }) {
             <button
               type="button"
               onClick={() => go(1)}
-              className="absolute top-1/2 right-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-[var(--shadow-card)] transition-colors hover:text-orange-500 lg:right-6"
+              className="absolute top-1/2 right-4 z-10 flex size-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white text-gray-400 shadow-(--shadow-card) transition-colors hover:text-orange-500 lg:right-6"
               aria-label="Next photo"
             >
               <Icon src="/icon/chevron-right.svg" className="h-6 w-6" />
@@ -1163,36 +1262,55 @@ export default function PetSitterDetail({ sitterId }) {
     setBooking((current) => ({ ...current, ...patch }));
   }
 
-  /** Continue → หน้าจอง 3 step (one day | many days ส่ง startDate+endDate) */
+  /** Continue → /owner/booking — many days ส่งแค่วัน · one day ส่งวัน+เวลา */
   function handleBookingContinue(event) {
     event.preventDefault();
-    if (!booking.startDate || !booking.startTime || !booking.endTime) return;
-    const resolvedEndDate = booking.endDate || booking.startDate;
-    const isManyDaysBooking = resolvedEndDate > booking.startDate;
-    if (isManyDaysBooking && !booking.endDate) return;
-    if (!isAtLeastThreeHoursAhead(booking.startDate, booking.startTime)) return;
-    const endDate = resolvedEndDate;
-    if (!isStartBeforeEnd(booking.startDate, booking.startTime, endDate, booking.endTime, isManyDaysBooking)) {
+
+    const { startDate, endDate: bookingEndDate, startTime, endTime } = booking;
+    const endDate = bookingEndDate || startDate;
+    const isManyDayRange = Boolean(startDate && endDate && endDate > startDate);
+
+    if (!startDate) return;
+
+    if (isManyDayRange) {
+      // Step 1a: many days — เช็คแค่วันที่ (ไม่ใช้ time)
+      if (!bookingEndDate || bookingEndDate <= startDate) return;
+
+      if (dateRangeOverlapsBooked(startDate, endDate, bookedSlots)) {
+        toast.error("This date and time is already booked. Please choose another slot.");
+        return;
+      }
+
+      // Step 2a: query เฉพาะ sitterId + startDate + endDate
+      const params = new URLSearchParams({
+        sitterId: String(sitter.id ?? sitterId),
+        startDate,
+        endDate,
+      });
+      setBookingOpen(false);
+      router.push(`/owner/booking?${params.toString()}`);
       return;
     }
+
+    // Step 1b: one day — ต้องมีเวลา + กฎเดิม
+    if (!startTime || !endTime) return;
+    if (!isAtLeastThreeHoursAhead(startDate, startTime)) return;
+    if (!isStartBeforeEnd(startDate, startTime, endDate, endTime, false)) return;
+
     if (
-      bookingRangeOverlapsBooked(
-        booking.startDate,
-        endDate,
-        booking.startTime,
-        booking.endTime,
-        bookedSlots,
-      )
+      bookingRangeOverlapsBooked(startDate, endDate, startTime, endTime, bookedSlots)
     ) {
       toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
+
+    // Step 2b: one day — startDate/endDate เท่ากัน + time (parseBookingParams รองรับ legacy ?date= ด้วย)
     const params = new URLSearchParams({
       sitterId: String(sitter.id ?? sitterId),
-      startDate: booking.startDate,
-      endDate: resolvedEndDate,
-      startTime: booking.startTime,
-      endTime: booking.endTime,
+      startDate,
+      endDate: startDate,
+      startTime,
+      endTime,
     });
     setBookingOpen(false);
     router.push(`/owner/booking?${params.toString()}`);
@@ -1267,7 +1385,7 @@ export default function PetSitterDetail({ sitterId }) {
         </div>
 
         <aside className="z-10 lg:sticky lg:top-28 lg:self-start">
-          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-[var(--shadow-card)]">
+          <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-(--shadow-card)">
             {sitter.avatarUrl ? (
               <Image
                 src={sitter.avatarUrl}

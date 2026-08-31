@@ -59,13 +59,15 @@ export function isManyDayBooking(startDate, endDate) {
   return nights !== null && nights > 0;
 }
 
-// URL: ?sitterId=&startDate=&endDate=&startTime=&endTime=
-// legacy one-day: ?sitterId=&date=&startTime=&endTime=
+// One day:  ?sitterId=&startDate=&endDate=&startTime=&endTime=  (วันเดียวกัน)
+// Legacy:   ?sitterId=&date=&startTime=&endTime=
+// Many days: ?sitterId=&startDate=&endDate=  (ไม่มี time)
 
 /**
- * อ่าน query หน้าจอง — รองรับ startDate+endDate หรือ date (one-day เดิม)
+ * อ่าน query หน้าจอง — แยก validation ตามโหมด one day / many days
  */
 export function parseBookingParams(searchParams) {
+  // Step 1: อ่านค่าดิบจาก URL
   const sitterId = String(searchParams?.sitterId ?? "").trim();
   const startTime = String(searchParams?.startTime ?? "").trim();
   const endTime = String(searchParams?.endTime ?? "").trim();
@@ -74,7 +76,7 @@ export function parseBookingParams(searchParams) {
   let endDate = normalizeBookingDate(searchParams?.endDate);
   const legacyDate = normalizeBookingDate(searchParams?.date);
 
-  // legacy: date เดียว → one day
+  // Step 2: เติมวันที่ — legacy ?date= หรือ endDate ว่าง → ใช้ startDate
   if (!startDate && legacyDate) {
     startDate = legacyDate;
     endDate = legacyDate;
@@ -83,18 +85,27 @@ export function parseBookingParams(searchParams) {
     endDate = startDate;
   }
 
+  // Step 3: ฟิลด์บังคับทุกโหมด
   const missing = [];
   if (!sitterId) missing.push("sitterId");
-  if (!startTime) missing.push("startTime");
-  if (!endTime) missing.push("endTime");
   if (!startDate) {
     missing.push(legacyDate || searchParams?.startDate ? "startDate" : "startDate or date");
+  }
+
+  // Step 4: รู้โหมดก่อน — endDate > startDate = many days (ไม่ inclusive)
+  const isManyDays = isManyDayBooking(startDate, endDate);
+
+  // Step 5: one day ต้องมีเวลา · many days ไม่ต้อง
+  if (!isManyDays) {
+    if (!startTime) missing.push("startTime");
+    if (!endTime) missing.push("endTime");
   }
 
   if (missing.length > 0) {
     return { valid: false, missing };
   }
 
+  // Step 6: วันสิ้นสุดต้องไม่ก่อนวันเริ่ม
   if (endDate < startDate) {
     return {
       valid: false,
@@ -102,32 +113,24 @@ export function parseBookingParams(searchParams) {
     };
   }
 
-  const isManyDays = isManyDayBooking(startDate, endDate);
   const nights = isManyDays ? calculateBookingNights(startDate, endDate) : null;
-
-  // one day: ต้องคิดชั่วโมงได้ | many days: เวลาเป็น check-in/out (ไม่ใช้คิดราคา)
   let hours = null;
-  if (!isManyDays) {
-    hours = calculateBookingHours(startTime, endTime);
-    if (hours === null) {
-      return {
-        valid: false,
-        error: "Invalid time range. End time must be after start time (HH:mm).",
-      };
-    }
-  } else {
+
+  if (isManyDays) {
+    // Step 7a: many days — เช็คแค่จำนวนคืน (ไม่ใช้ time)
     if (!nights || nights < 1) {
       return {
         valid: false,
         error: "Many-day bookings need at least one night between start and end date.",
       };
     }
-    const proposedStart = combineBookingDateTime(startDate, startTime);
-    const proposedEnd = combineBookingDateTime(endDate, endTime);
-    if (!proposedStart || !proposedEnd || proposedEnd <= proposedStart) {
+  } else {
+    // Step 7b: one day — คำนวณชั่วโมงจากช่วงเวลา
+    hours = calculateBookingHours(startTime, endTime);
+    if (hours === null) {
       return {
         valid: false,
-        error: "Check-out must be after check-in.",
+        error: "Invalid time range. End time must be after start time (HH:mm).",
       };
     }
   }
@@ -137,8 +140,8 @@ export function parseBookingParams(searchParams) {
     sitterId,
     startDate,
     endDate,
-    startTime,
-    endTime,
+    startTime: isManyDays ? "" : startTime,
+    endTime: isManyDays ? "" : endTime,
     isManyDays,
     nights,
     hours,
@@ -199,6 +202,33 @@ export function formatBookingDurationFromRecord(booking) {
 
   const formatted = formatBookingDuration(duration, durationUnit);
   return formatted || "—";
+}
+
+/**
+ * ticket 04: รู้โหมดจาก list API
+ * ลำดับ: duration_unit "Day" → ไม่งั้นดู end_date > start_date
+ */
+export function isManyDayBookingRecord(booking) {
+  if (!booking || typeof booking !== "object") return false;
+
+  const unit = String(booking.duration_unit ?? booking.durationUnit ?? "").trim();
+  if (unit === "Day") return true;
+
+  const start = normalizeBookingDate(booking.start_date ?? booking.startDate);
+  const end = normalizeBookingDate(booking.end_date ?? booking.endDate);
+  return isManyDayBooking(start, end);
+}
+
+/**
+ * ticket 04: many days history — ช่วงวันอย่างเดียว (ไม่มี time)
+ */
+export function formatBookingDateRangeFromRecord(booking) {
+  const start = normalizeBookingDate(booking?.start_date ?? booking?.startDate);
+  const end =
+    normalizeBookingDate(booking?.end_date ?? booking?.endDate) || start;
+  if (!start) return "—";
+  if (!end || end === start) return formatBookingDate(start);
+  return `${formatBookingDate(start)} - ${formatBookingDate(end)}`;
 }
 
 /** "2023-08-25" → "25 Aug, 2023" */
@@ -376,7 +406,7 @@ export function slotOverlapsBooked(date, startTime, endTime, bookedSlots) {
   return bookingRangeOverlapsBooked(date, date, startTime, endTime, bookedSlots);
 }
 
-/** Overlap ตามโหมด — one day เช็ควันเดียว, many days เช็คทั้งช่วง */
+/** Overlap ตามโหมด — many days เช็คช่วงวัน, one day เช็ควัน+เวลา */
 export function bookingSelectionOverlapsBooked({
   startDate,
   endDate,
@@ -386,13 +416,7 @@ export function bookingSelectionOverlapsBooked({
   bookedSlots,
 }) {
   if (isManyDays) {
-    return bookingRangeOverlapsBooked(
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      bookedSlots,
-    );
+    return dateRangeOverlapsBooked(startDate, endDate, bookedSlots);
   }
   return slotOverlapsBooked(startDate, startTime, endTime, bookedSlots);
 }
@@ -401,6 +425,22 @@ export function bookingSelectionOverlapsBooked({
 export function dateSpanMustOverlapBooked(startDate, endDate, bookedSlots) {
   if (!startDate || !endDate || startDate >= endDate) return false;
   return bookingRangeOverlapsBooked(startDate, endDate, "23:00", "00:00", bookedSlots);
+}
+
+/** Many-days (date only): occupy 00:00 on start through end of endDate */
+export function dateRangeOverlapsBooked(startDate, endDate, bookedSlots) {
+  if (!startDate) return false;
+  return bookingRangeOverlapsBooked(
+    startDate,
+    endDate || startDate,
+    "00:00",
+    "24:00",
+    bookedSlots,
+  );
+}
+
+export function dateHasBookedSlot(dateKey, bookedSlots) {
+  return (bookedSlots ?? []).some((slot) => slot.date === dateKey);
 }
 
 /** GET /api/sitters/:id → รูปทรง sidebar / eligibility */

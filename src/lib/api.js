@@ -274,7 +274,7 @@ export async function getProfile() {
 
 /**
  * สร้าง booking — cash | stripe
- * ส่ง startDate + endDate (one day = วันเดียวกัน) · date legacy ยัง map ได้
+ * many days: startDate + endDate เท่านั้น · one day: + startTime/endTime
  */
 export async function createBooking({
   sitterId,
@@ -286,19 +286,25 @@ export async function createBooking({
   petIds,
   message,
   paymentMethod = "cash",
+  isManyDays = false,
 }) {
   const resolvedStart = startDate ?? date;
   const resolvedEnd = endDate ?? date ?? resolvedStart;
 
+  // Step 1: ฟิลด์ร่วมทุกโหมด
   const body = {
     sitterId,
     startDate: resolvedStart,
     endDate: resolvedEnd,
-    startTime,
-    endTime,
     petIds,
     paymentMethod,
   };
+
+  // Step 2: one day เท่านั้นที่ส่ง time (many days omit ตาม BE contract)
+  if (!isManyDays) {
+    body.startTime = startTime;
+    body.endTime = endTime;
+  }
 
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
   if (trimmedMessage) {
@@ -424,21 +430,62 @@ export async function sendMessage(conversationId, { content = "", imageFile } = 
   return json.data;
 }
 
-export async function getOwnerPetRport(id) {
-  const json = await apiFetch(`/api/pets/${encodeURIComponent(id)}/reports`);
-  return json.data ?? [];
+function formatReportDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-//getReports
+function formatReportStatus(value) {
+  const status = String(value ?? "").trim().toLowerCase();
+  if (status === "resolved") return "Resolved";
+  if (status === "cancelled" || status === "canceled") return "Cancelled";
+  return "Pending";
+}
+
+/** Map `reports` table / API row → admin list & detail fields */
+export function mapAdminReport(row) {
+  if (!row || typeof row !== "object") return null;
+
+  const reporter =
+    row.reporter ??
+    row.reporter_name ??
+    row.reported_by ??
+    row.reporterName ??
+    "";
+  const target =
+    row.target ??
+    row.target_name ??
+    row.reported_person ??
+    row.sitter_name ??
+    row.sitterName ??
+    "";
+
+  return {
+    id: row.id,
+    reporter: String(reporter),
+    target: String(target),
+    issue: String(row.issue ?? row.subject ?? ""),
+    description: String(row.description ?? ""),
+    date: formatReportDate(row.date ?? row.created_at ?? row.createdAt),
+    status: formatReportStatus(row.status),
+  };
+}
+
 export async function getReports() {
   const json = await apiFetch("/api/reports");
-  return json.data ?? [];
+  const rows = Array.isArray(json.data) ? json.data : [];
+  return rows.map(mapAdminReport).filter(Boolean);
 }
 
-//getReports by id
 export async function getReport(id) {
   const json = await apiFetch(`/api/reports/${encodeURIComponent(id)}`);
-  return json.data;
+  return mapAdminReport(json.data);
 }
 
 

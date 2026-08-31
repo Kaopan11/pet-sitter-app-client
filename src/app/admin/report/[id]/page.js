@@ -1,6 +1,68 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { getReport } from "@/lib/api";
 
 export default function AdminReportDetailPage() {
+  const { id } = useParams();
+  const [report, setReport] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchReport() {
+      if (!id) return;
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const row = await getReport(id);
+        if (!cancelled) setReport(row);
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(error.message || "Failed to load report");
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    fetchReport();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (loadError || !report) {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+        <Link href="/admin/report" className="text-sm text-[#FF7037] hover:underline">
+          Back to reports
+        </Link>
+        <p>Error: {loadError || "Report not found"}</p>
+      </div>
+    );
+  }
+
+  const statusClass =
+    report.status === "Resolved"
+      ? "text-[#1CCD83]"
+      : report.status === "Cancelled"
+        ? "text-gray-500"
+        : "text-[#76D0FC]";
+  const statusDotClass =
+    report.status === "Resolved"
+      ? "bg-[#1CCD83]"
+      : report.status === "Cancelled"
+        ? "bg-gray-400"
+        : "bg-[#76D0FC]";
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -24,12 +86,12 @@ export default function AdminReportDetailPage() {
               />
             </svg>
             <h1 className="truncate text-xl font-bold text-[#1A1A1A]">
-              My daisy look sad..
+              {report.issue || "Report"}
             </h1>
           </Link>
-          <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#76D0FC]">
-            <span className="size-1.5 rounded-full bg-[#76D0FC]" />
-            Pending
+          <span className={`inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold ${statusClass}`}>
+            <span className={`size-1.5 rounded-full ${statusDotClass}`} />
+            {report.status}
           </span>
         </div>
 
@@ -47,26 +109,23 @@ export default function AdminReportDetailPage() {
         <dl className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
             <dt className="text-sm font-medium text-[#7B7E8C]">Reported by</dt>
-            <dd className="text-sm font-medium text-gray-900">John Wick</dd>
+            <dd className="text-sm font-medium text-gray-900">{report.reporter || "—"}</dd>
           </div>
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
             <dt className="text-sm font-medium text-[#7B7E8C]">Reported Person</dt>
-            <dd className="text-sm font-medium text-gray-900">Jane Maison</dd>
+            <dd className="text-sm font-medium text-gray-900">{report.target || "—"}</dd>
           </div>
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
             <dt className="text-sm font-medium text-[#7B7E8C]">Issue</dt>
-            <dd className="text-sm font-medium text-gray-900">My daisy look sad..</dd>
+            <dd className="text-sm font-medium text-gray-900">{report.issue || "—"}</dd>
           </div>
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
             <dt className="text-sm font-medium text-[#7B7E8C]">Description</dt>
-            <dd className="text-sm leading-6 text-gray-900">
-              After take Daisy home, she look a little bit sad, maybe something
-              bad happen at pet sitter place?
-            </dd>
+            <dd className="text-sm leading-6 text-gray-900">{report.description || "—"}</dd>
           </div>
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-[180px_1fr] sm:items-start sm:gap-4">
             <dt className="text-sm font-medium text-[#7B7E8C]">Date Submitted</dt>
-            <dd className="text-sm font-medium text-gray-900">25 Aug, 2023</dd>
+            <dd className="text-sm font-medium text-gray-900">{report.date || "—"}</dd>
           </div>
         </dl>
       </section>
