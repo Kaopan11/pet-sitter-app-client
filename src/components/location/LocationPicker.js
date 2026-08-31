@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { selectedIcon } from '../Map';
 
 // Leaflet Draggable Marker Component for location selection
 const MapWithPicker = dynamic(
   async () => {
-    const { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } = await import('react-leaflet');
+    const { MapContainer, TileLayer, Marker, useMap } = await import('react-leaflet');
 
     function MapFlyTo({ center }) {
       const map = useMap();
@@ -40,9 +41,7 @@ const MapWithPicker = dynamic(
           eventHandlers={eventHandlers}
           position={position}
           icon={selectedIcon}
-        >
-          <Popup>ลากหมุดเพื่อปรับตำแหน่งพิกัดร้านของคุณ</Popup>
-        </Marker>
+        />
       );
     }
 
@@ -68,186 +67,92 @@ const MapWithPicker = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-[300px] w-full bg-gray-100 animate-pulse rounded-2xl flex items-center justify-center text-gray-400 font-medium">
-        กำลังโหลดแผนที่เลือกพิกัด...
+        กำลังโหลดแผนที่...
       </div>
     ),
   }
 );
 
 export default function LocationPicker({
-  initialLocation = {
-    addressDetail: '',
-    district: '',
-    subDistrict: '',
-    province: '',
-    postcode: '',
-    latitude: 13.7563,
-    longitude: 100.5018,
-  },
+  address = {},
   onChange = () => {},
 }) {
-  const [address, setAddress] = useState(initialLocation);
-  const [searching, setSearching] = useState(false);
-  const [geoError, setGeoError] = useState('');
+  const prevAddressQueryRef = useRef('');
 
   const currentCoords = [
     Number(address.latitude) || 13.7563,
     Number(address.longitude) || 100.5018,
   ];
 
-  const handleInputChange = (field, value) => {
-    const next = { ...address, [field]: value };
-    setAddress(next);
-    onChange(next);
-  };
+  // Forward Geocoding: Address text input changes -> Move map pin with fallback query levels
+  useEffect(() => {
+    const rawDetail = (address.addressDetail || '').replace(/^\d+[\/\d\-]*\s*/, '').trim();
+    const fullQuery = [address.addressDetail, address.subDistrict, address.district, address.province, 'Thailand']
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const streetQuery = [rawDetail, address.subDistrict, address.district, address.province, 'Thailand']
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const areaQuery = [address.subDistrict, address.district, address.province, 'Thailand']
+      .filter(Boolean)
+      .join(' ')
+      .trim();
 
-  const handleCoordsChange = (newCoords) => {
-    const next = {
-      ...address,
+    if (!fullQuery || fullQuery === prevAddressQueryRef.current) return;
+    prevAddressQueryRef.current = fullQuery;
+
+    const queryGeocode = async (qText) => {
+      if (!qText) return null;
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+            qText
+          )}&format=json&limit=1`
+        );
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    const timer = setTimeout(async () => {
+      let coords = await queryGeocode(fullQuery);
+      if (!coords && streetQuery && streetQuery !== fullQuery) {
+        coords = await queryGeocode(streetQuery);
+      }
+      if (!coords && areaQuery) {
+        coords = await queryGeocode(areaQuery);
+      }
+      if (coords) {
+        onChange({
+          latitude: coords[0],
+          longitude: coords[1],
+        });
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [address.addressDetail, address.subDistrict, address.district, address.province]);
+
+  // When dragging pin in map: Only update Lat & Long without changing address details
+  const handlePositionChange = (newCoords) => {
+    onChange({
       latitude: newCoords[0],
       longitude: newCoords[1],
-    };
-    setAddress(next);
-    onChange(next);
-  };
-
-  // Convert Text Address -> Lat/Lng using Nominatim OpenStreetMap Geocoding API
-  const handleGeocodeAddress = async () => {
-    const fullQuery = [
-      address.addressDetail,
-      address.subDistrict,
-      address.district,
-      address.province,
-      'Thailand',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    if (!fullQuery) return;
-
-    setSearching(true);
-    setGeoError('');
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          fullQuery
-        )}&format=json&limit=1`
-      );
-      const data = await res.json();
-
-      if (data && data.length > 0) {
-        const foundLat = parseFloat(data[0].lat);
-        const foundLon = parseFloat(data[0].lon);
-        handleCoordsChange([foundLat, foundLon]);
-      } else {
-        setGeoError('ไม่พบพิกัดจากที่อยู่ที่กรอก กรุณาลากหมุดบนแผนที่แทน');
-      }
-    } catch (err) {
-      setGeoError('ค้นหาพิกัดขัดข้อง กรุณาปรับหมุดบนแผนที่โดยตรง');
-    } finally {
-      setSearching(false);
-    }
+    });
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-      <h2 className="text-lg font-bold text-gray-800">Address & Map Location</h2>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            Address detail*
-          </label>
-          <input
-            type="text"
-            value={address.addressDetail || ''}
-            onChange={(e) => handleInputChange('addressDetail', e.target.value)}
-            placeholder="บ้านเลขที่, ชื่ออาคาร, ซอย, ถนน"
-            className="input w-full"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            District*
-          </label>
-          <input
-            type="text"
-            value={address.district || ''}
-            onChange={(e) => handleInputChange('district', e.target.value)}
-            placeholder="เขต / อำเภอ"
-            className="input w-full"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            Sub-district*
-          </label>
-          <input
-            type="text"
-            value={address.subDistrict || ''}
-            onChange={(e) => handleInputChange('subDistrict', e.target.value)}
-            placeholder="แขวง / ตำบล"
-            className="input w-full"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            Province*
-          </label>
-          <input
-            type="text"
-            value={address.province || ''}
-            onChange={(e) => handleInputChange('province', e.target.value)}
-            placeholder="จังหวัด"
-            className="input w-full"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold text-gray-700">
-            Post code*
-          </label>
-          <input
-            type="text"
-            value={address.postcode || ''}
-            onChange={(e) => handleInputChange('postcode', e.target.value)}
-            placeholder="รหัสไปรษณีย์"
-            className="input w-full"
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-2">
-        <button
-          type="button"
-          onClick={handleGeocodeAddress}
-          disabled={searching}
-          className="btn btn-secondary text-xs"
-        >
-          {searching ? 'กำลังค้นหาพิกัด...' : '🔍 ค้นหาปักหมุดตามที่อยู่'}
-        </button>
-        <span className="text-xs text-gray-400">
-          พิกัดปัจจุบัน: {currentCoords[0].toFixed(5)}, {currentCoords[1].toFixed(5)}
-        </span>
-      </div>
-
-      {geoError && <p className="text-xs text-red-500">{geoError}</p>}
-
-      {/* Map Location Picker Container */}
-      <div className="relative mt-2 overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
-        <MapWithPicker
-          center={currentCoords}
-          onPositionChange={handleCoordsChange}
-          className="h-[300px] w-full z-0"
-        />
-      </div>
-      <p className="text-[11px] text-gray-400 text-center">
-        💡 คุณสามารถคลิกค้างที่หมุดแล้วลาก (Drag) ไปยังตำแหน่งร้านที่ถูกต้องเพื่อความแม่นยำ
-      </p>
+    <div className="relative overflow-hidden rounded-2xl border border-gray-100 shadow-xs h-[300px] w-full">
+      <MapWithPicker
+        center={currentCoords}
+        onPositionChange={handlePositionChange}
+        className="h-full w-full z-0"
+      />
     </div>
   );
 }

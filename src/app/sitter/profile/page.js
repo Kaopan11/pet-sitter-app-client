@@ -63,6 +63,8 @@ const initialForm = {
   subDistrict: "",
   province: "",
   postCode: "",
+  latitude: 13.7563,
+  longitude: 100.5018,
 };
 
 const initialErrors = {
@@ -137,6 +139,8 @@ export default function PetSitterProfilePage() {
       subDistrict: profile.sub_district ?? "",
       province: profile.province ?? "",
       postCode: profile.post_code ?? "",
+      latitude: profile.latitude != null ? Number(profile.latitude) : 13.7563,
+      longitude: profile.longitude != null ? Number(profile.longitude) : 100.5018,
     };
 
     setForm(nextForm);
@@ -416,6 +420,8 @@ export default function PetSitterProfilePage() {
       formData.append("sub_district", form.subDistrict);
       formData.append("province", form.province);
       formData.append("post_code", form.postCode);
+      if (form.latitude != null) formData.append("latitude", String(form.latitude));
+      if (form.longitude != null) formData.append("longitude", String(form.longitude));
       formData.append("experience_years", form.experience);
       formData.append("email", form.email.trim());
       formData.append("id_number", form.idNumber.trim());
@@ -875,7 +881,7 @@ export default function PetSitterProfilePage() {
 
         <div className="mt-4">
           <LocationPicker
-            initialLocation={{
+            address={{
               addressDetail: form.addressDetail,
               district: form.district,
               subDistrict: form.subDistrict,
@@ -884,16 +890,10 @@ export default function PetSitterProfilePage() {
               latitude: form.latitude || 13.7563,
               longitude: form.longitude || 100.5018,
             }}
-            onChange={(location) => {
+            onChange={(updates) => {
               setForm((prev) => ({
                 ...prev,
-                addressDetail: location.addressDetail ?? prev.addressDetail,
-                district: location.district ?? prev.district,
-                subDistrict: location.subDistrict ?? prev.subDistrict,
-                province: location.province ?? prev.province,
-                postCode: location.postcode ?? prev.postCode,
-                latitude: location.latitude,
-                longitude: location.longitude,
+                ...updates,
               }));
             }}
           />

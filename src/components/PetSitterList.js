@@ -48,6 +48,41 @@ function experienceToQuery(value) {
     return String(value).replace(/\s*Years$/i, "").trim();
 }
 
+const LOCATION_COORDS = {
+  "khu khot": [13.9560, 100.6270],
+  "lam luk ka": [13.9446, 100.6325],
+  "pak kret": [13.9130, 100.4984],
+  "bang kapi": [13.7658, 100.6472],
+  "pattaya": [12.9236, 100.8825],
+  "pathum thani": [14.0208, 100.5250],
+  "pathumthani": [14.0208, 100.5250],
+  "nonthaburi": [13.8591, 100.5217],
+  "samut prakan": [13.5991, 100.5968],
+  "bangkok": [13.7563, 100.5018],
+  "chiang mai": [18.7883, 98.9853],
+  "chon buri": [13.3611, 100.9847],
+  "phuket": [7.8804, 98.3923],
+};
+
+
+function getSitterCoords(sitter, idx = 0) {
+  if (sitter?.latitude != null && sitter?.longitude != null && !isNaN(Number(sitter.latitude)) && !isNaN(Number(sitter.longitude))) {
+    return [Number(sitter.latitude), Number(sitter.longitude)];
+  }
+
+  const locStr = String(sitter?.location || sitter?.province || sitter?.district || "").toLowerCase();
+  for (const [key, coords] of Object.entries(LOCATION_COORDS)) {
+    if (locStr.includes(key)) {
+      const jitterLat = ((idx % 5) - 2) * 0.008;
+      const jitterLng = (Math.floor(idx / 5) - 1) * 0.008;
+      return [coords[0] + jitterLat, coords[1] + jitterLng];
+    }
+  }
+
+  return [13.7563 + ((idx % 4) * 0.012 - 0.018), 100.5018 + (Math.floor(idx / 4) * 0.015 - 0.015)];
+}
+
+
 function RatingStars({ count }) {
     return (
         <div className="flex items-center gap-0.5 text-green">
@@ -106,9 +141,7 @@ export default function PetSitterList() {
             setTotalPages(result.pagination?.totalPages || 0);
             if (data.length > 0) {
                 setSelectedSitterId(data[0].id);
-                const firstLat = Number(data[0].latitude || data[0].lat) || 13.7563;
-                const firstLng = Number(data[0].longitude || data[0].lng) || 100.5018;
-                setMapCenter([firstLat, firstLng]);
+                setMapCenter(getSitterCoords(data[0], 0));
             }
         } catch (err) {
             setSitters([]);
@@ -122,9 +155,7 @@ export default function PetSitterList() {
     const handleSelectSitter = (sitter, idx = 0) => {
         if (!sitter) return;
         setSelectedSitterId(sitter.id);
-        const lat = Number(sitter.latitude || sitter.lat) || (13.7563 + (idx * 0.015 - 0.03));
-        const lng = Number(sitter.longitude || sitter.lng) || (100.5018 + (idx * 0.02 - 0.04));
-        setMapCenter([lat, lng]);
+        setMapCenter(getSitterCoords(sitter, idx));
     };
 
     useEffect(() => {
@@ -358,12 +389,11 @@ export default function PetSitterList() {
                                 center={mapCenter}
                                 zoom={13}
                                 markers={sitters.map((sitter, idx) => {
-                                    const lat = Number(sitter.latitude || sitter.lat) || (13.7563 + (idx * 0.015 - 0.03));
-                                    const lng = Number(sitter.longitude || sitter.lng) || (100.5018 + (idx * 0.02 - 0.04));
+                                    const coords = getSitterCoords(sitter, idx);
                                     return {
                                         id: sitter.id,
-                                        position: [lat, lng],
-                                        popup: sitter.trade_name || sitter.name || "Pet Sitter",
+                                        position: coords,
+                                        popup: sitter.trade_name || sitter.title || sitter.name || "Pet Sitter",
                                         sitterData: sitter,
                                         idx: idx
                                     };
@@ -400,7 +430,7 @@ export default function PetSitterList() {
                         </div>
                     )}
                 </section>
-                {totalPages > 1 && (
+                {viewMode === "list" && totalPages > 1 && (
                     <div className="col-span-full mt-8">
                         <Pagination
                             currentPage={currentPage}

@@ -3,6 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { useEffect } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 export const selectedIcon = L.icon({
   iconUrl: '/image/Map_Pin_Selected.svg',
@@ -53,7 +54,12 @@ export default function Map({
       />
       {markers.length > 0 ? (
         markers.map((marker, idx) => {
-          const isSelected = marker.id ? marker.id === selectedId : marker.isSelected;
+          const isSelected =
+            marker.isSelected !== undefined
+              ? marker.isSelected
+              : selectedId
+              ? String(marker.id) === String(selectedId)
+              : markers.length === 1;
           const currentIcon = marker.icon || (isSelected ? selectedIcon : unselectedIcon);
 
           return (

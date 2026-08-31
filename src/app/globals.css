@@ -2,7 +2,7 @@
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap");
 @import "tailwindcss";
 @import "../../node_modules/tw-animate-css/dist/tw-animate.css";
-@import "leaflet/dist/leaflet.css";
+
 
 :root {
   /* Orange — primary brand (600 → 100 left-to-right in design) */
