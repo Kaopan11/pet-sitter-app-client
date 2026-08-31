@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Search, UserRound } from "lucide-react";
 import axios from "axios";
 import LoadingState from "@/components/LoadingState";
@@ -17,12 +18,16 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const STATUS = {
-  Approved: { label: "Approved", text: "text-green", dot: "bg-green" },
+  Unverified: { label: "Unverified", text: "text-gray-500", dot: "bg-gray-400" },
+  "Waiting for verify": { label: "Waiting for verify", text: "text-pink", dot: "bg-pink" },
+  Verified: { label: "Verified", text: "text-green", dot: "bg-green" },
   "Waiting for approve": { label: "Waiting for approve", text: "text-pink", dot: "bg-pink" },
+  Approved: { label: "Approved", text: "text-green", dot: "bg-green" },
   Rejected: { label: "Rejected", text: "text-red", dot: "bg-red" },
 };
 
 export default function AdminPetSitterPage() {
+  const router = useRouter();
   const [sitters, setSitters] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -127,7 +132,8 @@ export default function AdminPetSitterPage() {
                     return (
                       <tr
                         key={sitter.id}
-                        className="h-19 border-b border-gray-200 last:border-b-0 hover:bg-gray-100"
+                        className="h-19 cursor-pointer border-b border-gray-200 last:border-b-0 hover:bg-gray-100"
+                        onClick={() => router.push(`/admin/pet-sitter/${sitter.id}`)}
                       >
                         <td className="px-6 py-5 text-body-2 text-black">
                           <span className="flex items-center gap-2">

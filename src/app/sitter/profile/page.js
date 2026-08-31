@@ -15,6 +15,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import LoadingState from "@/components/LoadingState";
 import { updateStoredUser } from "@/lib/auth";
+import { isFullProfileUnlocked } from "@/lib/sitterApproval";
 import {
   errorToastClassNames,
   successToastClassNames,
@@ -27,9 +28,12 @@ const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.com$/i;
 
 const APPROVAL_STYLES = {
+  Unverified: { text: "text-gray-500", dot: "bg-gray-400" },
+  "Waiting for verify": { text: "text-pink", dot: "bg-pink" },
+  Verified: { text: "text-green", dot: "bg-green" },
+  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
   Approved: { text: "text-green", dot: "bg-green" },
   Rejected: { text: "text-red", dot: "bg-red" },
-  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
 };
 
 const initialForm = {
@@ -74,11 +78,10 @@ export default function PetSitterProfilePage() {
   const galleryInputRef = useRef(null);
   const skipAddressSelect = useRef(true);
   const [form, setForm] = useState(initialForm);
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [photos, setPhotos] = useState([]);
-  const [galleryFiles, setGalleryFiles] = useState([]);
-  const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
+  const [avatarUrl, setAvatarUrl] = useState(""); // URL รูปโปรไฟล์ที่โชว์อยู่ (จากเซิร์ฟเวอร์/ร่าง)
+  const [imageFile, setImageFile] = useState(null); // ไฟล์ avatar ใหม่ที่เลือก ยังไม่อัปโหลด
+  const [existingGallery, setExistingGallery] = useState([]); // รูป gallery ที่มีอยู่แล้ว (id + photo_url)
+  const [galleryFiles, setGalleryFiles] = useState([]); // ไฟล์ gallery ใหม่ที่เลือก ยังไม่อัปโหลด
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -89,7 +92,8 @@ export default function PetSitterProfilePage() {
 
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
-  const approvalStyle = APPROVAL_STYLES[approvalStatus] ?? APPROVAL_STYLES["Waiting for approve"];
+  const approvalStyle = APPROVAL_STYLES[approvalStatus];
+  const fullProfileUnlocked = isFullProfileUnlocked(approvalStatus);
 
   async function loadSubDistricts(districtId) {
     if (!districtId) {
@@ -127,7 +131,7 @@ export default function PetSitterProfilePage() {
 
     setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
-    setPhotos(profile.sitter_photos ?? []);
+    setExistingGallery(profile.sitter_photos ?? []);
     updateStoredUser({
       name: profile.name,
       email: profile.email,
@@ -257,7 +261,7 @@ export default function PetSitterProfilePage() {
   function handleGalleryChange(event) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    const remaining = 10 - photos.length - galleryFiles.length;
+    const remaining = 10 - existingGallery.length - galleryFiles.length;
     const validFiles = files
       .filter(
         (file) =>
@@ -281,8 +285,7 @@ export default function PetSitterProfilePage() {
   }
 
   function handleDeletePhoto(photoId) {
-    setPhotos((current) => current.filter((photo) => photo.id !== photoId));
-    setDeletedPhotoIds((current) => [...current, photoId]);
+    setExistingGallery((current) => current.filter((photo) => photo.id !== photoId));
   }
 
   function handleRemoveGalleryFile(index) {
@@ -337,36 +340,38 @@ export default function PetSitterProfilePage() {
       }
     }
 
-    if (!form.tradeName.trim()) {
-      newErrors.tradeName = "Pet sitter name is required";
-    }
+    if (fullProfileUnlocked) {
+      if (!form.tradeName.trim()) {
+        newErrors.tradeName = "Pet sitter name is required";
+      }
 
-    if (form.petTypes.length === 0) {
-      newErrors.petTypes = "Please select at least one pet type";
-    }
+      if (form.petTypes.length === 0) {
+        newErrors.petTypes = "Please select at least one pet type";
+      }
 
-    if (photos.length + galleryFiles.length > 10) {
-      newErrors.gallery = "Image gallery allows a maximum of 10 images";
-    }
+      if (existingGallery.length + galleryFiles.length > 10) {
+        newErrors.gallery = "Image gallery allows a maximum of 10 images";
+      }
 
-    if (!form.addressDetail.trim()) {
-      newErrors.addressDetail = "Address detail is required";
-    }
+      if (!form.addressDetail.trim()) {
+        newErrors.addressDetail = "Address detail is required";
+      }
 
-    if (!form.district.trim()) {
-      newErrors.district = "District is required";
-    }
+      if (!form.district.trim()) {
+        newErrors.district = "District is required";
+      }
 
-    if (!form.subDistrict.trim()) {
-      newErrors.subDistrict = "Sub-district is required";
-    }
+      if (!form.subDistrict.trim()) {
+        newErrors.subDistrict = "Sub-district is required";
+      }
 
-    if (!form.province.trim()) {
-      newErrors.province = "Province is required";
-    }
+      if (!form.province.trim()) {
+        newErrors.province = "Province is required";
+      }
 
-    if (!form.postCode.trim()) {
-      newErrors.postCode = "Post code is required";
+      if (!form.postCode.trim()) {
+        newErrors.postCode = "Post code is required";
+      }
     }
 
     setErrors(newErrors);
@@ -405,27 +410,35 @@ export default function PetSitterProfilePage() {
       formData.append("email", form.email.trim());
       formData.append("id_number", form.idNumber.trim());
 
-      form.petTypes.forEach((petType) => {
-        formData.append("pet_types", petType);
-      });
+      if (fullProfileUnlocked) {
+        form.petTypes.forEach((petType) => {
+          formData.append("pet_types", petType);
+        });
+        formData.append(
+          "existing_gallery",
+          JSON.stringify(
+            existingGallery.map((photo) => ({
+              id: photo.id,
+              photo_url: photo.photo_url,
+            })),
+          ),
+        );
+      }
 
       if (imageFile) {
         formData.append("imageFile", imageFile);
       }
 
-      galleryFiles.forEach((file) => {
-        formData.append("galleryFiles", file);
-      });
+      if (fullProfileUnlocked) {
+        galleryFiles.forEach((file) => {
+          formData.append("galleryFiles", file);
+        });
+      }
 
       const { data: json } = await axios.put(`${API_BASE_URL}/api/sitters/me`, formData);
 
-      for (const id of deletedPhotoIds) {
-        await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${id}`);
-      }
-
       setImageFile(null);
       setGalleryFiles([]);
-      setDeletedPhotoIds([]);
       await loadProfile();
       window.dispatchEvent(new Event("sitter-profile-updated"));
       toast(json.message || "Profile updated successfully", {
@@ -628,6 +641,7 @@ export default function PetSitterProfilePage() {
         </div>
       </section>
 
+      {fullProfileUnlocked ? (
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="pet-sitter-title"
@@ -686,7 +700,7 @@ export default function PetSitterProfilePage() {
             Image Gallery (Maximum 10 images)
           </p>
           <div className="flex flex-wrap gap-4">
-            {photos.map((photo) => (
+            {existingGallery.map((photo) => (
               <div key={photo.id} className="relative size-42 overflow-hidden rounded-xl">
                 <Image
                   src={photo.photo_url}
@@ -727,7 +741,7 @@ export default function PetSitterProfilePage() {
                 </button>
               </div>
             ))}
-            {photos.length + galleryFiles.length < 10 ? (
+            {existingGallery.length + galleryFiles.length < 10 ? (
               <button
                 type="button"
                 className="btn-secondary flex size-42 flex-col items-center justify-center gap-2 rounded-xl cursor-pointer"
@@ -752,7 +766,9 @@ export default function PetSitterProfilePage() {
           )}
         </div>
       </section>
+      ) : null}
 
+      {fullProfileUnlocked ? (
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="address-title"
@@ -855,6 +871,7 @@ export default function PetSitterProfilePage() {
           Map preview
         </div>
       </section>
+      ) : null}
         </>
       )}
     </form>
