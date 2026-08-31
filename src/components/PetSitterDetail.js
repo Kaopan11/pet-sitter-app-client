@@ -1262,43 +1262,56 @@ export default function PetSitterDetail({ sitterId }) {
     setBooking((current) => ({ ...current, ...patch }));
   }
 
-  /** Continue → หน้าจอง 3 step (one day | many days ส่ง startDate+endDate) */
+  /** Continue → /owner/booking — many days ส่งแค่วัน · one day ส่งวัน+เวลา */
   function handleBookingContinue(event) {
     event.preventDefault();
-    const endDate = booking.endDate || booking.startDate;
-    const isManyDayRange = Boolean(
-      booking.startDate && endDate && endDate > booking.startDate,
-    );
-    const startTime = isManyDayRange ? "00:00" : booking.startTime;
-    const endTime = isManyDayRange ? "23:00" : booking.endTime;
 
-    if (!booking.startDate || !startTime || !endTime) return;
-    if (isManyDayRange && !endDate) return;
-    if (!isManyDayRange && !isAtLeastThreeHoursAhead(booking.startDate, startTime)) return;
-    if (!isStartBeforeEnd(booking.startDate, startTime, endDate, endTime, isManyDayRange)) {
+    const { startDate, endDate: bookingEndDate, startTime, endTime } = booking;
+    const endDate = bookingEndDate || startDate;
+    const isManyDayRange = Boolean(startDate && endDate && endDate > startDate);
+
+    if (!startDate) return;
+
+    if (isManyDayRange) {
+      // Step 1a: many days — เช็คแค่วันที่ (ไม่ใช้ time)
+      if (!bookingEndDate || bookingEndDate <= startDate) return;
+
+      if (dateRangeOverlapsBooked(startDate, endDate, bookedSlots)) {
+        toast.error("This date and time is already booked. Please choose another slot.");
+        return;
+      }
+
+      // Step 2a: query เฉพาะ sitterId + startDate + endDate
+      const params = new URLSearchParams({
+        sitterId: String(sitter.id ?? sitterId),
+        startDate,
+        endDate,
+      });
+      setBookingOpen(false);
+      router.push(`/owner/booking?${params.toString()}`);
       return;
     }
+
+    // Step 1b: one day — ต้องมีเวลา + กฎเดิม
+    if (!startTime || !endTime) return;
+    if (!isAtLeastThreeHoursAhead(startDate, startTime)) return;
+    if (!isStartBeforeEnd(startDate, startTime, endDate, endTime, false)) return;
+
     if (
-      isManyDayRange
-        ? dateRangeOverlapsBooked(booking.startDate, endDate, bookedSlots)
-        : bookingRangeOverlapsBooked(
-            booking.startDate,
-            endDate,
-            startTime,
-            endTime,
-            bookedSlots,
-          )
+      bookingRangeOverlapsBooked(startDate, endDate, startTime, endTime, bookedSlots)
     ) {
       toast.error("This date and time is already booked. Please choose another slot.");
       return;
     }
+
+    // Step 2b: one day — startDate/endDate เท่ากัน + time (parseBookingParams รองรับ legacy ?date= ด้วย)
     const params = new URLSearchParams({
       sitterId: String(sitter.id ?? sitterId),
-      date: isManyDayRange ? booking.startDate : endDate,
+      startDate,
+      endDate: startDate,
       startTime,
       endTime,
     });
-    if (isManyDayRange) params.set("endDate", endDate);
     setBookingOpen(false);
     router.push(`/owner/booking?${params.toString()}`);
   }
