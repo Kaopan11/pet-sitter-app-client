@@ -1,14 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getReports } from "@/lib/api";
+
 
 export default function AdminReportPage() {
+  
   const [search, setSearch] = useState("");
+  const [reports, setReports] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  const reports = [
-    { id: 1, reporter: "John Wick", target: "Jane Cooper", issue: "Late response", date: "2026-08-10", status: "Resolved" },
-    { id: 2, reporter: "Wade Warren", target: "System", issue: "Payment processing error", date: "2026-08-12", status: "Pending" },
-  ];
+
+  useEffect(() => {
+    const fetchReport = async () => {
+      setIsLoading(true);
+      try {
+        const reports = await getReports();
+        setReports(reports);
+      } catch (e) {
+        setLoadError(e);
+      }
+        setLoadError(false);
+    };
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (loadError) {
+    return <div>Error: {loadError}</div>;
+  }
+
+  // report mocks
+  // const reports = [
+  //   { id: 1, reporter: "John Wick", target: "Jane Cooper", issue: "Late response", date: "2026-08-10", status: "Resolved" },
+  //   { id: 2, reporter: "Wade Warren", target: "System", issue: "Payment processing error", date: "2026-08-12", status: "Pending" },
+  // ];
 
   const filteredReports = reports.filter(
     (report) =>

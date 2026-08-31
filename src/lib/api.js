@@ -423,3 +423,33 @@ export async function sendMessage(conversationId, { content = "", imageFile } = 
   );
   return json.data;
 }
+
+export async function getOwnerPetRport(id) {
+  const json = await apiFetch(`/api/pets/${encodeURIComponent(id)}/reports`);
+  return json.data ?? [];
+}
+
+//getReports
+export async function getReports() {
+  const json = await apiFetch("/api/reports");
+  return json.data ?? [];
+}
+
+//getReports by id
+export async function getReport(id) {
+  const json = await apiFetch(`/api/reports/${encodeURIComponent(id)}`);
+  return json.data;
+}
+
+
+
+// export async function createPetReport(id, { content = "", imageFile } = {}) {
+//   const formData = new FormData();
+//   formData.append("content", content);
+//   if (imageFile) formData.append("image", imageFile);
+
+//   const json = await apiFetch(`/api/pets/${encodeURIComponent(id)}/reports`, {
+//     method: "POST",
+//     body: formData,
+//   });
+// }
