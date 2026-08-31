@@ -13,7 +13,6 @@ import {
   bookingRangeOverlapsBooked,
   dateHasBookedSlot,
   dateRangeOverlapsBooked,
-  dateSpanMustOverlapBooked,
   isTimeInsideBookedSlot,
   normalizeBookedSlots,
 } from "@/lib/booking";
@@ -152,12 +151,6 @@ function formatBookingDate(value) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(year, month - 1, day);
   return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}, ${date.getFullYear()}`;
-}
-
-function formatBookingRange(startDate, endDate) {
-  if (!startDate) return "";
-  if (!endDate || endDate === startDate) return formatBookingDate(startDate);
-  return `${formatBookingDate(startDate)} - ${formatBookingDate(endDate)}`;
 }
 
 function getCalendarDays(year, month) {
@@ -333,6 +326,95 @@ function LoginRequiredModal({ onClose, onLogin }) {
   );
 }
 
+function DateField({ value, placeholder, open, onToggle }) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className={`input min-w-0 flex-1 cursor-pointer text-left ${
+        value ? "text-black" : "text-gray-400"
+      }`}
+    >
+      {formatBookingDate(value) || placeholder}
+    </button>
+  );
+}
+
+function BookingCalendar({
+  viewYear,
+  viewMonth,
+  calendarDays,
+  onShiftMonth,
+  isDateUnavailable,
+  isHighlighted,
+  isInRange,
+  onSelect,
+  hint,
+}) {
+  return (
+    <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
+      <div className="mb-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => onShiftMonth(-1)}
+          className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
+          aria-label="Previous month"
+        >
+          <Icon src="/icon/chevron-left.svg" className="h-4 w-4" />
+        </button>
+        <p className="text-body-2 font-bold text-black">
+          {MONTHS[viewMonth]} {viewYear}
+        </p>
+        <button
+          type="button"
+          onClick={() => onShiftMonth(1)}
+          className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
+          aria-label="Next month"
+        >
+          <Icon src="/icon/chevron-right.svg" className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mb-1 grid grid-cols-7 text-center text-body-3 text-gray-400">
+        {WEEKDAYS.map((day, index) => (
+          <span key={`${day}-${index}`}>{day}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7">
+        {calendarDays.map((item) => {
+          const key = toDateKey(item.date);
+          const unavailable = isDateUnavailable(key, item);
+          const highlighted = isHighlighted(key);
+          const inRange = isInRange(key);
+
+          return (
+            <button
+              key={item.key}
+              type="button"
+              disabled={unavailable}
+              onClick={() => onSelect(item.date)}
+              className={`mx-auto flex size-9 items-center justify-center rounded-full text-body-3 ${
+                highlighted
+                  ? "bg-orange-500 font-bold text-white"
+                  : inRange
+                    ? "bg-orange-100 font-medium text-orange-500"
+                    : unavailable
+                      ? "cursor-not-allowed text-gray-300"
+                      : item.outside
+                        ? "cursor-pointer text-gray-300 hover:bg-orange-100"
+                        : "cursor-pointer text-black hover:bg-orange-100"
+              }`}
+            >
+              {item.date.getDate()}
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="mt-3 text-center text-body-3 text-gray-400">{hint}</p> : null}
+    </div>
+  );
+}
+
 function BookingModal({
   startDate,
   endDate,
@@ -432,6 +514,15 @@ function BookingModal({
     });
   }
 
+  function openDatePicker(nextPicker) {
+    const key =
+      nextPicker === "endDate" ? endDate || startDate : startDate || endDate;
+    const base = key ? new Date(`${key}T00:00:00`) : startOfToday();
+    setViewYear(base.getFullYear());
+    setViewMonth(base.getMonth());
+    setOpenPicker(openPicker === nextPicker ? null : nextPicker);
+  }
+
   function selectDate(nextDate) {
     const key = toDateKey(nextDate);
 
@@ -441,21 +532,40 @@ function BookingModal({
       return;
     }
 
-    if (!startDate || (startDate && endDate)) {
-      onChange({ startDate: key, endDate: "" });
+    if (openPicker === "endDate") {
+      onChange({ endDate: key });
+      setOpenPicker(null);
       return;
     }
 
-    if (key < startDate) {
-      onChange({ startDate: key, endDate: startDate });
-    } else {
-      onChange({ endDate: key });
-    }
+    onChange({
+      startDate: key,
+      endDate: endDate && endDate > key ? endDate : "",
+    });
     setOpenPicker(null);
   }
 
   const today = startOfToday();
   const calendarDays = getCalendarDays(viewYear, viewMonth);
+
+  function isManyStartUnavailable(key, item) {
+    if (item.date < today || dateHasBookedSlot(key, bookedSlots)) return true;
+    if (endDate && key < endDate && dateRangeOverlapsBooked(key, endDate, bookedSlots)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isManyEndUnavailable(key, item) {
+    if (item.date < today || dateHasBookedSlot(key, bookedSlots)) return true;
+    if (startDate && key <= startDate) return true;
+    if (startDate && dateRangeOverlapsBooked(startDate, key, bookedSlots)) return true;
+    return false;
+  }
+
+  function isOneDayUnavailable(key, item) {
+    return item.date < today || !dateHasBookableStart(key, bookedSlots);
+  }
   const canContinue = isManyDays
     ? Boolean(
         startDate &&
@@ -554,110 +664,65 @@ function BookingModal({
 
           <div ref={pickerRef} className="flex flex-col gap-6">
             <div className="relative flex items-center gap-4">
-              <Icon src="/icon/calendar.svg" className="h-6 w-6 text-gray-400" />
-              <button
-                type="button"
-                onClick={() => setOpenPicker(openPicker === "date" ? null : "date")}
-                className={`input w-full cursor-pointer text-left ${
-                  startDate ? "text-black" : "text-gray-400"
-                }`}
-              >
-                {(isManyDays
-                  ? formatBookingRange(startDate, endDate)
-                  : formatBookingDate(startDate)) || "Select date"}
-              </button>
-              {openPicker === "date" ? (
-                <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
-                  <div className="mb-3 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => shiftMonth(-1)}
-                      className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
-                      aria-label="Previous month"
-                    >
-                      <Icon src="/icon/chevron-left.svg" className="h-4 w-4" />
-                    </button>
-                    <p className="text-body-2 font-bold text-black">
-                      {MONTHS[viewMonth]} {viewYear}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => shiftMonth(1)}
-                      className="flex size-8 cursor-pointer items-center justify-center text-gray-400 hover:text-orange-500"
-                      aria-label="Next month"
-                    >
-                      <Icon src="/icon/chevron-right.svg" className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="mb-1 grid grid-cols-7 text-center text-body-3 text-gray-400">
-                    {WEEKDAYS.map((day, index) => (
-                      <span key={`${day}-${index}`}>{day}</span>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7">
-                    {calendarDays.map((item) => {
-                      const key = toDateKey(item.date);
-                      const spanFrom =
-                        isManyDays && startDate && !endDate && key !== startDate
-                          ? key < startDate
-                            ? key
-                            : startDate
-                          : "";
-                      const spanTo = spanFrom ? (key < startDate ? startDate : key) : "";
-                      const isUnavailable = isManyDays
-                        ? item.date < today ||
-                          dateHasBookedSlot(key, bookedSlots) ||
-                          Boolean(
-                            spanFrom &&
-                              spanTo &&
-                              dateRangeOverlapsBooked(spanFrom, spanTo, bookedSlots),
-                          )
-                        : item.date < today ||
-                          !dateHasBookableStart(key, bookedSlots) ||
-                          Boolean(
-                            spanFrom &&
-                              spanTo &&
-                              dateSpanMustOverlapBooked(spanFrom, spanTo, bookedSlots),
-                          );
-                      const isStart = key === startDate;
-                      const isEnd = isManyDays && Boolean(endDate) && key === endDate;
-                      const inRange =
-                        isManyDays &&
-                        Boolean(startDate && endDate && startDate !== endDate) &&
-                        key > startDate &&
-                        key < endDate;
-
-                      return (
-                        <button
-                          key={item.key}
-                          type="button"
-                          disabled={isUnavailable}
-                          onClick={() => selectDate(item.date)}
-                          className={`mx-auto flex size-9 items-center justify-center rounded-full text-body-3 ${
-                            isStart || isEnd
-                              ? "bg-orange-500 font-bold text-white"
-                              : inRange
-                                ? "bg-orange-100 font-medium text-orange-500"
-                                : isUnavailable
-                                  ? "cursor-not-allowed text-gray-300"
-                                  : item.outside
-                                    ? "cursor-pointer text-gray-300 hover:bg-orange-100"
-                                    : "cursor-pointer text-black hover:bg-orange-100"
-                          }`}
-                        >
-                          {item.date.getDate()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {isManyDays ? (
-                    <p className="mt-3 text-center text-body-3 text-gray-400">
-                      {startDate && !endDate
-                        ? "Select an end date"
-                        : "Select a start and end date"}
-                    </p>
-                  ) : null}
+              <Icon src="/icon/calendar.svg" className="h-6 w-6 shrink-0 text-gray-400" />
+              {isManyDays ? (
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <DateField
+                    value={startDate}
+                    placeholder="Start date"
+                    open={openPicker === "startDate"}
+                    onToggle={() => openDatePicker("startDate")}
+                  />
+                  <span className="text-body-2 text-gray-400">-</span>
+                  <DateField
+                    value={endDate}
+                    placeholder="End date"
+                    open={openPicker === "endDate"}
+                    onToggle={() => openDatePicker("endDate")}
+                  />
                 </div>
+              ) : (
+                <DateField
+                  value={startDate}
+                  placeholder="Select date"
+                  open={openPicker === "date"}
+                  onToggle={() => openDatePicker("date")}
+                />
+              )}
+              {(openPicker === "date" ||
+              openPicker === "startDate" ||
+              openPicker === "endDate") ? (
+                <BookingCalendar
+                  viewYear={viewYear}
+                  viewMonth={viewMonth}
+                  calendarDays={calendarDays}
+                  onShiftMonth={shiftMonth}
+                  isDateUnavailable={
+                    openPicker === "endDate"
+                      ? isManyEndUnavailable
+                      : openPicker === "startDate"
+                        ? isManyStartUnavailable
+                        : isOneDayUnavailable
+                  }
+                  isHighlighted={(key) => key === startDate || key === endDate}
+                  isInRange={(key) =>
+                    Boolean(
+                      startDate &&
+                        endDate &&
+                        startDate !== endDate &&
+                        key > startDate &&
+                        key < endDate,
+                    )
+                  }
+                  onSelect={selectDate}
+                  hint={
+                    isManyDays
+                      ? openPicker === "endDate"
+                        ? "Select an end date"
+                        : "Select a start date"
+                      : ""
+                  }
+                />
               ) : null}
             </div>
 
@@ -719,6 +784,15 @@ function BookingModal({
   );
 }
 
+function wrapPhotos(photos, start, count) {
+  const length = photos.length;
+  if (!length || count <= 0) return [];
+  return Array.from({ length: count }, (_, index) => {
+    const next = ((start + index) % length + length) % length;
+    return photos[next];
+  });
+}
+
 function Gallery({ photos, title }) {
   const total = photos.length;
   const [isLg, setIsLg] = useState(false);
@@ -734,13 +808,18 @@ function Gallery({ photos, title }) {
     return () => media.removeEventListener("change", sync);
   }, []);
 
-  const visibleCount = isLg ? Math.min(3, Math.max(total, 1)) : 1;
-  const cloneCount = total > 1 ? visibleCount : 0;
+  const visibleCount = isLg ? 3 : 1;
+  const canLoop = total > 1 && total >= visibleCount;
+  const cloneCount = canLoop ? visibleCount : 0;
   const start = cloneCount;
-  const slides =
-    total > 1
-      ? [...photos.slice(-cloneCount), ...photos, ...photos.slice(0, cloneCount)]
-      : photos;
+  const slides = canLoop
+    ? [
+        ...wrapPhotos(photos, total - cloneCount, cloneCount),
+        ...photos,
+        ...wrapPhotos(photos, 0, cloneCount),
+      ]
+    : photos;
+  const centered = isLg && total > 0 && total < visibleCount;
 
   useEffect(() => {
     setAnimated(false);
@@ -748,16 +827,10 @@ function Gallery({ photos, title }) {
     locked.current = false;
   }, [start]);
 
-  if (total === 0) {
-    return (
-      <div className="w-full bg-[#FAFAFB] pt-6 sm:pt-8">
-        <div className="h-80 w-full lg:h-[28rem]" />
-      </div>
-    );
-  }
+  if (total === 0) return null;
 
   const go = (step) => {
-    if (total <= 1 || locked.current) return;
+    if (!canLoop || locked.current) return;
     locked.current = true;
     setAnimated(true);
     setOffset((value) => value + step);
@@ -765,7 +838,7 @@ function Gallery({ photos, title }) {
 
   const handleTransitionEnd = (event) => {
     if (event.target !== event.currentTarget) return;
-    if (total <= 1) {
+    if (!canLoop) {
       locked.current = false;
       return;
     }
@@ -783,10 +856,12 @@ function Gallery({ photos, title }) {
     <div className="relative w-full bg-[#FAFAFB] pt-6 sm:pt-8">
       <div className="relative overflow-hidden">
         <div
-          className={`flex ${animated ? "transition-transform duration-500 ease-out" : ""}`}
+          className={`flex ${animated ? "transition-transform duration-500 ease-out" : ""} ${
+            centered ? "mx-auto" : ""
+          }`}
           style={{
             width: `${(slides.length / visibleCount) * 100}%`,
-            transform: `translateX(-${(offset / slides.length) * 100}%)`,
+            transform: canLoop ? `translateX(-${(offset / slides.length) * 100}%)` : undefined,
           }}
           onTransitionEnd={handleTransitionEnd}
         >
@@ -811,7 +886,7 @@ function Gallery({ photos, title }) {
           ))}
         </div>
 
-        {total > 1 && (
+        {canLoop && (
           <>
             <button
               type="button"
