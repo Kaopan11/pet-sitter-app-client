@@ -28,7 +28,8 @@ import {
   normalizeBookingPet,
   normalizeBookingSitter,
   normalizeBookedSlots,
-  bookingSelectionOverlapsBooked,
+  dateRangeOverlapsBooked,
+  slotOverlapsBooked,
   calculateBookingPreviewTotal,
 } from "@/lib/booking";
 
@@ -108,22 +109,18 @@ export default function BookingFlow({
           bookedSlots = [];
         }
 
-        if (
-          bookingSelectionOverlapsBooked({
-            startDate,
-            endDate,
-            startTime,
-            endTime,
-            isManyDays,
-            bookedSlots,
-          })
-        ) {
+        // Step 1: overlap — many days เช็คช่วงวัน · one day เช็ควัน+เวลา
+        const slotTaken = isManyDays
+          ? dateRangeOverlapsBooked(startDate, endDate, bookedSlots)
+          : slotOverlapsBooked(startDate, startTime, endTime, bookedSlots);
+
+        if (slotTaken) {
           throw new Error(
             "This date and time is already booked. Please choose another slot.",
           );
         }
 
-        // ticket 03: many days ต้องมีอย่างน้อย 1 คืน
+        // Step 2: many days ต้องมีอย่างน้อย 1 คืน
         if (isManyDays && (!nights || nights < 1)) {
           throw new Error(
             "Invalid booking link. Many-day bookings need at least one night.",
@@ -214,7 +211,7 @@ export default function BookingFlow({
       return;
     }
 
-    // ticket 03: many days ใช้ nights (เวลาเป็น check-in/out ไม่คิดราคา)
+    // many days: เช็ค nights · one day: เช็ค hours
     if (isManyDays) {
       if (!nights || nights < 1) {
         setConfirmError("Many-day bookings need at least one night.");
@@ -249,6 +246,7 @@ export default function BookingFlow({
         petIds,
         message: additionalMessage,
         paymentMethod: apiPaymentMethod,
+        isManyDays,
       });
 
       setBookingResult(data ?? null);

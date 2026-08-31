@@ -274,7 +274,7 @@ export async function getProfile() {
 
 /**
  * สร้าง booking — cash | stripe
- * ส่ง startDate + endDate (one day = วันเดียวกัน) · date legacy ยัง map ได้
+ * many days: startDate + endDate เท่านั้น · one day: + startTime/endTime
  */
 export async function createBooking({
   sitterId,
@@ -286,19 +286,25 @@ export async function createBooking({
   petIds,
   message,
   paymentMethod = "cash",
+  isManyDays = false,
 }) {
   const resolvedStart = startDate ?? date;
   const resolvedEnd = endDate ?? date ?? resolvedStart;
 
+  // Step 1: ฟิลด์ร่วมทุกโหมด
   const body = {
     sitterId,
     startDate: resolvedStart,
     endDate: resolvedEnd,
-    startTime,
-    endTime,
     petIds,
     paymentMethod,
   };
+
+  // Step 2: one day เท่านั้นที่ส่ง time (many days omit ตาม BE contract)
+  if (!isManyDays) {
+    body.startTime = startTime;
+    body.endTime = endTime;
+  }
 
   const trimmedMessage = typeof message === "string" ? message.trim() : "";
   if (trimmedMessage) {

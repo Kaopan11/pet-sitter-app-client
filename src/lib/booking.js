@@ -379,7 +379,7 @@ export function slotOverlapsBooked(date, startTime, endTime, bookedSlots) {
   return bookingRangeOverlapsBooked(date, date, startTime, endTime, bookedSlots);
 }
 
-/** Overlap ตามโหมด — one day เช็ควันเดียว, many days เช็คทั้งช่วง */
+/** Overlap ตามโหมด — many days เช็คช่วงวัน, one day เช็ควัน+เวลา */
 export function bookingSelectionOverlapsBooked({
   startDate,
   endDate,
@@ -389,13 +389,7 @@ export function bookingSelectionOverlapsBooked({
   bookedSlots,
 }) {
   if (isManyDays) {
-    return bookingRangeOverlapsBooked(
-      startDate,
-      endDate,
-      startTime,
-      endTime,
-      bookedSlots,
-    );
+    return dateRangeOverlapsBooked(startDate, endDate, bookedSlots);
   }
   return slotOverlapsBooked(startDate, startTime, endTime, bookedSlots);
 }
