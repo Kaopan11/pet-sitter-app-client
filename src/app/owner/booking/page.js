@@ -10,7 +10,7 @@ export const metadata = {
  * URL ตัวอย่าง:
  * One day:  ?sitterId=...&startDate=2026-09-01&endDate=2026-09-01&startTime=10:00&endTime=13:00
  * Legacy:   ?sitterId=...&date=2026-09-01&startTime=10:00&endTime=13:00
- * Many days: ?sitterId=...&startDate=2026-08-27&endDate=2026-08-29&startTime=09:00&endTime=17:00
+ * Many days: ?sitterId=...&startDate=2026-08-27&endDate=2026-08-29
  * query ไม่ครบ / เวลาไม่ถูก → แสดง Invalid booking link
  */
 export default async function OwnerBookingPage({ searchParams }) {
