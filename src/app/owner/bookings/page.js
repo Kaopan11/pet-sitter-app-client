@@ -95,6 +95,8 @@ export default function BookingHistoryPage() {
   const [reportBooking, setReportBooking] = useState(null);
   const [reportSubject, setReportSubject] = useState("");
   const [reportDescription, setReportDescription] = useState("");
+  const [cancelBooking, setCancelBooking] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -277,6 +279,51 @@ export default function BookingHistoryPage() {
     }
   };
 
+  const openCancelModal = (booking) => {
+    setCancelBooking(booking);
+  };
+
+  const closeCancelModal = () => {
+    if (isCancelling) return;
+    setCancelBooking(null);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelBooking) return;
+
+    setIsCancelling(true);
+    try {
+      const token = getToken();
+      const res = await fetch(
+        `${API_URL}/api/bookings/owner/${cancelBooking.id}/cancel`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to cancel booking");
+      }
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === cancelBooking.id ? { ...b, status: "cancelled" } : b
+        )
+      );
+
+      toast.success("Booking cancelled");
+      setCancelBooking(null);
+    } catch (error) {
+      toast.error(error.message || "Failed to cancel booking");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const openReportModal = (booking) => {
     setReportSubject("");
     setReportDescription("");
@@ -445,6 +492,12 @@ export default function BookingHistoryPage() {
                           Waiting Pet Sitter for confirm booking
                         </span>
                         <div className="flex items-center gap-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openCancelModal(booking); }}
+                            className="btn btn-ghost shrink-0 hover:text-red-500!"
+                          >
+                            Cancel
+                          </button>
                           <button
                             onClick={(e) => openSitterChat(e, booking)}
                             className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
@@ -922,6 +975,50 @@ export default function BookingHistoryPage() {
               </button>
               <button onClick={handleSubmitReport} className="btn btn-primary">
                 Send Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Confirmation Modal */}
+      {cancelBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeCancelModal}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "480px",
+              borderRadius: "16px",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>Cancel Booking</h3>
+              <button onClick={closeCancelModal} disabled={isCancelling} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-6">
+              <p className="text-body-2" style={{ color: "#3A3B46" }}>
+                Are you sure you want to cancel this booking with{" "}
+                {cancelBooking.sitter_name || "this pet sitter"}?
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 pb-6" style={{ gap: "16px" }}>
+              <button onClick={closeCancelModal} disabled={isCancelling} className="btn btn-secondary flex-1">
+                Keep Booking
+              </button>
+              <button onClick={handleConfirmCancel} disabled={isCancelling} className="btn btn-primary flex-1">
+                {isCancelling ? "Cancelling..." : "Yes, Cancel"}
               </button>
             </div>
           </div>
