@@ -13,6 +13,7 @@ import {
   bookingRangeOverlapsBooked,
   dateHasBookedSlot,
   dateRangeOverlapsBooked,
+  formatBookingDate,
   isTimeInsideBookedSlot,
   normalizeBookedSlots,
 } from "@/lib/booking";
@@ -144,13 +145,6 @@ function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
-}
-
-function formatBookingDate(value) {
-  if (!value) return "";
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}, ${date.getFullYear()}`;
 }
 
 function getCalendarDays(year, month) {
@@ -326,18 +320,21 @@ function LoginRequiredModal({ onClose, onLogin }) {
   );
 }
 
-function DateField({ value, placeholder, open, onToggle }) {
+function DateField({ value, placeholder, open, onToggle, children }) {
   return (
-    <button
-      type="button"
-      aria-expanded={open}
-      onClick={onToggle}
-      className={`input min-w-0 flex-1 cursor-pointer text-left ${
-        value ? "text-black" : "text-gray-400"
-      }`}
-    >
-      {formatBookingDate(value) || placeholder}
-    </button>
+    <div className="relative min-w-0 flex-1">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className={`input w-full cursor-pointer text-left ${
+          value ? "text-black" : "text-gray-400"
+        }`}
+      >
+        {formatBookingDate(value) || placeholder}
+      </button>
+      {children}
+    </div>
   );
 }
 
@@ -351,9 +348,14 @@ function BookingCalendar({
   isInRange,
   onSelect,
   hint,
+  align = "start",
 }) {
   return (
-    <div className="absolute top-[calc(100%+8px)] left-10 z-30 w-[min(100%,20rem)] rounded-xl bg-white p-4 shadow-(--shadow-dropdown)">
+    <div
+      className={`absolute top-[calc(100%+8px)] z-30 w-80 rounded-xl bg-white p-4 shadow-(--shadow-dropdown) ${
+        align === "end" ? "right-0" : "left-0"
+      }`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <button
           type="button"
@@ -364,7 +366,10 @@ function BookingCalendar({
           <Icon src="/icon/chevron-left.svg" className="h-4 w-4" />
         </button>
         <p className="text-body-2 font-bold text-black">
-          {MONTHS[viewMonth]} {viewYear}
+          {new Date(viewYear, viewMonth, 1).toLocaleDateString("en-GB", {
+            month: "long",
+            year: "numeric",
+          })}
         </p>
         <button
           type="button"
@@ -595,6 +600,34 @@ function BookingModal({
     onContinue(event);
   }
 
+  const calendarProps = {
+    viewYear,
+    viewMonth,
+    calendarDays,
+    onShiftMonth: shiftMonth,
+    isDateUnavailable:
+      openPicker === "endDate"
+        ? isManyEndUnavailable
+        : openPicker === "startDate"
+          ? isManyStartUnavailable
+          : isOneDayUnavailable,
+    isHighlighted: (key) => key === startDate || key === endDate,
+    isInRange: (key) =>
+      Boolean(
+        startDate &&
+          endDate &&
+          startDate !== endDate &&
+          key > startDate &&
+          key < endDate,
+      ),
+    onSelect: selectDate,
+    hint: isManyDays
+      ? openPicker === "endDate"
+        ? "Select an end date"
+        : "Select a start date"
+      : "",
+  };
+
   return (
     <div
       className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4"
@@ -663,7 +696,7 @@ function BookingModal({
           </div>
 
           <div ref={pickerRef} className="flex flex-col gap-6">
-            <div className="relative flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <Icon src="/icon/calendar.svg" className="h-6 w-6 shrink-0 text-gray-400" />
               {isManyDays ? (
                 <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -672,14 +705,22 @@ function BookingModal({
                     placeholder="Start date"
                     open={openPicker === "startDate"}
                     onToggle={() => openDatePicker("startDate")}
-                  />
+                  >
+                    {openPicker === "startDate" ? (
+                      <BookingCalendar {...calendarProps} />
+                    ) : null}
+                  </DateField>
                   <span className="text-body-2 text-gray-400">-</span>
                   <DateField
                     value={endDate}
                     placeholder="End date"
                     open={openPicker === "endDate"}
                     onToggle={() => openDatePicker("endDate")}
-                  />
+                  >
+                    {openPicker === "endDate" ? (
+                      <BookingCalendar {...calendarProps} align="end" />
+                    ) : null}
+                  </DateField>
                 </div>
               ) : (
                 <DateField
@@ -687,43 +728,10 @@ function BookingModal({
                   placeholder="Select date"
                   open={openPicker === "date"}
                   onToggle={() => openDatePicker("date")}
-                />
+                >
+                  {openPicker === "date" ? <BookingCalendar {...calendarProps} /> : null}
+                </DateField>
               )}
-              {(openPicker === "date" ||
-              openPicker === "startDate" ||
-              openPicker === "endDate") ? (
-                <BookingCalendar
-                  viewYear={viewYear}
-                  viewMonth={viewMonth}
-                  calendarDays={calendarDays}
-                  onShiftMonth={shiftMonth}
-                  isDateUnavailable={
-                    openPicker === "endDate"
-                      ? isManyEndUnavailable
-                      : openPicker === "startDate"
-                        ? isManyStartUnavailable
-                        : isOneDayUnavailable
-                  }
-                  isHighlighted={(key) => key === startDate || key === endDate}
-                  isInRange={(key) =>
-                    Boolean(
-                      startDate &&
-                        endDate &&
-                        startDate !== endDate &&
-                        key > startDate &&
-                        key < endDate,
-                    )
-                  }
-                  onSelect={selectDate}
-                  hint={
-                    isManyDays
-                      ? openPicker === "endDate"
-                        ? "Select an end date"
-                        : "Select a start date"
-                      : ""
-                  }
-                />
-              ) : null}
             </div>
 
             {!isManyDays ? (
@@ -1441,20 +1449,14 @@ export default function PetSitterDetail({ sitterId }) {
             )}
 
             <div className="mt-6 flex w-full gap-3 border-t border-gray-200 pt-6">
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  className="btn btn-secondary min-w-0 flex-1 px-3"
-                  onClick={handleSendMessage}
-                  disabled={sendingMessage}
-                >
-                  {sendingMessage ? "Opening..." : "Send Message"}
-                </button>
-              ) : (
-                <Link href={loginHref} className="btn btn-secondary min-w-0 flex-1 px-3">
-                  Send Message
-                </Link>
-              )}
+              <button
+                type="button"
+                className="btn btn-secondary min-w-0 flex-1 px-3"
+                onClick={() => requireLogin(handleSendMessage)}
+                disabled={sendingMessage}
+              >
+                {sendingMessage ? "Opening..." : "Send Message"}
+              </button>
               <button
                 type="button"
                 className="btn btn-primary min-w-0 flex-1 px-3"
