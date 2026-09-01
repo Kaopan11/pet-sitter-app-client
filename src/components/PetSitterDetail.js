@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +9,16 @@ import { toast } from "sonner";
 import Icon from "./Icon";
 import Pagination from "./Pagination";
 import { createConversation, getSitter, getSitterAvailability, getSitterReviews } from "@/lib/api";
+
+const Map = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-72 w-full animate-pulse rounded-2xl bg-gray-100 flex items-center justify-center text-gray-400 font-medium">
+      กำลังโหลดแผนที่...
+    </div>
+  ),
+});
+
 import { getToken, getUser } from "@/lib/auth";
 import {
   bookingRangeOverlapsBooked,
@@ -1360,30 +1371,34 @@ export default function PetSitterDetail({ sitterId }) {
             </section>
           )}
 
-          {sitter.location && (
-            <section className="overflow-hidden rounded-2xl">
+          {(sitter.location || sitter.latitude) && (
+            <section className="overflow-hidden rounded-2xl border border-gray-100 shadow-xs">
               <div className="relative h-72 w-full bg-gray-100">
-                <iframe
-                  title={`${sitter.title} location`}
-                  src={mapSrc}
-                  className="absolute inset-0 h-full w-full border-0"
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
+                <Map
+                  center={[
+                    Number(sitter.latitude) || 13.7563,
+                    Number(sitter.longitude) || 100.5018,
+                  ]}
+                  zoom={15}
+                  selectedId={sitter.id}
+                  markers={[
+                    {
+                      id: sitter.id,
+                      position: [
+                        Number(sitter.latitude) || 13.7563,
+                        Number(sitter.longitude) || 100.5018,
+                      ],
+                      popup: sitter.title || sitter.sitter_name || "Pet Sitter",
+                      isSelected: true,
+                    },
+                  ]}
+                  className="h-full w-full z-0"
                 />
-                <a
-                  href={mapHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="absolute top-1/2 left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
-                >
-                  <span className="flex size-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-(--shadow-dropdown)">
-                    <Icon src="/icon/paw.svg" className="h-7 w-7" />
-                  </span>
-                  <span className="text-body-2 font-bold text-orange-500">See Map</span>
-                </a>
+
               </div>
             </section>
           )}
+
 
           <ReviewsSection
             sitterId={sitter.id ?? sitterId}

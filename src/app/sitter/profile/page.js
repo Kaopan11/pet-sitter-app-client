@@ -20,6 +20,16 @@ import {
   errorToastClassNames,
   successToastClassNames,
 } from "@/lib/toastStyles";
+import dynamic from "next/dynamic";
+
+const LocationPicker = dynamic(() => import("@/components/location/LocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] w-full items-center justify-center rounded-2xl bg-gray-100 text-body-2 text-gray-400 font-medium">
+      กำลังโหลดระบบแผนที่เลือกพิกัด...
+    </div>
+  )
+});
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -53,6 +63,8 @@ const initialForm = {
   subDistrict: "",
   province: "",
   postCode: "",
+  latitude: 13.7563,
+  longitude: 100.5018,
 };
 
 const initialErrors = {
@@ -127,6 +139,8 @@ export default function PetSitterProfilePage() {
       subDistrict: profile.sub_district ?? "",
       province: profile.province ?? "",
       postCode: profile.post_code ?? "",
+      latitude: profile.latitude != null ? Number(profile.latitude) : 13.7563,
+      longitude: profile.longitude != null ? Number(profile.longitude) : 100.5018,
     };
 
     setForm(nextForm);
@@ -406,6 +420,8 @@ export default function PetSitterProfilePage() {
       formData.append("sub_district", form.subDistrict);
       formData.append("province", form.province);
       formData.append("post_code", form.postCode);
+      if (form.latitude != null) formData.append("latitude", String(form.latitude));
+      if (form.longitude != null) formData.append("longitude", String(form.longitude));
       formData.append("experience_years", form.experience);
       formData.append("email", form.email.trim());
       formData.append("id_number", form.idNumber.trim());
@@ -863,12 +879,24 @@ export default function PetSitterProfilePage() {
           </div>
         </div>
 
-        <div
-          className="flex h-56 items-center justify-center rounded-xl bg-gray-200 text-body-2 text-gray-400"
-          role="img"
-          aria-label="Map preview"
-        >
-          Map preview
+        <div className="mt-4">
+          <LocationPicker
+            address={{
+              addressDetail: form.addressDetail,
+              district: form.district,
+              subDistrict: form.subDistrict,
+              province: form.province,
+              postcode: form.postCode,
+              latitude: form.latitude || 13.7563,
+              longitude: form.longitude || 100.5018,
+            }}
+            onChange={(updates) => {
+              setForm((prev) => ({
+                ...prev,
+                ...updates,
+              }));
+            }}
+          />
         </div>
       </section>
       ) : null}
