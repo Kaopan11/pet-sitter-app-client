@@ -68,8 +68,7 @@ export default function OwnerPetsCreatePage() {
       sex,
       age,
       color,
-      weight,
-    });
+      weight,});
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -121,7 +120,7 @@ export default function OwnerPetsCreatePage() {
         <div className="flex w-full min-w-0 flex-col gap-4 lg:flex-row lg:justify-center lg:gap-0">
           <AccountSidebar />
 
-          <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
+          <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-222 lg:w-2/3 lg:p-10">
             <h3 className="text-h3">Your Pet</h3>
 
             <div className="mx-4 my-8">
@@ -313,7 +312,7 @@ export default function OwnerPetsCreatePage() {
                   name="about"
                   value={about}
                   onChange={(event) => setAbout(event.target.value)}
-                  className="input min-h-[120px] resize-y"
+                  className="input min-h-30 resize-y"
                   placeholder="Describe more about your pet..."
                 />
               </label>

@@ -3,19 +3,22 @@
 import Link from "next/link";
 import { Eye, X } from "lucide-react";
 import Icon from "@/components/Icon";
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatBookedDateDetail, formatDate } from "@/utils/formatDateTime";
 import { formatBookingDurationFromRecord } from "@/lib/booking";
 import { createConversation } from "@/lib/api";
 import {
+  BOOKING_ERROR_ACTION,
+  getSitterBooking,
+  normalizeBookingStatusError,
+  updateSitterBookingStatus,
+} from "@/lib/api/sitterBooking";
+import {
   errorToastClassNames,
   successToastClassNames,
 } from "@/lib/toastStyles";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const STATUS = {
   waiting_confirm: { label: "Waiting for confirm", text: "text-pink", dot: "bg-pink" },
@@ -35,32 +38,53 @@ export default function BookingDetailPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  const getBookingById = async () => {
-    const response = await axios.get(`${API_BASE_URL}/api/sitters/bookings/${id}`);
-    setBooking(response.data.data ?? null);
-  };
+  const loadBooking = useCallback(async () => {
+    if (!id) return;
+    try {
+      const data = await getSitterBooking(id);
+      setBooking(data);
+    } catch (error) {
+      const { action, message } = normalizeBookingStatusError(
+        error,
+        "Failed to load booking",
+      );
+      if (action === BOOKING_ERROR_ACTION.LOGIN) {
+        router.replace("/login");
+        return;
+      }
+      toast(message, { classNames: errorToastClassNames });
+    }
+  }, [id, router]);
 
   useEffect(() => {
-    if (!id) return;
-    getBookingById();
-  }, [id]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only booking load
+    void loadBooking();
+  }, [loadBooking]);
 
+  /**
+   * PATCH สถานะ booking — T04
+   * Confirm (waiting_service): BE capture Stripe → ถ้าล้มเหลวคืน 402 + message
+   */
   const updateBookingStatus = async (nextStatus, successMessage) => {
     if (!id || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
     try {
-      await axios.patch(`${API_BASE_URL}/api/sitters/bookings/${id}/status`, {
-        status: nextStatus,
-      });
+      await updateSitterBookingStatus(id, nextStatus);
       setShowRejectModal(false);
-      await getBookingById();
+      await loadBooking();
       toast(successMessage, {
         classNames: successToastClassNames,
       });
     } catch (error) {
-      toast(error.response?.data?.message || "Failed to update booking status", {
-        classNames: errorToastClassNames,
-      });
+      const { action, message } = normalizeBookingStatusError(error);
+
+      if (action === BOOKING_ERROR_ACTION.LOGIN) {
+        router.replace("/login");
+        return;
+      }
+
+      // 402 = Payment capture failed — แสดง error.message จาก BE (เช่น บัตรปฏิเสธ)
+      toast(message, { classNames: errorToastClassNames });
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -201,7 +225,7 @@ export default function BookingDetailPage() {
                 <li key={pet.id}>
                   <button
                     type="button"
-                    className="flex w-[207px] cursor-pointer flex-col items-center gap-4 rounded-2xl border border-gray-200 bg-white p-6 text-left"
+                    className="flex w-51.75 cursor-pointer flex-col items-center gap-4 rounded-2xl border border-gray-200 bg-white p-6 text-left"
                     onClick={() => setSelectedPet(pet)}
                   >
                     {pet.avatar_url ? (
@@ -299,7 +323,7 @@ export default function BookingDetailPage() {
                 <div className="h-60 w-60 rounded-full bg-gray-200" aria-hidden="true" />
               )}
             </div>
-            <div className="flex w-[440px] flex-col gap-10 rounded-lg bg-[#FAFAFB] p-6">
+            <div className="flex w-110 flex-col gap-10 rounded-lg bg-[#FAFAFB] p-6">
               <DetailField label="Pet Owner Name">{owner.name || "—"}</DetailField>
               <DetailField label="Email">{owner.email || "—"}</DetailField>
               <DetailField label="Phone">{owner.phone || "—"}</DetailField>
