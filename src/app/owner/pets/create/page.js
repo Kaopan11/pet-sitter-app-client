@@ -68,8 +68,7 @@ export default function OwnerPetsCreatePage() {
       sex,
       age,
       color,
-      weight,
-    });
+      weight,});
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
