@@ -93,7 +93,6 @@ export default function AdminPetSitterDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [rejectNote, setRejectNote] = useState("");
 
   const statusStyle = STATUS[sitterData?.approval_status] ?? STATUS.Unverified;
   const isWaiting =
@@ -130,12 +129,17 @@ export default function AdminPetSitterDetailPage() {
   async function updateStatus(approvalStatus) {
     setIsSaving(true);
     try {
-      await axios.patch(`${API_BASE_URL}/api/admin/sitters/${id}/status`, {
-        approval_status: approvalStatus,
-      });
+      // ส่งไปว่า admin กด approve หรือ reject ถ้า reject ก็ส่ง rejection_reason ด้วย
+      const body = { approval_status: approvalStatus };
+      if (approvalStatus === "Rejected") {
+        body.rejection_reason = reason.trim();
+      }
+      await axios.patch(`${API_BASE_URL}/api/admin/sitters/${id}/status`, body);
+
       const response = await axios.get(`${API_BASE_URL}/api/admin/sitters/${id}`);
       setSitterData(response.data.data ?? null);
       setIsRejectOpen(false);
+      setReason("");
       toast(
         approvalStatus === "Approved"
           ? "Pet sitter approved"
@@ -152,9 +156,7 @@ export default function AdminPetSitterDetailPage() {
   }
 
   function handleReject() {
-    const note = reason.trim();
-    if (!note) return;
-    setRejectNote(note);
+    if (!reason.trim()) return;
     updateStatus("Rejected");
   }
 
@@ -172,7 +174,7 @@ export default function AdminPetSitterDetailPage() {
 
             <div className="flex items-center gap-6">
                 <h1 className="text-h3 text-black">
-                    {sitterData?.full_name || "Pet Sitter"}
+                    {sitterData?.full_name}
                 </h1>
 
                 {sitterData ? (
@@ -216,7 +218,9 @@ export default function AdminPetSitterDetailPage() {
           <CircleAlert className="size-6 shrink-0" aria-hidden="true" />
           <span>
             Their request has not been approved
-            {rejectNote ? `: '${rejectNote}'` : "."}
+            {sitterData.rejection_reason
+              ? `: '${sitterData.rejection_reason}'`
+              : "."}
           </span>
         </p>
       ) : null}
