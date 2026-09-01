@@ -212,8 +212,8 @@ export default function AdminPetSitterDetailPage() {
       </header>
 
       {isRejected ? (
-        <p className="flex items-start gap-3 rounded-2xl bg-gray-100 px-6 py-4 text-body-2 text-red">
-          <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+        <p className="flex items-center gap-2.5 rounded-md bg-gray-200 p-3 text-body-2 text-red">
+          <CircleAlert className="size-6 shrink-0" aria-hidden="true" />
           <span>
             Their request has not been approved
             {rejectNote ? `: '${rejectNote}'` : "."}
@@ -320,15 +320,15 @@ export default function AdminPetSitterDetailPage() {
                 <div className="flex flex-col gap-1">
                   <p className="text-h4 text-gray-300">Image Gallery</p>
                   {photos.length > 0 ? (
-                    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <ul className="flex flex-wrap gap-4">
                       {photos.map((src) => (
                         <li
                           key={src}
-                          className="relative h-48 overflow-hidden rounded-md bg-gray-100"
+                          className="relative h-46 w-62 overflow-hidden bg-gray-100"
                         >
                           <Image
                             src={src}
-                            alt={`${sitterData.pet_sitter_name || sitterData.full_name || "Pet sitter"} gallery photo`}
+                            alt="gallery photo"
                             fill
                             unoptimized
                             className="object-cover"
@@ -348,7 +348,7 @@ export default function AdminPetSitterDetailPage() {
                 <Field label="Address">{dash(address)}</Field>
                 <div className="relative overflow-hidden rounded-md">
                   <iframe
-                    title={`${sitterData.full_name || "Pet sitter"} location`}
+                    title="location"
                     src={mapSrc}
                     className="h-112 w-full border-0"
                     loading="lazy"
@@ -377,10 +377,10 @@ export default function AdminPetSitterDetailPage() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="reject-title"
-            className="w-full max-w-lg rounded-2xl bg-white"
+            className="w-full max-w-[600px] overflow-hidden rounded-2xl bg-white shadow-[4px_4px_24px_0px_rgba(0,0,0,0.04)]"
           >
-            <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <h2 id="reject-title" className="text-h4 text-gray-900">
+            <header className="flex h-15 items-center justify-between border-b border-gray-200 px-6 py-4">
+              <h2 id="reject-title" className="text-h4 text-black">
                 Reject Confirmation
               </h2>
               <button
@@ -393,37 +393,39 @@ export default function AdminPetSitterDetailPage() {
               </button>
             </header>
 
-            <div className="flex flex-col gap-2 px-6 py-6">
-              <label htmlFor="reject-reason" className="text-body-2 text-black">
-                Reason and suggestion
-              </label>
-              <textarea
-                id="reject-reason"
-                className="input min-h-30 resize-y"
-                placeholder="Admin's suggestion here"
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-            </div>
+            <div className="flex flex-col gap-6 p-6">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="reject-reason" className="text-body-2 text-black">
+                  Reason and suggestion
+                </label>
+                <textarea
+                  id="reject-reason"
+                  className="input h-35 resize-none"
+                  placeholder="Admin's suggestion here"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                />
+              </div>
 
-            <footer className="flex items-center justify-between px-6 pb-6">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setIsRejectOpen(false)}
-                disabled={isSaving}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleReject}
-                disabled={isSaving || !reason.trim()}
-              >
-                {isSaving ? "Rejecting..." : "Reject"}
-              </button>
-            </footer>
+              <footer className="flex items-center justify-between">
+                <button
+                  type="button"
+                  className="btn btn-secondary min-w-30"
+                  onClick={() => setIsRejectOpen(false)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary min-w-30"
+                  onClick={handleReject}
+                  disabled={isSaving || !reason.trim()}
+                >
+                  {isSaving ? "Rejecting..." : "Reject"}
+                </button>
+              </footer>
+            </div>
           </section>
         </div>
       ) : null}
