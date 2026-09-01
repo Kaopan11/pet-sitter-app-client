@@ -10,7 +10,7 @@ function assertApiUrl() {
   }
 }
 
-async function apiFetch(path, { method = "GET", body } = {}) {
+export async function apiFetch(path, { method = "GET", body } = {}) {
   assertApiUrl();
 
   const token = getToken();
