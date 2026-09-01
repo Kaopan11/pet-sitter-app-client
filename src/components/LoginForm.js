@@ -23,7 +23,7 @@ function getLoginToastMessage(message) {
   return message || "Login failed";
 }
 
-// ฟอร์ม login ร่วม owner/sitter — หน้า page เป็นคนเปิด Remember / social
+// ฟอร์ม login ร่วม — หน้า page เป็นคนเปิด Remember / social
 export default function LoginForm({
   title,
   subtitle,
@@ -33,8 +33,6 @@ export default function LoginForm({
   showRemember = false,
   showForgotPassword = false,
   showSocial = false,
-  /** "owner" | "sitter" — ใช้ตอนกลับจาก /forgot-password */
-  forgotPasswordFrom = "owner",
 }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -44,12 +42,10 @@ export default function LoginForm({
 
   // ลิงก์ไป /forgot-password — พกอีเมลที่พิมพ์ไว้ (ถ้ามี)
   const forgotPasswordHref = (() => {
-    const params = new URLSearchParams();
     const trimmed = email.trim();
-    if (trimmed) params.set("email", trimmed);
-    if (forgotPasswordFrom === "sitter") params.set("from", "sitter");
-    const query = params.toString();
-    return query ? `/forgot-password?${query}` : "/forgot-password";
+    return trimmed
+      ? `/forgot-password?${new URLSearchParams({ email: trimmed })}`
+      : "/forgot-password";
   })();
 
   async function handleSubmit(event) {
