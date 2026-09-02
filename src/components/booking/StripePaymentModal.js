@@ -9,6 +9,7 @@ import {
 } from "@stripe/react-stripe-js";
 import Icon from "@/components/Icon";
 import { getStripe } from "@/lib/stripe";
+import { isStripePaymentAuthorized } from "@/lib/stripePayment";
 
 function StripeCheckoutForm({ onSuccess, onCancel }) {
   const stripe = useStripe();
@@ -39,11 +40,8 @@ function StripeCheckoutForm({ onSuccess, onCancel }) {
         return;
       }
 
-      if (
-        paymentIntent &&
-        (paymentIntent.status === "succeeded" ||
-          paymentIntent.status === "processing")
-      ) {
+      // requires_capture = authorize สำเร็จ (manual capture) — ไม่ใช่ error
+      if (isStripePaymentAuthorized(paymentIntent)) {
         onSuccess();
         return;
       }
