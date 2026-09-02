@@ -1,12 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Phone, SquarePen, X, MapPin, Star } from "lucide-react";
+import { Calendar, Phone, SquarePen, X, MapPin, Star } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { getToken, getUser } from "@/lib/auth";
-import { createConversation, getSitters } from "@/lib/api";
-import { formatBookingDurationFromRecord, formatBookingDateRangeFromRecord, isManyDayBookingRecord } from "@/lib/booking";
+import { createConversation, getSitterAvailability, getSitters } from "@/lib/api";
+import {
+  bookingRangeOverlapsBooked,
+  calculateBookingNights,
+  dateHasBookedSlot,
+  dateRangeOverlapsBooked,
+  formatBookingDurationFromRecord,
+  formatBookingDateRangeFromRecord,
+  isManyDayBookingRecord,
+  normalizeBookedSlots,
+  normalizeBookingDate,
+  normalizeBookingTime,
+} from "@/lib/booking";
+import {
+  BookingCalendar,
+  DateField,
+  getCalendarDays,
+  startOfToday,
+  toDateKey,
+} from "@/components/booking/BookingCalendarPicker";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -97,6 +115,14 @@ export default function BookingHistoryPage() {
   const [reportDescription, setReportDescription] = useState("");
   const [cancelBooking, setCancelBooking] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [changeDateBooking, setChangeDateBooking] = useState(null);
+  const [newStartDate, setNewStartDate] = useState("");
+  const [changeBookedSlots, setChangeBookedSlots] = useState([]);
+  const [changeViewYear, setChangeViewYear] = useState(new Date().getFullYear());
+  const [changeViewMonth, setChangeViewMonth] = useState(new Date().getMonth());
+  const [changePickerOpen, setChangePickerOpen] = useState(false);
+  const [isSavingDate, setIsSavingDate] = useState(false);
+  const changePickerRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +177,19 @@ export default function BookingHistoryPage() {
       cancelled = true;
     };
   }, [router]);
+
+  useEffect(() => {
+    if (!changeDateBooking) return;
+
+    function handlePointerDown(event) {
+      if (!changePickerRef.current?.contains(event.target)) {
+        setChangePickerOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [changeDateBooking]);
 
   async function openSitterChat(event, booking) {
     event.stopPropagation();
@@ -324,6 +363,138 @@ export default function BookingHistoryPage() {
     }
   };
 
+  // ticket 05: Change date — reuse the same calendar UI as the booking flow
+  function addDaysToKey(key, days) {
+    const [year, month, day] = key.split("-").map(Number);
+    return toDateKey(new Date(year, month - 1, day + days));
+  }
+
+  const changeNights = changeDateBooking
+    ? calculateBookingNights(
+        normalizeBookingDate(changeDateBooking.start_date),
+        normalizeBookingDate(changeDateBooking.end_date) ||
+          normalizeBookingDate(changeDateBooking.start_date)
+      ) || 0
+    : 0;
+
+  async function openChangeDateModal(booking) {
+    const originalStart = normalizeBookingDate(booking.start_date);
+    const base = originalStart ? new Date(`${originalStart}T00:00:00`) : startOfToday();
+
+    setChangeDateBooking(booking);
+    setNewStartDate(originalStart);
+    setChangeViewYear(base.getFullYear());
+    setChangeViewMonth(base.getMonth());
+    setChangePickerOpen(true);
+    setChangeBookedSlots([]);
+
+    const sitterId = bookingSitterId(booking);
+    if (!sitterId) return;
+
+    try {
+      const data = await getSitterAvailability(sitterId);
+      const originalEnd = normalizeBookingDate(booking.end_date) || originalStart;
+      const slots = normalizeBookedSlots(data).filter(
+        (slot) => !(slot.date >= originalStart && slot.date <= originalEnd)
+      );
+      setChangeBookedSlots(slots);
+    } catch {
+      setChangeBookedSlots([]);
+    }
+  }
+
+  function closeChangeDateModal() {
+    if (isSavingDate) return;
+    setChangeDateBooking(null);
+    setNewStartDate("");
+    setChangeBookedSlots([]);
+    setChangePickerOpen(false);
+  }
+
+  function shiftChangeMonth(step) {
+    const next = new Date(changeViewYear, changeViewMonth + step, 1);
+    setChangeViewYear(next.getFullYear());
+    setChangeViewMonth(next.getMonth());
+  }
+
+  function selectChangeDate(nextDate) {
+    setNewStartDate(toDateKey(nextDate));
+    setChangePickerOpen(false);
+  }
+
+  function isChangeDateUnavailable(key, item) {
+    if (item.date < startOfToday()) return true;
+
+    if (changeNights > 0) {
+      return dateRangeOverlapsBooked(key, addDaysToKey(key, changeNights), changeBookedSlots);
+    }
+
+    const startTime = normalizeBookingTime(changeDateBooking?.start_time);
+    const endTime = normalizeBookingTime(changeDateBooking?.end_time);
+    if (startTime && endTime) {
+      return bookingRangeOverlapsBooked(key, key, startTime, endTime, changeBookedSlots);
+    }
+    return dateHasBookedSlot(key, changeBookedSlots);
+  }
+
+  function isChangeDateHighlighted(key) {
+    if (!newStartDate) return false;
+    return key === newStartDate || (changeNights > 0 && key === addDaysToKey(newStartDate, changeNights));
+  }
+
+  function isChangeDateInRange(key) {
+    if (!newStartDate || changeNights <= 0) return false;
+    const end = addDaysToKey(newStartDate, changeNights);
+    return key > newStartDate && key < end;
+  }
+
+  const handleSaveDate = async () => {
+    if (!changeDateBooking || !newStartDate) return;
+
+    const newEndDate = changeNights > 0 ? addDaysToKey(newStartDate, changeNights) : newStartDate;
+
+    setIsSavingDate(true);
+    try {
+      const token = getToken();
+      const res = await fetch(
+        `${API_URL}/api/bookings/owner/${changeDateBooking.id}/reschedule`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate }),
+        }
+      );
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.message || "Failed to change booking date");
+      }
+
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === changeDateBooking.id
+            ? { ...b, start_date: newStartDate, end_date: newEndDate }
+            : b
+        )
+      );
+      setSelectedBooking((prev) =>
+        prev && prev.id === changeDateBooking.id
+          ? { ...prev, start_date: newStartDate, end_date: newEndDate }
+          : prev
+      );
+
+      toast.success("Booking date updated");
+      closeChangeDateModal();
+    } catch (error) {
+      toast.error(error.message || "Failed to change booking date");
+    } finally {
+      setIsSavingDate(false);
+    }
+  };
+
   const openReportModal = (booking) => {
     setReportSubject("");
     setReportDescription("");
@@ -451,7 +622,7 @@ export default function BookingHistoryPage() {
                         {formatHistoryDateTime(booking)}
                         {booking.status === "waiting_confirm" && (
                           <button
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); openChangeDateModal(booking); }}
                             className="inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity text-body-2"
                             style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                           >
@@ -712,7 +883,7 @@ export default function BookingHistoryPage() {
                 </div>
                 {selectedBooking.status === "waiting_confirm" && (
                   <button
-                    onClick={() => toast.info("Change booking feature coming soon")}
+                    onClick={() => openChangeDateModal(selectedBooking)}
                     className="inline-flex items-center gap-1 shrink-0 cursor-pointer hover:opacity-80 transition-opacity text-body-2"
                     style={{ color: "#FF7037", fontWeight: 700, textAlign: "center" }}
                   >
@@ -1019,6 +1190,84 @@ export default function BookingHistoryPage() {
               </button>
               <button onClick={handleConfirmCancel} disabled={isCancelling} className="btn btn-primary flex-1">
                 {isCancelling ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Booking Date Modal — same calendar UI as the Book Now flow */}
+      {changeDateBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={closeChangeDateModal}
+        >
+          <div
+            className="w-full flex flex-col bg-white font-sans"
+            style={{
+              maxWidth: "480px",
+              borderRadius: "16px",
+              overflow: "visible",
+              boxShadow: "0px 4px 24px 0px rgba(0, 0, 0, 0.04)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
+              <h3 className="text-h3" style={{ color: "#3A3B46" }}>Change Booking Date</h3>
+              <button onClick={closeChangeDateModal} disabled={isSavingDate} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
+                <X className="size-5" style={{ color: "#3A3B46" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col gap-4 px-6 py-6">
+              <p className="text-body-2" style={{ color: "#3A3B46" }}>
+                {changeDateBooking.sitter_name
+                  ? `Pick a new date for your booking with ${changeDateBooking.sitter_name}.`
+                  : "Pick a new date for your booking."}
+              </p>
+
+              <div ref={changePickerRef} className="flex items-center gap-4">
+                <Calendar className="h-6 w-6 shrink-0 text-gray-400" />
+                <DateField
+                  value={newStartDate}
+                  placeholder="Select date"
+                  open={changePickerOpen}
+                  onToggle={() => setChangePickerOpen((open) => !open)}
+                >
+                  {changePickerOpen ? (
+                    <BookingCalendar
+                      viewYear={changeViewYear}
+                      viewMonth={changeViewMonth}
+                      calendarDays={getCalendarDays(changeViewYear, changeViewMonth)}
+                      onShiftMonth={shiftChangeMonth}
+                      isDateUnavailable={isChangeDateUnavailable}
+                      isHighlighted={isChangeDateHighlighted}
+                      isInRange={isChangeDateInRange}
+                      onSelect={selectChangeDate}
+                      hint={changeNights > 0 ? `${changeNights} night${changeNights > 1 ? "s" : ""} stay` : ""}
+                    />
+                  ) : null}
+                </DateField>
+              </div>
+
+              <p className="text-body-3" style={{ color: "#AEB1C3" }}>
+                Grayed-out dates are in the past or already booked.
+              </p>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 pb-6" style={{ gap: "16px" }}>
+              <button onClick={closeChangeDateModal} disabled={isSavingDate} className="btn btn-secondary flex-1">
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDate}
+                disabled={isSavingDate || !newStartDate}
+                className="btn btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingDate ? "Saving..." : "Confirm change"}
               </button>
             </div>
           </div>
