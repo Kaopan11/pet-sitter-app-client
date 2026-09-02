@@ -124,8 +124,9 @@ export default function AdminPetSitterDetailLayout({ children }) {
             ) : null}
           </div>
         </div>
-
-        {isWaiting ? (
+        
+        {/* ปุ่ม approve หรือ reject จะแสดงขึ้นหน้า profile เท่านั้น */}
+        {isWaiting && pathname === tabHref(id, "profile") ? (
           <div className="flex items-center gap-2">
             <button
               type="button"
