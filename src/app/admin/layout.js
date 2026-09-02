@@ -3,14 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
-import { getUser } from "@/lib/auth";
+import { getUser, isAdminUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
-
-function isAdminUser(user) {
-  return Boolean(user?.isAdmin);
-}
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
