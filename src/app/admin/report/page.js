@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import { getReports } from "@/lib/api";
 import Pagination from "@/components/Pagination";
 
@@ -61,40 +62,32 @@ export default function AdminReportPage() {
     );
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
+    <div className="flex w-full min-w-0 flex-col gap-6">
       {/* Title & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex w-full items-center justify-between">
         <h1 className="text-xl font-bold text-[#323640]">Report</h1>
-        <div className="relative w-full sm:w-64">
+        <label className="relative block w-60">
           <input
-            type="text"
+            className="input pr-10"
+            type="search"
+            name="search"
             placeholder="Search..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-4 pr-10 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:border-[#FF7037] placeholder-gray-400 text-gray-700 shadow-xs"
           />
-          <svg
-            className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        </div>
+          <Search
+            className="pointer-events-none absolute top-1/2 right-3 h-6 w-6 -translate-y-1/2 text-gray-300"
+            aria-hidden="true"
+          />
+        </label>
       </div>
 
       {/* Table Area */}
-      <div className="overflow-x-auto rounded-xl shadow-xs">
-        <table className="w-full border-collapse text-left text-xs sm:text-sm">
+      <div className="w-full min-w-0 overflow-hidden rounded-2xl bg-white">
+        <table className="w-full table-fixed border-collapse text-left text-xs sm:text-sm">
           <thead>
             <tr className="bg-[#000000] text-white">
               <th className="py-3.5 px-6 font-medium rounded-tl-xl">

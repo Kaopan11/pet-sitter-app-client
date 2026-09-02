@@ -27,7 +27,7 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-100 [&_button]:cursor-pointer [&_button:disabled]:cursor-not-allowed">
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

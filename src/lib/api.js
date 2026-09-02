@@ -1,6 +1,7 @@
 // src/lib — คุยกับ backend / เก็บ session
 // เรียก API ตาม NEXT_PUBLIC_API_URL จาก .env.example (local:4000 | prod: Render)
 import { getToken } from "@/lib/auth";
+import { formatDate } from "@/utils/formatDateTime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -428,6 +429,124 @@ export async function sendMessage(conversationId, { content = "", imageFile } = 
     },
   );
   return json.data;
+}
+
+function formatOwnerPhone(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (digits.length !== 10) return value || "—";
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+}
+
+function formatOwnerIdNumber(value) {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (digits.length !== 13) return value || "—";
+  return `${digits.slice(0, 4)} ${digits.slice(4, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
+}
+
+function formatOwnerDob(value) {
+  if (!value) return "—";
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return formatDate(value) || "—";
+  const date = new Date(year, month - 1, day);
+  return `${day} ${date.toLocaleString("en-GB", { month: "short" })} ${year}`;
+}
+
+function formatPetAge(months) {
+  if (months == null || months === "") return "—";
+  const count = Number(months);
+  if (Number.isNaN(count)) return String(months);
+  if (count < 12) return `${count} Month${count === 1 ? "" : "s"}`;
+  const years = Math.floor(count / 12);
+  const rest = count % 12;
+  const yearLabel = `${years} Year${years === 1 ? "" : "s"}`;
+  if (rest === 0) return yearLabel;
+  return `${yearLabel} ${rest} Month${rest === 1 ? "" : "s"}`;
+}
+
+function mapOwnerPet(pet) {
+  if (!pet || typeof pet !== "object") return null;
+  const months = pet.age_months ?? pet.age;
+  return {
+    id: String(pet.id),
+    name: pet.name ?? "—",
+    type: pet.pet_type ?? pet.type ?? "",
+    breed: pet.breed || "—",
+    sex: pet.sex || "—",
+    age: formatPetAge(months),
+    color: pet.color || "—",
+    weight:
+      pet.weight_kg != null ? `${pet.weight_kg} Kilogram` : pet.weight || "—",
+    about: pet.about || "—",
+    image: pet.avatar_url ?? pet.image ?? "",
+    isSuspended: Boolean(pet.is_suspended ?? pet.isSuspended),
+  };
+}
+
+function mapOwnerReview(review) {
+  if (!review || typeof review !== "object") return null;
+  return {
+    id: String(review.id),
+    sitterName: review.sitter_name ?? review.sitterName ?? "Pet Sitter",
+    sitterAvatar: review.sitter_avatar_url ?? review.sitterAvatar ?? "",
+    date: formatDate(review.created_at ?? review.date) || "—",
+    rating: Number(review.rating ?? 0) || 0,
+    comment: review.comment ?? review.content ?? "",
+  };
+}
+
+function mapAdminOwnerListItem(row) {
+  return {
+    id: row.id,
+    name: row.name ?? row.full_name ?? "—",
+    phone: formatOwnerPhone(row.phone),
+    email: row.email || "—",
+    pets: row.pet_count ?? row.pets_count ?? 0,
+    status: row.status === "Banned" || row.is_banned ? "Banned" : "Normal",
+    avatar: row.avatar_url ?? row.avatar ?? "",
+  };
+}
+
+function mapAdminOwner(row) {
+  if (!row || typeof row !== "object") return null;
+  return {
+    id: row.id,
+    name: row.name ?? row.full_name ?? "Pet Owner",
+    phone: formatOwnerPhone(row.phone),
+    email: row.email || "—",
+    idCard: formatOwnerIdNumber(row.id_number ?? row.idCard),
+    dob: formatOwnerDob(row.date_of_birth ?? row.dob),
+    status: row.status === "Banned" || row.is_banned ? "Banned" : "Normal",
+    avatar: row.avatar_url ?? row.avatar ?? "",
+    pets: Array.isArray(row.pets) ? row.pets.map(mapOwnerPet).filter(Boolean) : [],
+    reviews: Array.isArray(row.reviews)
+      ? row.reviews.map(mapOwnerReview).filter(Boolean)
+      : [],
+  };
+}
+
+export async function getAdminOwners({ search = "", page = 1, limit = 8 } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  params.set("page", String(page));
+  params.set("limit", String(limit));
+
+  const json = await apiFetch(`/api/admin/owners?${params.toString()}`);
+  return {
+    rows: (json.data ?? []).map(mapAdminOwnerListItem),
+    currentPage: json.currentPage ?? page,
+    totalPages: json.totalPages ?? 1,
+  };
+}
+
+export async function getAdminOwner(id) {
+  const json = await apiFetch(`/api/admin/owners/${encodeURIComponent(id)}`);
+  const owner = mapAdminOwner(json.data);
+  if (!owner) {
+    const error = new Error("Pet owner not found");
+    error.status = 404;
+    throw error;
+  }
+  return owner;
 }
 
 function formatReportDate(value) {
