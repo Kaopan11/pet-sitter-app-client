@@ -371,6 +371,32 @@ export function combineBookingDateTime(dateKey, timeValue) {
   return new Date(year, month - 1, day, hour, minute || 0, 0, 0);
 }
 
+export const HOURLY_TIMES = Array.from({ length: 24 }, (_, hour) => {
+  const value = `${String(hour).padStart(2, "0")}:00`;
+  const hour12 = hour % 12 || 12;
+  const suffix = hour < 12 ? "AM" : "PM";
+  return { value, label: `${hour12}:00 ${suffix}` };
+});
+
+export const MIN_BOOKING_ADVANCE_MS = 3 * 60 * 60 * 1000;
+
+/** Must start at least 3 hours from now — same rule as the initial booking flow */
+export function isAtLeastThreeHoursAhead(dateKey, timeValue, now = new Date()) {
+  const start = combineBookingDateTime(dateKey, timeValue);
+  return Boolean(start && start.getTime() >= now.getTime() + MIN_BOOKING_ADVANCE_MS);
+}
+
+/** "10:00" + 3 → "13:00" (wraps at 24h; caller must reject wrap-around for same-day bookings) */
+export function addHoursToBookingTime(time, hours) {
+  const minutes = parseTimeToMinutes(time);
+  if (minutes === null) return "";
+  const total = minutes + Math.round(hours * 60);
+  const wrapped = ((total % (24 * 60)) + 24 * 60) % (24 * 60);
+  const hh = Math.floor(wrapped / 60);
+  const mm = wrapped % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 export function isTimeInsideBookedSlot(date, time, bookedSlots) {
   const instant = combineBookingDateTime(date, time);
   if (!instant) return false;
