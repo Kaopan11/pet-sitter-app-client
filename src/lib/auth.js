@@ -4,12 +4,25 @@
 const TOKEN_KEY = "pet-sitter-token";
 const USER_KEY = "pet-sitter-user";
 
+export function isAdminUser(user) {
+  return Boolean(user?.isAdmin || user?.is_admin);
+}
+
+function normalizeUser(user) {
+  if (!user || typeof user !== "object") return user;
+  return {
+    ...user,
+    isAdmin: isAdminUser(user),
+    isSitter: Boolean(user.isSitter || user.is_sitter),
+  };
+}
+
 export function saveAuth({ token, user }, persist = true) {
   const storage = persist ? localStorage : sessionStorage;
   const other = persist ? sessionStorage : localStorage;
 
   storage.setItem(TOKEN_KEY, token);
-  storage.setItem(USER_KEY, JSON.stringify(user));
+  storage.setItem(USER_KEY, JSON.stringify(normalizeUser(user)));
   other.removeItem(TOKEN_KEY);
   other.removeItem(USER_KEY);
 }
