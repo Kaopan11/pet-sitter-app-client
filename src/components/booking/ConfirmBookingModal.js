@@ -31,7 +31,7 @@ export default function ConfirmBookingModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
+            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:cursor-not-allowed disabled:opacity-50 sm:size-8"
             aria-label="Close"
           >
             <Icon src="/icon/x.svg" className="size-5" />
@@ -49,11 +49,12 @@ export default function ConfirmBookingModal({
         ) : null}
 
         <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
+          {/* ใช้ .btn จาก globals — มี cursor: pointer + hover ตาม design system */}
           <button
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-secondary min-h-12 flex-1 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel
           </button>
@@ -61,7 +62,7 @@ export default function ConfirmBookingModal({
             type="button"
             onClick={onConfirm}
             disabled={submitting}
-            className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-500 px-6 text-body-2 font-bold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn btn-primary min-h-12 flex-1 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Booking..." : "Yes, I'm sure"}
           </button>
