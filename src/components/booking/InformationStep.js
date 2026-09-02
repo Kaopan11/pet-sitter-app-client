@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 /**
  * Step 2 — ข้อมูลผู้จองจากโปรไฟล์ (อ่านอย่างเดียว) + ข้อความถึง sitter (optional)
  */
@@ -5,10 +7,24 @@ export default function InformationStep({
   guest,
   additionalMessage,
   onMessageChange,
+  incomplete = false,
+  completeProfileHref = "/owner/profile",
 }) {
   return (
     <section>
       <div className="space-y-6">
+        {incomplete ? (
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-body-2 text-orange-600">
+            Please complete your profile before booking.{" "}
+            <Link
+              href={completeProfileHref}
+              className="font-bold underline underline-offset-2"
+            >
+              Update profile
+            </Link>
+          </div>
+        ) : null}
+
         <div>
           <label
             htmlFor="guest-name"

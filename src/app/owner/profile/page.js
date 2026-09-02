@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { validateProfile } from "../../../utils/validateProfile"; 
 import { toast } from "sonner";
 import { getToken, getUser, updateStoredUser } from "@/lib/auth"; //ดึงฟังก์ชันที่เกี่ยวกับ login จากไฟล์ src/lib/auth.js มาใช้ในหน้าโปรไฟล์
+import {
+  errorToastClassNames,
+  successToastClassNames,
+} from "@/lib/toastStyles";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
@@ -64,8 +68,19 @@ function persistUpdatedUser(profile) {
   window.dispatchEvent(new Event("owner-profile-updated"));
 }
 
+function isSafeInternalPath(path) {
+  return (
+    typeof path === "string" &&
+    path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.includes("://")
+  );
+}
+
 export default function OwnerProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const avatarInputRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -197,13 +212,20 @@ export default function OwnerProfilePage() {
       setAvatarUrl(profile.avatar_url ?? "");
       setImageFile(null);
       persistUpdatedUser(profile);
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated successfully", {
+        classNames: successToastClassNames,
+      });
+      if (isSafeInternalPath(returnTo)) {
+        router.push(returnTo);
+      }
     } catch (error) {
       if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
         router.replace("/login/owner");
         return;
       }
-      toast.error(error.message || "Failed to update profile");
+      toast.error(error.message || "Failed to update profile", {
+        classNames: errorToastClassNames,
+      });
     } finally {
       setIsSaving(false);
     }
@@ -216,6 +238,12 @@ export default function OwnerProfilePage() {
 
         <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
           <h3 className="text-h3">Profile</h3>
+
+          {isSafeInternalPath(returnTo) && (
+            <p className="mt-4 text-body-2 text-orange-500">
+              Complete your profile to continue booking.
+            </p>
+          )}
 
           {loadError && (
             <p className="mt-4 text-body-3 text-red-500">{loadError}</p>

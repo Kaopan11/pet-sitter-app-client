@@ -10,6 +10,37 @@ export function getAge(dateOfBirth) {
   return age;
 }
 
+function toDateInputValue(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  return String(value).slice(0, 10);
+}
+
+export function getOwnerProfileFormValues(profile) {
+  return {
+    name: String(profile?.name ?? "").trim(),
+    email: String(profile?.email ?? "").trim(),
+    phone: String(profile?.phone ?? "").replace(/\D/g, ""),
+    idNumber: String(profile?.id_number ?? profile?.idNumber ?? "").replace(
+      /\D/g,
+      "",
+    ),
+    dateOfBirth: toDateInputValue(
+      profile?.date_of_birth ?? profile?.dateOfBirth,
+    ),
+  };
+}
+
+export function getOwnerProfileErrors(profile) {
+  return validateProfile(getOwnerProfileFormValues(profile));
+}
+
+export function isOwnerProfileComplete(profile) {
+  return Object.keys(getOwnerProfileErrors(profile)).length === 0;
+}
+
 export function validateProfile({ name, email, phone, idNumber, dateOfBirth }) {
   const errors = {};
   if (!name.trim()) {
