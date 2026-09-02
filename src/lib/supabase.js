@@ -239,6 +239,8 @@ export function clearOAuthPendingToken() {
  * เริ่ม Google / Facebook ผ่าน Supabase (ticket 04)
  * สำเร็จ → เบราว์เซอร์ถูกพาไป provider แล้วกลับ /auth/callback
  * provider: "google" | "facebook"
+ *
+ * queryParams บังคับเลือกบัญชีทุกครั้ง (OAuth แบบ A) — ไม่ให้ browser ข้ามหน้าเลือก account
  */
 export async function signInWithOAuthProvider(provider) {
   const supabase = getSupabaseBrowserClient();
@@ -248,10 +250,19 @@ export async function signInWithOAuthProvider(provider) {
     );
   }
 
+  // Google: prompt select_account · Facebook: reauthenticate — ให้ถามเลือกบัญชีใหม่ทุกครั้ง
+  const queryParams =
+    provider === "google"
+      ? { prompt: "select_account" }
+      : provider === "facebook"
+        ? { auth_type: "reauthenticate" }
+        : {};
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
       redirectTo: getOAuthRedirectTo(),
+      queryParams,
     },
   });
 
