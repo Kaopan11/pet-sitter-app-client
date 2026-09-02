@@ -9,6 +9,7 @@ import {
 } from "@stripe/react-stripe-js";
 import Icon from "@/components/Icon";
 import { getStripe } from "@/lib/stripe";
+import { isStripePaymentAuthorized } from "@/lib/stripePayment";
 
 function StripeCheckoutForm({ onSuccess, onCancel }) {
   const stripe = useStripe();
@@ -39,11 +40,8 @@ function StripeCheckoutForm({ onSuccess, onCancel }) {
         return;
       }
 
-      if (
-        paymentIntent &&
-        (paymentIntent.status === "succeeded" ||
-          paymentIntent.status === "processing")
-      ) {
+      // requires_capture = authorize สำเร็จ (manual capture) — ไม่ใช่ error
+      if (isStripePaymentAuthorized(paymentIntent)) {
         onSuccess();
         return;
       }
@@ -73,18 +71,19 @@ function StripeCheckoutForm({ onSuccess, onCancel }) {
       ) : null}
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row">
+        {/* ใช้ .btn จาก globals — hover เป็น cursor มือ (Feedback Team) */}
         <button
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-secondary min-h-12 flex-1 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={!stripe || !elements || busy}
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-orange-500 px-6 text-body-2 font-bold text-white hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-primary min-h-12 flex-1 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? "Paying..." : "Pay now"}
         </button>
@@ -125,7 +124,7 @@ export default function StripePaymentModal({
           <button
             type="button"
             onClick={onClose}
-            className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-orange-100 px-6 text-body-2 font-bold text-orange-500 hover:bg-orange-200"
+            className="btn btn-secondary mt-6 min-h-12 w-full"
           >
             Close
           </button>
@@ -152,7 +151,7 @@ export default function StripePaymentModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex size-10 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 sm:size-8"
+            className="flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 sm:size-8"
             aria-label="Close"
           >
             <Icon src="/icon/x.svg" className="size-5" />
