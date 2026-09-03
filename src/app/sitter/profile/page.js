@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Plus, UserRound, CirclePlus, Calendar, X } from "lucide-react";
+import { Plus, UserRound, CirclePlus, Calendar, X, CircleAlert } from "lucide-react";
 import PetTypeSelect from "@/components/PetTypeSelect";
 import {
   Select,
@@ -101,6 +101,7 @@ export default function PetSitterProfilePage() {
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [approvalStatus, setApprovalStatus] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
@@ -153,6 +154,7 @@ export default function PetSitterProfilePage() {
       avatarUrl: profile.avatar_url,
     });
     setApprovalStatus(profile.approval_status ?? "");
+    setRejectionReason(profile.rejection_reason ?? "");
     return nextForm;
   }
 
@@ -502,6 +504,16 @@ export default function PetSitterProfilePage() {
           {isSaving ? "Saving..." : "Update"}
         </button>
       </header>
+
+      {approvalStatus === "Rejected" ? (
+        <p className="flex items-center gap-2.5 rounded-md bg-gray-200 p-3 text-body-2 text-red">
+          <CircleAlert className="size-6 shrink-0" aria-hidden="true" />
+          <span>
+            Your request has not been approved
+            {rejectionReason ? `: '${rejectionReason}'` : "."}
+          </span>
+        </p>
+      ) : null}
 
       {error ? <p className="text-body-2 text-red">{error}</p> : null}
 
