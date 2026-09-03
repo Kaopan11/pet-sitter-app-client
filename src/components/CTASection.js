@@ -3,14 +3,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { getUser } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
 
 export default function CTASection() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
-        const user = getUser();
-        setIsLoggedIn(!!user);
+        function syncLoginState() {
+            setIsLoggedIn(Boolean(getToken() && getUser()));
+        }
+
+        syncLoginState();
+        window.addEventListener("auth-changed", syncLoginState);
+        return () => window.removeEventListener("auth-changed", syncLoginState);
     }, []);
 
     return (

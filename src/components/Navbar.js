@@ -208,6 +208,11 @@ export default function Navbar() {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
+        if (res.status === 401) {
+          clearAuth();
+          if (!cancelled) setUser(null);
+          return;
+        }
         const json = await res.json().catch(() => ({}));
         if (!res.ok || cancelled || !json.data) return;
 

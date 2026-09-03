@@ -4,6 +4,40 @@
 const TOKEN_KEY = "pet-sitter-token";
 const USER_KEY = "pet-sitter-user";
 
+function notifyAuthChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-changed"));
+  }
+}
+
+function isTokenExpired(token) {
+  if (!token || typeof token !== "string") return true;
+
+  const parts = token.split(".");
+  if (parts.length < 2) return true;
+
+  try {
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "=",
+    );
+    const payload = JSON.parse(atob(padded));
+    if (typeof payload.exp !== "number") return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function removeAuthKeys() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+}
+
 export function isAdminUser(user) {
   return Boolean(user?.isAdmin || user?.is_admin);
 }
@@ -25,6 +59,7 @@ export function saveAuth({ token, user }, persist = true) {
   storage.setItem(USER_KEY, JSON.stringify(normalizeUser(user)));
   other.removeItem(TOKEN_KEY);
   other.removeItem(USER_KEY);
+  notifyAuthChanged();
 }
 
 function getAuthStorage() {
@@ -35,10 +70,17 @@ function getAuthStorage() {
 }
 
 export function getToken() {
-  return getAuthStorage()?.getItem(TOKEN_KEY) ?? null;
+  const token = getAuthStorage()?.getItem(TOKEN_KEY) ?? null;
+  if (!token) return null;
+  if (isTokenExpired(token)) {
+    removeAuthKeys();
+    return null;
+  }
+  return token;
 }
 
 export function getUser() {
+  if (!getToken()) return null;
   const raw = getAuthStorage()?.getItem(USER_KEY);
   if (!raw) return null;
   try {
@@ -67,16 +109,10 @@ export function updateStoredUser(partialUser = {}) {
   delete user.avatar_url;
 
   saveAuth({ token, user }, persist);
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("auth-changed"));
-  }
   return user;
 }
 
 export function clearAuth() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  sessionStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(USER_KEY);
+  removeAuthKeys();
+  notifyAuthChanged();
 }
