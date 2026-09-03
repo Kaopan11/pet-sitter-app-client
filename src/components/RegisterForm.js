@@ -7,6 +7,7 @@ import { register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
+import LegalAuthNotice from "@/components/legal/LegalAuthNotice";
 import { validatePassword } from "@/utils/validatePassword";
 
 // หน้าสมัครเดียว — toggle Owner/Sitter ส่ง asSitter ให้ backend
@@ -250,6 +251,8 @@ export default function RegisterForm({
       </button>
 
       <SocialAuthButtons remember />
+
+      <LegalAuthNotice />
 
       <p className="text-center text-body-3 text-gray-500">
         {loginPrompt}{" "}

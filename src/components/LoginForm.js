@@ -9,6 +9,7 @@ import { saveAuth } from "@/lib/auth";
 import { errorToastClassNames } from "@/lib/toastStyles";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
+import LegalAuthNotice from "@/components/legal/LegalAuthNotice";
 
 /** แปลง message จาก BE → ข้อความ toast (แยกอีเมล / รหัส) */
 function getLoginToastMessage(message) {
@@ -146,6 +147,8 @@ export default function LoginForm({
       </button>
 
       {showSocial ? <SocialAuthButtons remember={showRemember ? remember : true} /> : null}
+
+      {showSocial ? <LegalAuthNotice /> : null}
 
       <p className="text-center text-body-3 text-gray-500">
         {registerPrompt}{" "}
