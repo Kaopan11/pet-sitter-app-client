@@ -106,6 +106,7 @@ export default function BookingDateTimeModal({
   description,
   submitLabel = "Continue",
   submitting = false,
+  submittingLabel = "Saving...",
   closeDisabled = false,
 }) {
   const pickerRef = useRef(null);
@@ -477,7 +478,7 @@ export default function BookingDateTimeModal({
             disabled={!canContinue}
             className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Saving..." : submitLabel}
+            {submitting ? submittingLabel : submitLabel}
           </button>
         </form>
       </div>

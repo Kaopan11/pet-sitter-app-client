@@ -505,18 +505,24 @@ export function normalizeBookingPet(raw) {
     avatarUrl:
       firstString(raw.avatarUrl, raw.avatar_url, raw.image_url, raw.image) ||
       FALLBACK_AVATAR,
+    isSuspended: Boolean(raw.is_suspended ?? raw.isSuspended),
   };
 }
 
 /** GET /api/users/me → guest บน Step Information (read-only) */
 export function normalizeBookingGuest(raw) {
   if (!raw || typeof raw !== "object") {
-    return { name: "", email: "", phone: "" };
+    return { name: "", email: "", phone: "", idNumber: "", dateOfBirth: "" };
   }
+
+  const idNumber = String(raw.id_number ?? raw.idNumber ?? "").replace(/\D/g, "");
+  const dateOfBirth = String(raw.date_of_birth ?? raw.dateOfBirth ?? "").slice(0, 10);
 
   return {
     name: firstString(raw.name) || "",
     email: firstString(raw.email) || "",
     phone: firstString(raw.phone) || "",
+    idNumber,
+    dateOfBirth: /^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) ? dateOfBirth : "",
   };
 }

@@ -32,6 +32,7 @@ import {
   slotOverlapsBooked,
   calculateBookingPreviewTotal,
 } from "@/lib/booking";
+import { isOwnerProfileComplete } from "@/utils/validateProfile";
 
 const TOTAL_STEPS = 3;
 
@@ -75,6 +76,7 @@ export default function BookingFlow({
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,17 +131,19 @@ export default function BookingFlow({
 
         const nextPets = (Array.isArray(petsRaw) ? petsRaw : [])
           .map(normalizeBookingPet)
-          .filter((pet) => pet?.id);
+          .filter((pet) => pet?.id && !pet.isSuspended);
 
         setSitter(nextSitter);
         setPets(nextPets);
         setGuest(normalizeBookingGuest(profileRaw));
+        setProfileIncomplete(!isOwnerProfileComplete(profileRaw));
         setSelectedPetIds([]);
       } catch (err) {
         if (!cancelled) {
           setSitter(null);
           setPets([]);
           setGuest(EMPTY_GUEST);
+          setProfileIncomplete(false);
           setError(err instanceof Error ? err.message : "Failed to load booking data");
         }
       } finally {
@@ -166,6 +170,7 @@ export default function BookingFlow({
 
   const canConfirm =
     hasEligibleSelection &&
+    !profileIncomplete &&
     (paymentMethod === "cash" || paymentMethod === "card");
 
   function togglePet(petId) {
@@ -176,6 +181,7 @@ export default function BookingFlow({
   }
 
   function goNext() {
+    if (step === 2 && profileIncomplete) return;
     if (step < TOTAL_STEPS) setStep((current) => current + 1);
   }
 
@@ -204,6 +210,11 @@ export default function BookingFlow({
 
   async function handleConfirmYes() {
     if (submitting || !canConfirm) return;
+
+    if (profileIncomplete) {
+      setConfirmError("Please complete your profile before booking.");
+      return;
+    }
 
     const petIds = buildPetIds();
     if (petIds.length < 1) {
@@ -293,7 +304,23 @@ export default function BookingFlow({
     setStripeClientSecret("");
   }
 
-  const canGoNext = step === 1 ? hasEligibleSelection : true;
+  const canGoNext =
+    step === 1 ? hasEligibleSelection : step === 2 ? !profileIncomplete : true;
+
+  const bookingReturnPath = useMemo(() => {
+    const params = new URLSearchParams({
+      sitterId: String(sitterId),
+      startDate,
+      endDate,
+    });
+    if (!isManyDays && startTime && endTime) {
+      params.set("startTime", startTime);
+      params.set("endTime", endTime);
+    }
+    return `/owner/booking?${params.toString()}`;
+  }, [sitterId, startDate, endDate, startTime, endTime, isManyDays]);
+
+  const completeProfileHref = `/owner/profile?returnTo=${encodeURIComponent(bookingReturnPath)}`;
 
   const previewTotal = useMemo(
     () =>
@@ -401,6 +428,28 @@ export default function BookingFlow({
     );
   }
 
+  if (profileIncomplete) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 sm:px-8">
+        <div className="card space-y-4 p-8 text-center">
+          <h1 className="text-h3 text-gray-900">Complete your profile</h1>
+          <p className="text-body-2 text-gray-500">
+            Please fill in your name, email, phone, ID number, and date of birth
+            before booking a pet sitter.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href={completeProfileHref} className="btn btn-primary">
+              Complete profile
+            </Link>
+            <Link href={`/find-sitter/${sitterId}`} className="btn btn-secondary">
+              Back to sitter
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isCompleted) {
     return (
       <ThankYouView
@@ -462,6 +511,8 @@ export default function BookingFlow({
                     guest={guest}
                     additionalMessage={additionalMessage}
                     onMessageChange={setAdditionalMessage}
+                    incomplete={profileIncomplete}
+                    completeProfileHref={completeProfileHref}
                   />
                 )}
 

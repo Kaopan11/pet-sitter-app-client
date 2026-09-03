@@ -6,4 +6,6 @@ export const EMPTY_GUEST = {
   name: "",
   email: "",
   phone: "",
+  idNumber: "",
+  dateOfBirth: "",
 };

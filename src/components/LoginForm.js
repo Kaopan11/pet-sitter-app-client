@@ -14,6 +14,9 @@ import PasswordInput from "@/components/PasswordInput";
 function getLoginToastMessage(message) {
   const lower = String(message).toLowerCase();
 
+  if (lower.includes("banned")) {
+    return "This account has been banned";
+  }
   if (lower.includes("email")) {
     return "Incorrect email";
   }

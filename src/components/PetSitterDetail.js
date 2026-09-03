@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Icon from "./Icon";
 import Pagination from "./Pagination";
-import { createConversation, getSitter, getSitterAvailability, getSitterReviews } from "@/lib/api";
+import { createConversation, getProfile, getSitter, getSitterAvailability, getSitterReviews } from "@/lib/api";
 import BookingDateTimeModal from "@/components/booking/BookingDateTimeModal";
 
 const Map = dynamic(() => import("@/components/Map"), {
@@ -29,6 +29,8 @@ import {
   normalizeBookedSlots,
 } from "@/lib/booking";
 import { MONTHS } from "@/components/booking/BookingCalendarPicker";
+import { errorToastClassNames } from "@/lib/toastStyles";
+import { isOwnerProfileComplete } from "@/utils/validateProfile";
 
 const PET_BADGE = {
   dog: "badge-dog",
@@ -137,6 +139,61 @@ function isStartBeforeEnd(startDate, startTime, endDate, endTime, isManyDays) {
     return Boolean(start && end && start.getTime() < end.getTime());
   }
   return startTime < endTime;
+}
+
+function CompleteProfileModal({ onClose, onComplete }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="complete-profile-title"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-(--shadow-card)"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <h3 id="complete-profile-title" className="text-h4 text-gray-900">
+            Complete your profile
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-lg p-1 text-gray-400 transition-colors hover:text-gray-600"
+            aria-label="Close"
+          >
+            <Icon src="/icon/x.svg" className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="px-6 py-6">
+          <p className="text-body-2 text-gray-500">
+            Please fill in your name, email, phone, ID number, and date of birth
+            before booking a pet sitter.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 px-6 pb-6">
+          <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
+            Cancel
+          </button>
+          <button type="button" onClick={onComplete} className="btn btn-primary flex-1">
+            Complete profile
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function LoginRequiredModal({ onClose, onLogin }) {
@@ -550,7 +607,9 @@ export default function PetSitterDetail({ sitterId }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingChecking, setBookingChecking] = useState(false);
   const [booking, setBooking] = useState({
     startDate: "",
     endDate: "",
@@ -619,7 +678,9 @@ export default function PetSitterDetail({ sitterId }) {
       const conversation = await createConversation(sitter.id);
       router.push(`/messages?id=${conversation.id}`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to start chat");
+      toast.error(err instanceof Error ? err.message : "Failed to start chat", {
+        classNames: errorToastClassNames,
+      });
     } finally {
       setSendingMessage(false);
     }
@@ -658,13 +719,41 @@ export default function PetSitterDetail({ sitterId }) {
     setLoginModalOpen(true);
   }
 
+  async function openBookingIfProfileComplete() {
+    if (bookingChecking) return;
+
+    setBookingChecking(true);
+    try {
+      const profile = await getProfile();
+      if (!isOwnerProfileComplete(profile)) {
+        setProfileModalOpen(true);
+        return;
+      }
+      setBookingOpen(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load profile", {
+        classNames: errorToastClassNames,
+      });
+    } finally {
+      setBookingChecking(false);
+    }
+  }
+
   function handleBookNow() {
-    requireLogin(() => setBookingOpen(true));
+    requireLogin(() => {
+      void openBookingIfProfileComplete();
+    });
   }
 
   function handleLoginConfirm() {
     setLoginModalOpen(false);
     router.push("/login");
+  }
+
+  function handleCompleteProfile() {
+    setProfileModalOpen(false);
+    const returnTo = `/find-sitter/${sitter.id ?? sitterId}`;
+    router.push(`/owner/profile?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
   function handleBookingChange(patch) {
@@ -686,7 +775,9 @@ export default function PetSitterDetail({ sitterId }) {
       if (!bookingEndDate || bookingEndDate <= startDate) return;
 
       if (dateRangeOverlapsBooked(startDate, endDate, bookedSlots)) {
-        toast.error("This date and time is already booked. Please choose another slot.");
+        toast.error("This date and time is already booked. Please choose another slot.", {
+          classNames: errorToastClassNames,
+        });
         return;
       }
 
@@ -709,7 +800,9 @@ export default function PetSitterDetail({ sitterId }) {
     if (
       bookingRangeOverlapsBooked(startDate, endDate, startTime, endTime, bookedSlots)
     ) {
-      toast.error("This date and time is already booked. Please choose another slot.");
+      toast.error("This date and time is already booked. Please choose another slot.", {
+        classNames: errorToastClassNames,
+      });
       return;
     }
 
@@ -864,10 +957,11 @@ export default function PetSitterDetail({ sitterId }) {
               </button>
               <button
                 type="button"
-                className="btn btn-primary min-w-0 flex-1 px-3"
+                className="btn btn-primary min-w-0 flex-1 px-3 disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={handleBookNow}
+                disabled={bookingChecking}
               >
-                Book Now
+                {bookingChecking ? "Checking..." : "Book Now"}
               </button>
             </div>
           </div>
@@ -879,6 +973,13 @@ export default function PetSitterDetail({ sitterId }) {
         <LoginRequiredModal
           onClose={() => setLoginModalOpen(false)}
           onLogin={handleLoginConfirm}
+        />
+      ) : null}
+
+      {profileModalOpen ? (
+        <CompleteProfileModal
+          onClose={() => setProfileModalOpen(false)}
+          onComplete={handleCompleteProfile}
         />
       ) : null}
 
