@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearAuth, getToken, getUser, updateStoredUser, saveAuth } from "@/lib/auth";
 import { becomeSitter } from "@/lib/api";
 import { useUnreadChatCount } from "@/lib/useUnreadChatCount";
+import NotificationBell from "@/components/NotificationBell";
 
 const FALLBACK_AVATAR = "/icon/user.svg";
 
@@ -341,7 +342,7 @@ export default function Navbar() {
         {isLoggedIn ? (
           <div className="hidden items-center gap-6 md:flex">
             <div className="flex items-center gap-3">
-              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot />
+              <NotificationBell enabled={isLoggedIn} />
               <IconButton
                 src="/navbar/icon-chat.svg"
                 alt="Messages"
@@ -446,7 +447,7 @@ export default function Navbar() {
         <div className="flex shrink-0 items-center gap-2 md:hidden">
           {isLoggedIn ? (
             <>
-              <IconButton src="/navbar/icon-bell.svg" alt="Notifications" hasDot variant="plain" />
+              <NotificationBell enabled={isLoggedIn} variant="plain" />
               <IconButton
                 src="/navbar/icon-chat.svg"
                 alt="Messages"
