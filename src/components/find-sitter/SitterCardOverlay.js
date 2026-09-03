@@ -192,7 +192,7 @@ export default function SitterCardOverlay({
         onPointerCancel={handlePointerUp}
         onClickCapture={handleClickCapture}
         onDragStart={(event) => event.preventDefault()}
-        className={`pointer-events-auto flex w-full touch-pan-x gap-3 overflow-x-auto px-4 pb-1 select-none scrollbar-none ${
+        className={`pointer-events-auto flex w-full touch-pan-x gap-3 overflow-x-auto px-4 py-2 select-none scrollbar-none ${
           isDragging
             ? 'cursor-grabbing snap-none scroll-auto'
             : 'snap-x snap-mandatory scroll-smooth'

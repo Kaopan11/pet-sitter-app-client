@@ -9,6 +9,7 @@ import Pagination from "./Pagination";
 import PetSitterCard from "./PetSitterCard";
 import SitterCardOverlay from "./find-sitter/SitterCardOverlay";
 import { getSitters } from "@/lib/api";
+import { getSitterCoords } from "@/lib/sitterLocation";
 
 const Map = dynamic(() => import("@/components/Map"), {
     ssr: false,
@@ -57,41 +58,6 @@ function experienceToQuery(value) {
     if (!value) return "";
     return String(value).replace(/\s*Years$/i, "").trim();
 }
-
-const LOCATION_COORDS = {
-  "khu khot": [13.9560, 100.6270],
-  "lam luk ka": [13.9446, 100.6325],
-  "pak kret": [13.9130, 100.4984],
-  "bang kapi": [13.7658, 100.6472],
-  "pattaya": [12.9236, 100.8825],
-  "pathum thani": [14.0208, 100.5250],
-  "pathumthani": [14.0208, 100.5250],
-  "nonthaburi": [13.8591, 100.5217],
-  "samut prakan": [13.5991, 100.5968],
-  "bangkok": [13.7563, 100.5018],
-  "chiang mai": [18.7883, 98.9853],
-  "chon buri": [13.3611, 100.9847],
-  "phuket": [7.8804, 98.3923],
-};
-
-
-function getSitterCoords(sitter, idx = 0) {
-  if (sitter?.latitude != null && sitter?.longitude != null && !isNaN(Number(sitter.latitude)) && !isNaN(Number(sitter.longitude))) {
-    return [Number(sitter.latitude), Number(sitter.longitude)];
-  }
-
-  const locStr = String(sitter?.location || sitter?.province || sitter?.district || "").toLowerCase();
-  for (const [key, coords] of Object.entries(LOCATION_COORDS)) {
-    if (locStr.includes(key)) {
-      const jitterLat = ((idx % 5) - 2) * 0.008;
-      const jitterLng = (Math.floor(idx / 5) - 1) * 0.008;
-      return [coords[0] + jitterLat, coords[1] + jitterLng];
-    }
-  }
-
-  return [13.7563 + ((idx % 4) * 0.012 - 0.018), 100.5018 + (Math.floor(idx / 4) * 0.015 - 0.015)];
-}
-
 
 function RatingStars({ count }) {
     return (
@@ -151,7 +117,7 @@ export default function PetSitterList() {
             setTotalPages(isMap ? 0 : result.pagination?.totalPages || 0);
             if (data.length > 0) {
                 setSelectedSitterId(data[0].id);
-                setMapCenter(getSitterCoords(data[0], 0));
+                setMapCenter(getSitterCoords(data[0]));
             }
         } catch (err) {
             setSitters([]);
@@ -162,10 +128,10 @@ export default function PetSitterList() {
         }
     }, [searchParams, viewMode]);
 
-    const handleSelectSitter = (sitter, idx = 0) => {
+    const handleSelectSitter = (sitter) => {
         if (!sitter) return;
         setSelectedSitterId(sitter.id);
-        setMapCenter(getSitterCoords(sitter, idx));
+        setMapCenter(getSitterCoords(sitter));
         setMapZoom(15);
     };
 
@@ -406,21 +372,20 @@ export default function PetSitterList() {
                             <Map
                                 center={mapCenter}
                                 zoom={mapZoom}
-                                markers={sitters.map((sitter, idx) => {
-                                    const coords = getSitterCoords(sitter, idx);
+                                markers={sitters.map((sitter) => {
+                                    const coords = getSitterCoords(sitter);
                                     return {
                                         id: sitter.id,
                                         position: coords,
                                         popup: sitter.trade_name || sitter.title || sitter.name || "Pet Sitter",
                                         sitterData: sitter,
-                                        idx: idx
                                     };
                                 })}
                                 selectedId={selectedSitterId}
                                 onMarkerClick={(marker) => {
                                     const targetSitter = sitters.find(s => s.id === marker.id) || marker.sitterData;
                                     if (targetSitter) {
-                                        handleSelectSitter(targetSitter, marker.idx);
+                                        handleSelectSitter(targetSitter);
                                     }
                                 }}
                                 className="h-full w-full z-0"
@@ -429,8 +394,7 @@ export default function PetSitterList() {
                                 sitters={sitters}
                                 selectedId={selectedSitterId}
                                 onSelect={(sitter) => {
-                                    const idx = sitters.findIndex(s => s.id === sitter.id);
-                                    handleSelectSitter(sitter, idx);
+                                    handleSelectSitter(sitter);
                                 }}
                             />
                         </div>
