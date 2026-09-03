@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function SearchBar() {
     const router = useRouter();
     const [selectedPets, setSelectedPets] = useState([]);
-    const [selectedRating, setSelectedRating] = useState(null);
+    const [selectedRatings, setSelectedRatings] = useState([]);
     const [experience, setExperience] = useState("");
 
     const petOptions = [
@@ -26,11 +26,19 @@ export default function SearchBar() {
         }
     };
 
+    const toggleRating = (rating) => {
+        setSelectedRatings((prev) =>
+            prev.includes(rating)
+                ? prev.filter((value) => value !== rating)
+                : [...prev, rating],
+        );
+    };
+
     const handleSearch = (e) => {
         e.preventDefault();
         const params = new URLSearchParams();
         if (selectedPets.length) params.set("petTypes", selectedPets.join(","));
-        if (selectedRating) params.set("rating", String(selectedRating));
+        if (selectedRatings.length) params.set("rating", selectedRatings.join(","));
         if (experience) {
             params.set("experience", experience.replace(/\s*Years$/i, ""));
         }
@@ -97,14 +105,13 @@ export default function SearchBar() {
                         </span>
                         <div className="flex items-center gap-1.5 flex-wrap w-full pb-1 sm:pb-0 scrollbar-hide">
                             {ratingOptions.map((rating) => {
-                                const isSelected = selectedRating === rating;
+                                const isSelected = selectedRatings.includes(rating);
                                 return (
                                     <button
                                         key={rating}
                                         type="button"
-                                        onClick={() =>
-                                            setSelectedRating(isSelected ? null : rating)
-                                        }
+                                        aria-pressed={isSelected}
+                                        onClick={() => toggleRating(rating)}
                                         className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${isSelected
                                             ? "border-[#FF7037] bg-white hover:bg-[#FFF1EC]"
                                             : "border-gray-200 bg-white hover:border-[#FF7037] hover:bg-[#FFF1EC]"

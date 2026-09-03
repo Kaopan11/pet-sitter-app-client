@@ -92,10 +92,15 @@ export async function getSitters({
   page = 1,
   limit = 5,
 } = {}) {
+  const ratings = (Array.isArray(rating) ? rating : rating != null ? [rating] : [])
+    .map((value) => Number.parseInt(value, 10))
+    .filter((value) => value >= 1 && value <= 5);
+  const uniqueRatings = [...new Set(ratings)];
+
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (petTypes.length) params.set("petTypes", petTypes.join(","));
-  if (rating) params.set("rating", String(rating));
+  if (uniqueRatings.length) params.set("rating", uniqueRatings.join(","));
   if (experience) params.set("experience", experience);
   params.set("page", String(page));
   params.set("limit", String(limit));

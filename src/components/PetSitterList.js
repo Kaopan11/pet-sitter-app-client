@@ -36,6 +36,15 @@ function parsePetTypes(value) {
         .filter((item) => PET_OPTIONS.some((pet) => pet.id === item));
 }
 
+function parseRatings(value) {
+    return [...new Set(
+        String(value ?? "")
+            .split(",")
+            .map((item) => Number.parseInt(item.trim(), 10))
+            .filter((item) => item >= 1 && item <= 5),
+    )].sort((a, b) => b - a);
+}
+
 function experienceToForm(value) {
     if (!value) return "";
     if (["0-2 Years", "3-5 Years", "5+ Years"].includes(value)) return value;
@@ -98,7 +107,7 @@ export default function PetSitterList() {
     const searchParams = useSearchParams();
     const [query, setQuery] = useState("");
     const [selectedPets, setSelectedPets] = useState([]);
-    const [selectedRating, setSelectedRating] = useState(null);
+    const [selectedRatings, setSelectedRatings] = useState([]);
     const [experience, setExperience] = useState("");
     const [viewMode, setViewMode] = useState("list");
     const [currentPage, setCurrentPage] = useState(1);
@@ -110,18 +119,16 @@ export default function PetSitterList() {
     const [mapCenter, setMapCenter] = useState([13.7563, 100.5018]);
 
     const syncFormFromUrl = useCallback(() => {
-        const rating = Number.parseInt(searchParams.get("rating") ?? "", 10);
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
 
         setQuery(searchParams.get("q") ?? "");
         setSelectedPets(parsePetTypes(searchParams.get("petTypes")));
-        setSelectedRating(rating >= 1 && rating <= 5 ? rating : null);
+        setSelectedRatings(parseRatings(searchParams.get("rating")));
         setExperience(experienceToForm(searchParams.get("experience") ?? ""));
         setCurrentPage(Number.isInteger(page) && page > 0 ? page : 1);
     }, [searchParams]);
 
     const fetchSitters = useCallback(async () => {
-        const rating = Number.parseInt(searchParams.get("rating") ?? "", 10);
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
 
         setLoading(true);
@@ -131,7 +138,7 @@ export default function PetSitterList() {
             const result = await getSitters({
                 q: searchParams.get("q") ?? "",
                 petTypes: parsePetTypes(searchParams.get("petTypes")),
-                rating: rating >= 1 && rating <= 5 ? rating : null,
+                rating: parseRatings(searchParams.get("rating")),
                 experience: searchParams.get("experience") ?? "",
                 page: Number.isInteger(page) && page > 0 ? page : 1,
                 limit: PAGE_SIZE,
@@ -167,7 +174,7 @@ export default function PetSitterList() {
         const params = new URLSearchParams();
         if (next.q) params.set("q", next.q);
         if (next.petTypes.length) params.set("petTypes", next.petTypes.join(","));
-        if (next.rating) params.set("rating", String(next.rating));
+        if (next.ratings.length) params.set("rating", next.ratings.join(","));
         if (next.experience) params.set("experience", experienceToQuery(next.experience));
         if (next.page > 1) params.set("page", String(next.page));
 
@@ -181,10 +188,18 @@ export default function PetSitterList() {
         );
     };
 
+    const toggleRating = (rating) => {
+        setSelectedRatings((prev) =>
+            prev.includes(rating)
+                ? prev.filter((value) => value !== rating)
+                : [...prev, rating],
+        );
+    };
+
     const handleClear = () => {
         setQuery("");
         setSelectedPets([]);
-        setSelectedRating(null);
+        setSelectedRatings([]);
         setExperience("");
     };
 
@@ -193,7 +208,7 @@ export default function PetSitterList() {
         updateUrl({
             q: query.trim(),
             petTypes: selectedPets,
-            rating: selectedRating,
+            ratings: selectedRatings,
             experience,
             page: 1,
         });
@@ -304,14 +319,13 @@ export default function PetSitterList() {
                             <span className="text-[15px] font-bold text-gray-900">Rating:</span>
                             <div className="flex flex-wrap gap-2">
                                 {RATING_OPTIONS.map((rating) => {
-                                    const isSelected = selectedRating === rating;
+                                    const isSelected = selectedRatings.includes(rating);
                                     return (
                                         <button
                                             key={rating}
                                             type="button"
-                                            onClick={() =>
-                                                setSelectedRating(isSelected ? null : rating)
-                                            }
+                                            aria-pressed={isSelected}
+                                            onClick={() => toggleRating(rating)}
                                             className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${
                                                 isSelected
                                                     ? "border-orange-500 bg-white hover:bg-orange-100"
