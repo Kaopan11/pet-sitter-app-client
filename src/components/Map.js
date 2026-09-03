@@ -25,10 +25,10 @@ function MapController({ center, zoom }) {
     if (center && Array.isArray(center) && center.length === 2 && center[0] && center[1]) {
       map.flyTo(center, zoom || map.getZoom(), {
         animate: true,
-        duration: 1
+        duration: 0.8,
       });
     }
-  }, [center, zoom, map]);
+  }, [center[0], center[1], zoom, map]);
   return null;
 }
 

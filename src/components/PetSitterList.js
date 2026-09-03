@@ -28,6 +28,7 @@ const PET_OPTIONS = [
 
 const RATING_OPTIONS = [5, 4, 3, 2, 1];
 const PAGE_SIZE = 5;
+const MAP_LIMIT = 1000;
 
 function parsePetTypes(value) {
     return String(value ?? "")
@@ -117,6 +118,7 @@ export default function PetSitterList() {
     const [error, setError] = useState("");
     const [selectedSitterId, setSelectedSitterId] = useState(null);
     const [mapCenter, setMapCenter] = useState([13.7563, 100.5018]);
+    const [mapZoom, setMapZoom] = useState(13);
 
     const syncFormFromUrl = useCallback(() => {
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
@@ -130,6 +132,7 @@ export default function PetSitterList() {
 
     const fetchSitters = useCallback(async () => {
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
+        const isMap = viewMode === "map";
 
         setLoading(true);
         setError("");
@@ -140,12 +143,12 @@ export default function PetSitterList() {
                 petTypes: parsePetTypes(searchParams.get("petTypes")),
                 rating: parseRatings(searchParams.get("rating")),
                 experience: searchParams.get("experience") ?? "",
-                page: Number.isInteger(page) && page > 0 ? page : 1,
-                limit: PAGE_SIZE,
+                page: isMap ? 1 : Number.isInteger(page) && page > 0 ? page : 1,
+                limit: isMap ? MAP_LIMIT : PAGE_SIZE,
             });
             const data = result.data || [];
             setSitters(data);
-            setTotalPages(result.pagination?.totalPages || 0);
+            setTotalPages(isMap ? 0 : result.pagination?.totalPages || 0);
             if (data.length > 0) {
                 setSelectedSitterId(data[0].id);
                 setMapCenter(getSitterCoords(data[0], 0));
@@ -157,12 +160,13 @@ export default function PetSitterList() {
         } finally {
             setLoading(false);
         }
-    }, [searchParams]);
+    }, [searchParams, viewMode]);
 
     const handleSelectSitter = (sitter, idx = 0) => {
         if (!sitter) return;
         setSelectedSitterId(sitter.id);
         setMapCenter(getSitterCoords(sitter, idx));
+        setMapZoom(15);
     };
 
     useEffect(() => {
@@ -401,7 +405,7 @@ export default function PetSitterList() {
                         <div className="relative h-[650px] w-full rounded-2xl overflow-hidden shadow-[var(--shadow-card)] border border-gray-200">
                             <Map
                                 center={mapCenter}
-                                zoom={13}
+                                zoom={mapZoom}
                                 markers={sitters.map((sitter, idx) => {
                                     const coords = getSitterCoords(sitter, idx);
                                     return {
