@@ -3,7 +3,7 @@
 import { useContext } from "react";
 import Image from "next/image";
 import { UserRound } from "lucide-react";
-import Icon from "@/components/Icon";
+import LocationPicker from "@/components/location/LocationPicker";
 import { isFullProfileUnlocked } from "@/lib/sitterApproval";
 import { SitterDetailContext } from "./sitter-detail-context";
 
@@ -72,13 +72,15 @@ export default function AdminPetSitterProfilePage() {
   const petTypes = sitterData.pet_types ?? [];
   const photos = sitterData.photos ?? [];
   const address = formatAddress(sitterData);
-  const mapQuery =
-    sitterData.latitude != null &&
-    sitterData.longitude != null &&
-    sitterData.latitude !== ""
-      ? `${sitterData.latitude},${sitterData.longitude}`
-      : address || "Bangkok";
-  const mapSrc = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`;
+  const locationAddress = {
+    addressDetail: sitterData.address_detail ?? "",
+    subDistrict: sitterData.sub_district ?? "",
+    district: sitterData.district ?? "",
+    province: sitterData.province ?? "",
+    postcode: sitterData.post_code ?? "",
+    latitude: sitterData.latitude,
+    longitude: sitterData.longitude,
+  };
 
   return (
     <article className="flex flex-col gap-10 rounded-2xl rounded-tl-none bg-white p-10">
@@ -178,18 +180,9 @@ export default function AdminPetSitterProfilePage() {
       {showFullProfile ? (
         <section className="flex flex-col gap-4 rounded-md bg-[#FAFAFB] p-6">
           <Field label="Address">{dash(address)}</Field>
-          <div className="relative overflow-hidden rounded-md">
-            <iframe
-              title={`${sitterData.full_name || "Pet sitter"} location`}
-              src={mapSrc}
-              className="h-112 w-full border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-            <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 flex size-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-orange-500 text-white">
-              <Icon src="/icon/paw.svg" className="h-7 w-7" />
-            </span>
-          </div>
+          <LocationPicker
+            address={locationAddress}
+          />
         </section>
       ) : null}
     </article>

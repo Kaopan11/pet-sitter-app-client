@@ -155,7 +155,7 @@ export default function LocationPicker({
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-gray-100 shadow-xs h-[300px] w-full">
+    <div className="relative overflow-hidden rounded-2xl border border-gray-100 shadow-xs h-100 w-full">
       <MapWithPicker
         center={currentCoords}
         flyToTarget={flyToTarget}
