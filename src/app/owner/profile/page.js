@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
@@ -77,7 +77,7 @@ function isSafeInternalPath(path) {
   );
 }
 
-export default function OwnerProfilePage() {
+function OwnerProfileForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
@@ -403,5 +403,21 @@ export default function OwnerProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function OwnerProfileFallback() {
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <p className="p-8 text-body-2 text-gray-400">Loading profile...</p>
+    </div>
+  );
+}
+
+export default function OwnerProfilePage() {
+  return (
+    <Suspense fallback={<OwnerProfileFallback />}>
+      <OwnerProfileForm />
+    </Suspense>
   );
 }
