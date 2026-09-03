@@ -502,9 +502,13 @@ export function normalizeBookingPet(raw) {
     petType: String(raw.petType ?? raw.pet_type ?? raw.type ?? "")
       .toLowerCase()
       .trim(),
-    avatarUrl:
-      firstString(raw.avatarUrl, raw.avatar_url, raw.image_url, raw.image) ||
-      FALLBACK_AVATAR,
+    avatarUrl: firstString(
+      raw.avatarUrl,
+      raw.avatar_url,
+      raw.image_url,
+      raw.image,
+    ),
+    // ไม่มีรูป → "" (UI แสดง PawPrint) — ห้ามใช้ FALLBACK_AVATAR ของ sitter/profile คน
     isSuspended: Boolean(raw.is_suspended ?? raw.isSuspended),
   };
 }

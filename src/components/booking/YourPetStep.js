@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { PawPrint } from "lucide-react";
 import Icon from "@/components/Icon";
 
 /** map ประเภทสัตว์ → class badge ใน globals.css */
@@ -68,6 +69,7 @@ export default function YourPetStep({
         {pets.map((pet) => {
           const eligible = isEligible(pet);
           const selected = selectedPetIds.includes(pet.id);
+          const hasAvatar = Boolean(pet.avatarUrl?.trim());
           const remote = isRemoteSrc(pet.avatarUrl);
 
           return (
@@ -93,15 +95,25 @@ export default function YourPetStep({
                 <PetCheckbox checked={selected} disabled={!eligible} />
               </div>
 
-              <div className="relative mt-1 size-20 overflow-hidden rounded-full bg-gray-100 md:mt-2 md:size-22">
-                <Image
-                  src={pet.avatarUrl}
-                  alt={pet.name}
-                  fill
-                  sizes="(max-width: 768px) 80px, 88px"
-                  unoptimized={remote}
-                  className="object-cover"
-                />
+              <div className="relative mt-1 size-20 overflow-hidden rounded-full bg-gray-200 md:mt-2 md:size-22">
+                {hasAvatar ? (
+                  <Image
+                    src={pet.avatarUrl}
+                    alt={pet.name}
+                    fill
+                    sizes="(max-width: 768px) 80px, 88px"
+                    unoptimized={remote}
+                    className="object-cover"
+                  />
+                ) : (
+                  /* ไม่มีรูป — เหมือนหน้า /owner/pets */
+                  <div className="flex size-full items-center justify-center">
+                    <PawPrint
+                      className="size-10 text-white md:size-12"
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
               </div>
 
               <p className="mt-3 w-full text-center text-body-1 font-bold wrap-break-word text-gray-900 md:mt-4">
