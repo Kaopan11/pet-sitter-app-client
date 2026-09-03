@@ -131,7 +131,7 @@ export default function BookingFlow({
 
         const nextPets = (Array.isArray(petsRaw) ? petsRaw : [])
           .map(normalizeBookingPet)
-          .filter((pet) => pet?.id);
+          .filter((pet) => pet?.id && !pet.isSuspended);
 
         setSitter(nextSitter);
         setPets(nextPets);

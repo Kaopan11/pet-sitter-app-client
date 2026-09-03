@@ -65,7 +65,7 @@ export default function AdminReportPage() {
     <div className="flex w-full min-w-0 flex-col gap-6">
       {/* Title & Search Bar */}
       <div className="flex w-full items-center justify-between">
-        <h1 className="text-xl font-bold text-[#323640]">Report</h1>
+        <h1 className="text-h3 font-bold text-gray-900">Report</h1>
         <label className="relative block w-60">
           <input
             className="input pr-10"
@@ -87,53 +87,53 @@ export default function AdminReportPage() {
 
       {/* Table Area */}
       <div className="w-full min-w-0 overflow-hidden rounded-2xl bg-white">
-        <table className="w-full table-fixed border-collapse text-left text-xs sm:text-sm">
-          <thead>
-            <tr className="bg-[#000000] text-white">
-              <th className="py-3.5 px-6 font-medium rounded-tl-xl">
+        <table className="w-full table-fixed border-collapse text-left">
+          <thead className="bg-black text-white">
+            <tr>
+              <th className="border-0 px-6 py-4 text-body-3 font-medium">
                 Reporter
               </th>
-              <th className="py-3.5 px-6 font-medium">Target</th>
-              <th className="py-3.5 px-6 font-medium">Issue</th>
-              <th className="py-3.5 px-6 font-medium">Date</th>
-              <th className="py-3.5 px-6 font-medium rounded-tr-xl">Status</th>
+              <th className="border-0 px-6 py-4 text-body-3 font-medium">Target</th>
+              <th className="border-0 px-6 py-4 text-body-3 font-medium">Issue</th>
+              <th className="border-0 px-6 py-4 text-body-3 font-medium">Date</th>
+              <th className="border-0 px-6 py-4 text-body-3 font-medium">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 bg-white">
+          <tbody>
             {pagedReports.map((report) => (
               <tr
                 key={report.id}
-                className="hover:bg-gray-50/80 transition-colors"
+                className="h-19 border-b border-gray-200 last:border-b-0 hover:bg-gray-100"
               >
-                <td className="py-3.5 px-6 font-medium text-gray-900">
+                <td className="px-6 py-5 text-body-2 text-black">
                   {report.reporter}
                 </td>
-                <td className="py-3.5 px-6 text-gray-700">{report.target}</td>
-                <td className="py-3.5 px-6 text-gray-900 font-medium">
+                <td className="px-6 py-5 text-body-2 text-black">{report.target}</td>
+                <td className="px-6 py-5 text-body-2 text-black">
                   <Link
                     href={`/admin/report/${report.id}`}
-                    className="hover:text-[#FF7037] hover:underline"
+                    className="hover:text-orange-500 hover:underline"
                   >
                     {report.issue}
                   </Link>
                 </td>
-                <td className="py-3.5 px-6 text-gray-500 text-xs font-mono">
+                <td className="px-6 py-5 text-body-2 text-black">
                   {report.date}
                 </td>
-                <td className="py-3.5 px-6 font-medium">
+                <td className="px-6 py-5 text-body-2">
                   {report.status === "Resolved" ? (
-                    <span className="inline-flex items-center gap-1.5 text-[#1CCD83] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#1CCD83]"></span>
+                    <span className="inline-flex items-center gap-2 text-green">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green"></span>
                       Resolved
                     </span>
                   ) : report.status === "Cancelled" ? (
-                    <span className="inline-flex items-center gap-1.5 text-gray-500 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                    <span className="inline-flex items-center gap-2 text-gray-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
                       Cancelled
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 text-amber-500 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    <span className="inline-flex items-center gap-2 text-amber-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                       Pending
                     </span>
                   )}

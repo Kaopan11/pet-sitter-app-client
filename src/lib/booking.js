@@ -505,6 +505,7 @@ export function normalizeBookingPet(raw) {
     avatarUrl:
       firstString(raw.avatarUrl, raw.avatar_url, raw.image_url, raw.image) ||
       FALLBACK_AVATAR,
+    isSuspended: Boolean(raw.is_suspended ?? raw.isSuspended),
   };
 }
 

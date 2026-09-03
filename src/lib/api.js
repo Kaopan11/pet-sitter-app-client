@@ -348,6 +348,7 @@ export function mapPet(pet) {
     weight: pet.weight_kg == null ? "" : String(pet.weight_kg),
     about: pet.about ?? "",
     image: pet.avatar_url ?? "",
+    isSuspended: Boolean(pet.is_suspended ?? pet.isSuspended),
   };
 }
 
@@ -547,6 +548,25 @@ export async function getAdminOwner(id) {
     throw error;
   }
   return owner;
+}
+
+export async function setAdminOwnerBan(id, isBanned) {
+  const json = await apiFetch(`/api/admin/owners/${encodeURIComponent(id)}/ban`, {
+    method: "PATCH",
+    body: { is_banned: isBanned },
+  });
+  return json.data;
+}
+
+export async function setAdminPetSuspend(ownerId, petId, isSuspended) {
+  const json = await apiFetch(
+    `/api/admin/owners/${encodeURIComponent(ownerId)}/pets/${encodeURIComponent(petId)}/suspend`,
+    {
+      method: "PATCH",
+      body: { is_suspended: isSuspended },
+    },
+  );
+  return mapOwnerPet(json.data);
 }
 
 function formatReportDate(value) {

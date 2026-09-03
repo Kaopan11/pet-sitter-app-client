@@ -7,8 +7,8 @@ import { useParams } from "next/navigation";
 import { ChevronLeft, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import LoadingState from "@/components/LoadingState";
-import { getAdminOwner } from "@/lib/api";
-import { errorToastClassNames } from "@/lib/toastStyles";
+import { getAdminOwner, setAdminOwnerBan, setAdminPetSuspend } from "@/lib/api";
+import { errorToastClassNames, successToastClassNames } from "@/lib/toastStyles";
 
 const TABS = ["Profile", "Pets", "Reviews"];
 
@@ -55,6 +55,7 @@ export default function AdminPetOwnerDetailPage() {
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
   const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const statusStyle = STATUS[ownerStatus] ?? STATUS.Normal;
 
@@ -77,18 +78,64 @@ export default function AdminPetOwnerDetailPage() {
     if (id) loadOwner();
   }, [id]);
 
-  function handleToggleBanStatus() {
-    toast("Ban status cannot be updated yet.", { classNames: errorToastClassNames });
-    setIsBanModalOpen(false);
+  async function handleToggleBanStatus() {
+    if (!owner?.id || isSaving) return;
+    const shouldBan = ownerStatus !== "Banned";
+    setIsSaving(true);
+    try {
+      const result = await setAdminOwnerBan(owner.id, shouldBan);
+      const nextStatus = result?.status === "Banned" || result?.is_banned ? "Banned" : "Normal";
+      setOwnerStatus(nextStatus);
+      setOwner((current) => (current ? { ...current, status: nextStatus } : current));
+      setIsBanModalOpen(false);
+      toast(shouldBan ? "User banned successfully" : "User unbanned successfully", {
+        classNames: successToastClassNames,
+      });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to update ban status", {
+        classNames: errorToastClassNames,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleSuspendPet() {
-    toast("Pet suspend is not available yet.", { classNames: errorToastClassNames });
-    setIsSuspendModalOpen(false);
-    setSelectedPet(null);
+  async function handleTogglePetSuspend() {
+    if (!owner?.id || !selectedPet?.id || isSaving) return;
+    const shouldSuspend = !selectedPet.isSuspended;
+    setIsSaving(true);
+    try {
+      const updatedPet = await setAdminPetSuspend(owner.id, selectedPet.id, shouldSuspend);
+      if (!updatedPet) {
+        throw new Error("Failed to update pet status");
+      }
+      setOwner((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          pets: current.pets.map((pet) =>
+            pet.id === selectedPet.id ? { ...pet, ...updatedPet } : pet,
+          ),
+        };
+      });
+      setSelectedPet((current) =>
+        current?.id === selectedPet.id ? { ...current, ...updatedPet } : current,
+      );
+      setIsSuspendModalOpen(false);
+      toast(
+        shouldSuspend ? "Pet suspended successfully" : "Pet unsuspended successfully",
+        { classNames: successToastClassNames },
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to update pet status", {
+        classNames: errorToastClassNames,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  const activePets = (owner?.pets ?? []).filter((pet) => !pet.isSuspended);
+  const pets = owner?.pets ?? [];
 
   return (
     <section className="flex flex-col gap-6 pb-12">
@@ -170,16 +217,20 @@ export default function AdminPetOwnerDetailPage() {
             </article>
           ) : tab === "Pets" ? (
             <article className="rounded-2xl rounded-tl-none bg-white p-10">
-              {activePets.length > 0 ? (
+              {pets.length > 0 ? (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {activePets.map((pet) => {
+                  {pets.map((pet) => {
                     const badge = PET_BADGE[String(pet.type ?? "").toLowerCase()] ?? "badge";
                     return (
                       <button
                         key={pet.id}
                         type="button"
                         onClick={() => setSelectedPet(pet)}
-                        className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white p-6 hover:border-orange-500"
+                        className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border bg-white p-6 hover:border-orange-500 ${
+                          pet.isSuspended
+                            ? "border-red-200 opacity-70"
+                            : "border-gray-200"
+                        }`}
                       >
                         <div className="relative size-24 shrink-0 overflow-hidden rounded-full bg-gray-200">
                           {pet.image ? (
@@ -196,6 +247,9 @@ export default function AdminPetOwnerDetailPage() {
                         </div>
                         <span className="text-body-1 font-bold text-black">{pet.name}</span>
                         <span className={`badge ${badge}`}>{pet.type || "Pet"}</span>
+                        {pet.isSuspended ? (
+                          <span className="text-body-3 font-medium text-red">Suspended</span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -294,11 +348,21 @@ export default function AdminPetOwnerDetailPage() {
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setIsBanModalOpen(false)}
+                disabled={isSaving}
               >
                 Cancel
               </button>
-              <button type="button" className="btn btn-primary" onClick={handleToggleBanStatus}>
-                {ownerStatus === "Banned" ? "Unban User" : "Ban User"}
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleToggleBanStatus}
+                disabled={isSaving}
+              >
+                {isSaving
+                  ? "Saving..."
+                  : ownerStatus === "Banned"
+                    ? "Unban User"
+                    : "Ban User"}
               </button>
             </footer>
           </section>
@@ -361,7 +425,7 @@ export default function AdminPetOwnerDetailPage() {
                 onClick={() => setIsSuspendModalOpen(true)}
                 className="text-body-2 font-bold text-orange-500 hover:text-orange-600 hover:underline"
               >
-                Suspend This Pet
+                {selectedPet.isSuspended ? "Unsuspend This Pet" : "Suspend This Pet"}
               </button>
             </footer>
           </section>
@@ -378,7 +442,7 @@ export default function AdminPetOwnerDetailPage() {
           >
             <header className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
               <h2 id="suspend-title" className="text-h4 text-gray-900">
-                Suspend Pet
+                {selectedPet?.isSuspended ? "Unsuspend Pet" : "Suspend Pet"}
               </h2>
               <button
                 type="button"
@@ -390,18 +454,32 @@ export default function AdminPetOwnerDetailPage() {
               </button>
             </header>
             <div className="px-6 py-6">
-              <p className="text-body-2 text-black">Are you sure to suspend this pet?</p>
+              <p className="text-body-2 text-black">
+                {selectedPet?.isSuspended
+                  ? "Are you sure to unsuspend this pet?"
+                  : "Are you sure to suspend this pet?"}
+              </p>
             </div>
             <footer className="flex items-center justify-between px-6 pb-6">
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={() => setIsSuspendModalOpen(false)}
+                disabled={isSaving}
               >
                 Cancel
               </button>
-              <button type="button" className="btn btn-primary" onClick={handleSuspendPet}>
-                Suspend This Pet
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleTogglePetSuspend}
+                disabled={isSaving}
+              >
+                {isSaving
+                  ? "Saving..."
+                  : selectedPet?.isSuspended
+                    ? "Unsuspend This Pet"
+                    : "Suspend This Pet"}
               </button>
             </footer>
           </section>

@@ -88,7 +88,9 @@ export default function OwnerPetsPage() {
                   <Link
                     key={pet.id}
                     href={`/owner/pets/${pet.id}`}
-                    className="flex min-w-0 flex-col items-center rounded-2xl border border-gray-200 bg-white px-6 py-8 transition hover:border-orange-400"
+                    className={`flex min-w-0 flex-col items-center rounded-2xl border bg-white px-6 py-8 transition hover:border-orange-400 ${
+                      pet.isSuspended ? "border-red-200 opacity-70" : "border-gray-200"
+                    }`}
                   >
                     {pet.image ? (
                       <img
@@ -110,6 +112,9 @@ export default function OwnerPetsPage() {
                     <span className={`badge mt-2 ${BADGE_CLASS[pet.type] ?? ""}`}>
                       {pet.type}
                     </span>
+                    {pet.isSuspended ? (
+                      <span className="mt-2 text-body-3 font-medium text-red">Suspended</span>
+                    ) : null}
                   </Link>
                 ))
               )}
