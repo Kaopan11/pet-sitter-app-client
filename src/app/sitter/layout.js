@@ -9,6 +9,7 @@ import axios from "axios";
 import { clearAuth, getUser } from "@/lib/auth";
 import jwtInterceptor from "@/utils/jwtInterceptor";
 import { useUnreadChatCount } from "@/lib/useUnreadChatCount";
+import NotificationBell from "@/components/NotificationBell";
 
 jwtInterceptor();
 
@@ -138,7 +139,7 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header
-          className={`h-18 shrink-0 items-center justify-between bg-white ${
+          className={`relative z-20 h-18 shrink-0 items-center justify-between bg-white ${
             pathname === "/messages"
               ? "hidden px-4 md:flex md:px-16"
               : "flex px-16"
@@ -162,7 +163,9 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
               {headerUser.name || "Pet Sitter"}
             </span>
           </div>
-          <Link
+          <div className="flex items-center gap-3">
+            <NotificationBell enabled={isSitter} variant="lucide" />
+            <Link
             href="/messages"
             className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:text-orange-500 ${
               pathname === "/messages" ? "text-orange-500" : "text-gray-400"
@@ -180,6 +183,7 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
               </span>
             ) : null}
           </Link>
+          </div>
         </header>
 
         <div

@@ -424,6 +424,26 @@ export async function getConversations() {
   return json.data ?? [];
 }
 
+export async function getNotifications() {
+  const json = await apiFetch("/api/notifications");
+  return json.data ?? { items: [], unreadCount: 0 };
+}
+
+export async function markNotificationRead(id) {
+  const json = await apiFetch(
+    `/api/notifications/${encodeURIComponent(id)}/read`,
+    { method: "PATCH" },
+  );
+  return json.data ?? { items: [], unreadCount: 0 };
+}
+
+export async function markAllNotificationsRead() {
+  const json = await apiFetch("/api/notifications/read-all", {
+    method: "PATCH",
+  });
+  return json.data ?? { items: [], unreadCount: 0 };
+}
+
 export async function getMessages(conversationId) {
   const json = await apiFetch(
     `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
