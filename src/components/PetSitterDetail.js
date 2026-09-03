@@ -43,6 +43,11 @@ function isRemoteSrc(src) {
   return String(src ?? "").startsWith("http");
 }
 
+function isOwnSitterListing(sitterId) {
+  const currentId = getUser()?.id;
+  return Boolean(currentId && sitterId && String(currentId) === String(sitterId));
+}
+
 function firstString(...values) {
   return values.find((value) => typeof value === "string" && value.trim()) ?? "";
 }
@@ -710,6 +715,7 @@ export default function PetSitterDetail({ sitterId }) {
   const query = encodeURIComponent(mapQuery(sitter));
   const mapSrc = `https://maps.google.com/maps?q=${query}&z=15&output=embed`;
   const mapHref = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  const isOwnSitter = isOwnSitterListing(sitter.id ?? sitterId);
 
   function requireLogin(onAllowed) {
     if (isLoggedIn) {
@@ -740,6 +746,12 @@ export default function PetSitterDetail({ sitterId }) {
   }
 
   function handleBookNow() {
+    if (isOwnSitter) {
+      toast.error("You cannot book yourself", {
+        classNames: errorToastClassNames,
+      });
+      return;
+    }
     requireLogin(() => {
       void openBookingIfProfileComplete();
     });
@@ -763,6 +775,13 @@ export default function PetSitterDetail({ sitterId }) {
   /** Continue → /owner/booking — many days ส่งแค่วัน · one day ส่งวัน+เวลา */
   function handleBookingContinue(event) {
     event.preventDefault();
+
+    if (isOwnSitter) {
+      toast.error("You cannot book yourself", {
+        classNames: errorToastClassNames,
+      });
+      return;
+    }
 
     const { startDate, endDate: bookingEndDate, startTime, endTime } = booking;
     const endDate = bookingEndDate || startDate;
@@ -946,23 +965,30 @@ export default function PetSitterDetail({ sitterId }) {
               </div>
             )}
 
-            <div className="mt-6 flex w-full gap-3 border-t border-gray-200 pt-6">
-              <button
-                type="button"
-                className="btn btn-secondary min-w-0 flex-1 px-3"
-                onClick={() => requireLogin(handleSendMessage)}
-                disabled={sendingMessage}
-              >
-                {sendingMessage ? "Opening..." : "Send Message"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary min-w-0 flex-1 px-3 disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={handleBookNow}
-                disabled={bookingChecking}
-              >
-                {bookingChecking ? "Checking..." : "Book Now"}
-              </button>
+            <div className="mt-6 flex w-full flex-col gap-3 border-t border-gray-200 pt-6">
+              <div className="flex w-full gap-3">
+                <button
+                  type="button"
+                  className="btn btn-secondary min-w-0 flex-1 px-3"
+                  onClick={() => requireLogin(handleSendMessage)}
+                  disabled={sendingMessage}
+                >
+                  {sendingMessage ? "Opening..." : "Send Message"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary min-w-0 flex-1 px-3 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={handleBookNow}
+                  disabled={bookingChecking || isOwnSitter}
+                >
+                  {bookingChecking ? "Checking..." : "Book Now"}
+                </button>
+              </div>
+              {isOwnSitter ? (
+                <p className="text-body-3 text-gray-400">
+                  You cannot book your own sitter profile
+                </p>
+              ) : null}
             </div>
           </div>
         </aside>

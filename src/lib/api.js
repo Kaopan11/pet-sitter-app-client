@@ -1,6 +1,6 @@
 // src/lib — คุยกับ backend / เก็บ session
 // เรียก API ตาม NEXT_PUBLIC_API_URL จาก .env.example (local:4000 | prod: Render)
-import { getToken } from "@/lib/auth";
+import { clearAuth, getToken } from "@/lib/auth";
 import { formatDate } from "@/utils/formatDateTime";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -30,6 +30,14 @@ export async function apiFetch(path, { method = "GET", body } = {}) {
   const json = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    const message = String(json.message || json.error || "");
+    if (
+      res.status === 401 &&
+      token &&
+      message.toLowerCase().includes("unauthorized")
+    ) {
+      clearAuth();
+    }
     // ติด status ไว้ให้ UI แยก 400 / 401 ได้ (เช่น reset-password)
     const error = new Error(json.message || `Request failed (${res.status})`);
     error.status = res.status;
@@ -54,6 +62,14 @@ async function apiFormFetch(path, { method = "POST", body } = {}) {
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
+    const message = String(json.message || json.error || "");
+    if (
+      res.status === 401 &&
+      token &&
+      message.toLowerCase().includes("unauthorized")
+    ) {
+      clearAuth();
+    }
     throw new Error(json.message || `Request failed (${res.status})`);
   }
   return json;
@@ -76,10 +92,15 @@ export async function getSitters({
   page = 1,
   limit = 5,
 } = {}) {
+  const ratings = (Array.isArray(rating) ? rating : rating != null ? [rating] : [])
+    .map((value) => Number.parseInt(value, 10))
+    .filter((value) => value >= 1 && value <= 5);
+  const uniqueRatings = [...new Set(ratings)];
+
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (petTypes.length) params.set("petTypes", petTypes.join(","));
-  if (rating) params.set("rating", String(rating));
+  if (uniqueRatings.length) params.set("rating", uniqueRatings.join(","));
   if (experience) params.set("experience", experience);
   params.set("page", String(page));
   params.set("limit", String(limit));

@@ -21,7 +21,7 @@ import StripePaymentModal from "@/components/booking/StripePaymentModal";
 import ThankYouView from "@/components/booking/ThankYouView";
 import { EMPTY_GUEST } from "@/components/booking/mockBookingData";
 import { createBooking, getMyPets, getProfile, getSitter, getSitterAvailability } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { getToken, getUser } from "@/lib/auth";
 import { getStripePublishableKey } from "@/lib/stripe";
 import {
   normalizeBookingGuest,
@@ -91,6 +91,11 @@ export default function BookingFlow({
       setError("");
 
       try {
+        const currentUserId = getUser()?.id;
+        if (currentUserId && String(currentUserId) === String(sitterId)) {
+          throw new Error("You cannot book yourself");
+        }
+
         const [sitterRaw, petsRaw, profileRaw] = await Promise.all([
           getSitter(sitterId),
           getMyPets(),
@@ -407,7 +412,11 @@ export default function BookingFlow({
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-8">
         <div className="card space-y-4 p-8 text-center">
           <h1 className="text-h3 text-gray-900">
-            {error?.includes("already booked") ? "Time unavailable" : "Could not load booking"}
+            {error?.includes("cannot book yourself")
+              ? "Cannot book this sitter"
+              : error?.includes("already booked")
+                ? "Time unavailable"
+                : "Could not load booking"}
           </h1>
           <p className="text-body-2 text-gray-500">
             {error || "Pet sitter not found"}
