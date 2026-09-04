@@ -68,7 +68,10 @@ function Field({ label, children }) {
 
 export default function AdminPetSitterProfilePage() {
   const sitterData = useContext(SitterDetailContext);
-  const showFullProfile = isFullProfileUnlocked(sitterData.approval_status);
+  const showFullProfile = isFullProfileUnlocked(
+    sitterData.approval_status,
+    sitterData,
+  );
   const petTypes = sitterData.pet_types ?? [];
   const photos = sitterData.photos ?? [];
   const address = formatAddress(sitterData);
