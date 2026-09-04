@@ -114,11 +114,11 @@ function normalizeSitter(raw) {
   };
 }
 
-function Stars({ count }) {
+function Stars({ count, iconClassName = "h-5 w-5" }) {
   return (
     <div className="flex items-center gap-0.5 text-green" aria-label={`${count} star rating`}>
       {Array.from({ length: Math.min(5, Math.max(0, count)) }).map((_, index) => (
-        <Icon key={index} src="/icon/star.svg" className="h-5 w-5" />
+        <Icon key={index} src="/icon/star.svg" className={iconClassName} />
       ))}
     </div>
   );
@@ -479,9 +479,9 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
   }
 
   return (
-    <section className="rounded-2xl rounded-tl-[100px] bg-gray-100 p-4">
-      <div className="rounded-xl rounded-l-[120px] bg-white p-5">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-10">
+    <section className="-mx-4 p-4 w-[calc(100%+2rem)] bg-gray-100 sm:-mx-6 sm:w-[calc(100%+3rem)] lg:mx-0 lg:w-auto lg:rounded-2xl lg:rounded-tl-[100px] lg:p-4">
+      <div className="rounded-2xl rounded-tl-[80px] bg-white p-5 lg:rounded-xl lg:rounded-l-[120px]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-10">
           <div className="relative size-36.5 shrink-0">
             <Image
               src="/image/rating.svg"
@@ -536,7 +536,7 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
         </div>
       </div>
 
-      <div className="bg-gray-100 px-5 py-8 sm:px-8 sm:py-10">
+      <div className="px-5 pt-6 pb-8 sm:px-8 sm:py-10">
           {loading ? (
             <p className="py-10 text-body-2 text-gray-400">Loading reviews...</p>
           ) : reviews.length === 0 ? (
@@ -548,35 +548,46 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
               {reviews.map((review) => (
                 <li
                   key={review.id}
-                  className="flex flex-col gap-4 py-8 first:pt-4 sm:flex-row sm:items-start sm:justify-between sm:gap-10"
+                  className="flex flex-col gap-3 py-6 first:pt-0 sm:flex-row sm:items-start sm:justify-between sm:gap-10 sm:py-8 sm:first:pt-4"
                 >
-                  <div className="flex shrink-0 items-center gap-4 sm:w-56">
-                    {review.avatarUrl ? (
-                      <Image
-                        src={review.avatarUrl}
-                        alt={review.name}
-                        width={56}
-                        height={56}
-                        className="avatar size-14 shrink-0"
-                        unoptimized={isRemoteSrc(review.avatarUrl)}
-                      />
-                    ) : (
-                      <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-300">
-                        <Icon src="/icon/user.svg" className="h-6 w-6" />
+                  <div className="flex min-w-0 items-start justify-between gap-3 sm:w-56 sm:shrink-0 sm:items-center sm:justify-start sm:gap-4">
+                    <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                      {review.avatarUrl ? (
+                        <Image
+                          src={review.avatarUrl}
+                          alt={review.name}
+                          width={56}
+                          height={56}
+                          className="avatar size-10 shrink-0 sm:size-14"
+                          unoptimized={isRemoteSrc(review.avatarUrl)}
+                        />
+                      ) : (
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-300 sm:size-14">
+                          <Icon src="/icon/user.svg" className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-body-2 font-bold text-black">{review.name}</p>
+                        {review.date ? (
+                          <p className="text-body-3 text-gray-400">{review.date}</p>
+                        ) : null}
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate text-body-2 font-bold text-black">{review.name}</p>
-                      {review.date ? (
-                        <p className="text-body-3 text-gray-400">{review.date}</p>
-                      ) : null}
                     </div>
+                    {review.rating > 0 ? (
+                      <div className="shrink-0 sm:hidden">
+                        <Stars count={review.rating} iconClassName="h-4 w-4" />
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    {review.rating > 0 ? <Stars count={review.rating} /> : null}
+                    {review.rating > 0 ? (
+                      <div className="hidden sm:block">
+                        <Stars count={review.rating} />
+                      </div>
+                    ) : null}
                     {review.comment ? (
-                      <p className="mt-2 text-body-2 text-gray-500">{review.comment}</p>
+                      <p className="text-body-2 text-gray-500 sm:mt-2">{review.comment}</p>
                     ) : null}
                   </div>
                 </li>
@@ -837,7 +848,7 @@ export default function PetSitterDetail({ sitterId }) {
       <Gallery photos={sitter.photos} title={sitter.title} />
 
       <div className="bg-[#FAFAFB]">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_26rem] lg:items-start lg:gap-16 lg:px-8 lg:py-16">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 pt-10 pb-0 sm:px-6 lg:grid-cols-[1fr_26rem] lg:items-start lg:gap-16 lg:px-8 lg:py-16">
           <div className="flex min-w-0 flex-col gap-10">
           <h1 className="text-h2 text-black">{sitter.title}</h1>
 
@@ -891,14 +902,9 @@ export default function PetSitterDetail({ sitterId }) {
           )}
 
 
-          <ReviewsSection
-            sitterId={sitter.id ?? sitterId}
-            ratingAvg={sitter.ratingAvg}
-            reviewCount={sitter.reviewCount}
-          />
         </div>
 
-        <aside className="z-10 lg:sticky lg:top-28 lg:self-start">
+        <aside className="z-10 lg:col-start-2 lg:row-span-2 lg:sticky lg:top-28 lg:self-start">
           <div className="flex flex-col items-center rounded-2xl bg-white px-6 py-8 text-center shadow-(--shadow-card)">
             {sitter.avatarUrl ? (
               <Image
@@ -981,6 +987,14 @@ export default function PetSitterDetail({ sitterId }) {
             </div>
           </div>
         </aside>
+
+        <div className="lg:col-start-1">
+          <ReviewsSection
+            sitterId={sitter.id ?? sitterId}
+            ratingAvg={sitter.ratingAvg}
+            reviewCount={sitter.reviewCount}
+          />
+        </div>
         </div>
       </div>
 

@@ -327,7 +327,7 @@ export default function BookingDateTimeModal({
 
   return (
     <div
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center overflow-x-hidden bg-black/60 p-4"
       onClick={handleClose}
       role="presentation"
     >
@@ -393,7 +393,7 @@ export default function BookingDateTimeModal({
             <div className="flex items-center gap-4">
               <Icon src="/icon/calendar.svg" className="h-6 w-6 shrink-0 text-gray-400" />
               {isManyDays ? (
-                <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
                   <DateField
                     value={startDate}
                     placeholder="Start date"
@@ -404,7 +404,7 @@ export default function BookingDateTimeModal({
                       <BookingCalendar {...calendarProps} />
                     ) : null}
                   </DateField>
-                  <span className="text-body-2 text-gray-400">-</span>
+                  <span className="hidden text-body-2 text-gray-400 sm:inline">-</span>
                   <DateField
                     value={endDate}
                     placeholder="End date"

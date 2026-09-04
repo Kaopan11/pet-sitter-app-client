@@ -85,6 +85,7 @@ export default function PetSitterList() {
     const [selectedSitterId, setSelectedSitterId] = useState(null);
     const [mapCenter, setMapCenter] = useState([13.7563, 100.5018]);
     const [mapZoom, setMapZoom] = useState(13);
+    const [filtersOpen, setFiltersOpen] = useState(true);
 
     const syncFormFromUrl = useCallback(() => {
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
@@ -196,165 +197,211 @@ export default function PetSitterList() {
         router.push(queryString ? `/find-sitter?${queryString}` : "/find-sitter");
     };
 
+    const viewToggle = (
+        <div className="flex items-center justify-center gap-2.5">
+            <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-body-2 font-medium transition-colors ${
+                    viewMode === "list"
+                        ? "border-orange-500 text-orange-500 hover:bg-orange-100"
+                        : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
+                }`}
+            >
+                <Icon src="/icon/list.svg" className="h-5 w-5" />
+                List
+            </button>
+            <button
+                type="button"
+                onClick={() => setViewMode("map")}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-body-2 font-medium transition-colors ${
+                    viewMode === "map"
+                        ? "border-orange-500 text-orange-500 hover:bg-orange-100"
+                        : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
+                }`}
+            >
+                <Icon src="/icon/map.svg" className="h-5 w-5" />
+                Map
+            </button>
+        </div>
+    );
+
     return (
         <div className="min-h-full bg-[#FAFAFB] px-4 py-8 sm:px-8">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-6 hidden items-center justify-between lg:flex">
                     <h1 className="text-h3 font-bold text-gray-900">
                         Search For Pet Sitter
                     </h1>
-                    <div className="flex items-center gap-2.5">
-                        <button
-                            type="button"
-                            onClick={() => setViewMode("list")}
-                            className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-body-2 font-medium transition-colors ${
-                                viewMode === "list"
-                                    ? "border-orange-500 text-orange-500 hover:bg-orange-100"
-                                    : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
-                            }`}
-                        >
-                            <Icon src="/icon/list.svg" className="h-5 w-5" />
-                            List
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setViewMode("map")}
-                            className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-body-2 font-medium transition-colors ${
-                                viewMode === "map"
-                                    ? "border-orange-500 text-orange-500 hover:bg-orange-100"
-                                    : "border-gray-200 text-gray-300 hover:border-gray-300 hover:text-gray-400"
-                            }`}
-                        >
-                            <Icon src="/icon/map.svg" className="h-5 w-5" />
-                            Map
-                        </button>
-                    </div>
+                    {viewToggle}
                 </div>
 
                 <div className={`grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] ${
                     viewMode === "map" ? "lg:items-stretch" : "lg:items-start"
                 }`}>
                 <aside className={viewMode === "list" ? "lg:sticky lg:top-6 lg:self-start" : ""}>
-                    <form onSubmit={handleSearch} className="flex flex-col gap-6 rounded-xl bg-white p-6 shadow-[var(--shadow-card)]">
-                        <div className="flex flex-col">
-                            <h2 className="text-[15px] font-bold text-gray-900">Search:</h2>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    className="input pr-11"
-                                    aria-label="Search pet sitters"
-                                />
-                                <Icon
-                                    src="/icon/search.svg"
-                                    className="pointer-events-none absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-gray-400"
-                                />
-                            </div>
-                        </div>
+                    <form
+                        onSubmit={handleSearch}
+                        className="relative overflow-hidden rounded-[1.25rem] bg-white shadow-sm lg:flex lg:flex-col lg:gap-6 lg:rounded-xl lg:p-6 lg:shadow-[var(--shadow-card)]"
+                    >
+                        <button
+                            type="button"
+                            aria-expanded={filtersOpen}
+                            aria-label={filtersOpen ? "Hide search filters" : "Show search filters"}
+                            onClick={() => setFiltersOpen((open) => !open)}
+                            className={`flex cursor-pointer items-center text-[15px] font-bold text-gray-900 lg:hidden ${
+                                filtersOpen
+                                    ? "absolute top-3 right-3 z-10 rounded-full p-1"
+                                    : "w-full justify-between px-5 py-4"
+                            }`}
+                        >
+                            {!filtersOpen && <span>Search</span>}
+                            <Icon
+                                src="/icon/chevron-down.svg"
+                                className={`h-5 w-5 text-gray-400 transition-transform duration-300 ${
+                                    filtersOpen ? "rotate-180" : ""
+                                }`}
+                            />
+                        </button>
 
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[15px] font-bold text-gray-900">Pet Type:</span>
-                            <div className="flex flex-nowrap items-center gap-8">
-                                {PET_OPTIONS.map((pet) => {
-                                    const isChecked = selectedPets.includes(pet.id);
-                                    return (
-                                        <label
-                                            key={pet.id}
-                                            className="group flex shrink-0 cursor-pointer items-center gap-2 select-none"
-                                        >
-                                            <div className="relative flex items-center justify-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="peer sr-only"
-                                                    checked={isChecked}
-                                                    onChange={() => togglePet(pet.id)}
-                                                />
-                                                <div className="h-5 w-5 rounded-[4px] border border-gray-200 bg-white transition-all peer-checked:border-orange-500 peer-checked:bg-orange-500" />
-                                                {isChecked && (
-                                                    <Icon
-                                                        src="/icon/check.svg"
-                                                        className="pointer-events-none absolute h-3.5 w-3.5 text-white"
-                                                    />
-                                                )}
-                                            </div>
-                                            <span className="text-[15px] font-medium text-gray-500 transition-colors group-hover:text-gray-900">
-                                                {pet.label}
-                                            </span>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                        <div
+                            className={`grid transition-[grid-template-rows] duration-300 ease-in-out lg:grid-rows-[1fr] ${
+                                filtersOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                            }`}
+                        >
+                            <div className="min-h-0 overflow-hidden lg:flex lg:flex-col lg:gap-6">
+                                <div className="hidden lg:flex lg:flex-col">
+                                    <h2 className="text-[15px] font-bold text-gray-900">Search:</h2>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            className="input pr-11"
+                                            aria-label="Search pet sitters"
+                                        />
+                                        <Icon
+                                            src="/icon/search.svg"
+                                            className="pointer-events-none absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 text-gray-400"
+                                        />
+                                    </div>
+                                </div>
 
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[15px] font-bold text-gray-900">Rating:</span>
-                            <div className="flex flex-wrap gap-2">
-                                {RATING_OPTIONS.map((rating) => {
-                                    const isSelected = selectedRatings.includes(rating);
-                                    return (
-                                        <button
-                                            key={rating}
-                                            type="button"
-                                            aria-pressed={isSelected}
-                                            onClick={() => toggleRating(rating)}
-                                            className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${
-                                                isSelected
-                                                    ? "border-orange-500 bg-white hover:bg-orange-100"
-                                                    : "border-gray-200 bg-white hover:border-orange-500 hover:bg-orange-100"
-                                            }`}
-                                        >
-                                            <span
-                                                className={`text-[14px] font-medium transition-colors ${
-                                                    isSelected
-                                                        ? "text-orange-500"
-                                                        : "text-gray-500 group-hover:text-orange-500"
+                                <div className="bg-[#F8F9FB] px-5 py-5 pr-12 lg:bg-transparent lg:px-0 lg:py-0 lg:pr-0">
+                                    <div className="flex flex-col gap-3 lg:gap-3">
+                                        <span className="text-[15px] font-bold text-gray-900">Pet Type:</span>
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 lg:flex-nowrap lg:gap-8">
+                                            {PET_OPTIONS.map((pet) => {
+                                                const isChecked = selectedPets.includes(pet.id);
+                                                return (
+                                                    <label
+                                                        key={pet.id}
+                                                        className="group flex shrink-0 cursor-pointer items-center gap-2 select-none"
+                                                    >
+                                                        <div className="relative flex items-center justify-center">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="peer sr-only"
+                                                                checked={isChecked}
+                                                                onChange={() => togglePet(pet.id)}
+                                                            />
+                                                            <div className="h-5 w-5 rounded-[4px] border border-gray-200 bg-white transition-all peer-checked:border-orange-500 peer-checked:bg-orange-500" />
+                                                            {isChecked && (
+                                                                <Icon
+                                                                    src="/icon/check.svg"
+                                                                    className="pointer-events-none absolute h-3.5 w-3.5 text-white"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[15px] font-medium text-gray-500 transition-colors group-hover:text-gray-900">
+                                                            {pet.label}
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-5 px-5 py-5 lg:gap-6 lg:px-0 lg:py-0">
+                                    <div className="flex flex-col gap-3">
+                                        <span className="text-[15px] font-bold text-gray-900">Rating:</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {RATING_OPTIONS.map((rating) => {
+                                                const isSelected = selectedRatings.includes(rating);
+                                                return (
+                                                    <button
+                                                        key={rating}
+                                                        type="button"
+                                                        aria-pressed={isSelected}
+                                                        onClick={() => toggleRating(rating)}
+                                                        className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${
+                                                            isSelected
+                                                                ? "border-orange-500 bg-white hover:bg-orange-100"
+                                                                : "border-gray-200 bg-white hover:border-orange-500 hover:bg-orange-100"
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`text-[14px] font-medium transition-colors ${
+                                                                isSelected
+                                                                    ? "text-orange-500"
+                                                                    : "text-gray-500 group-hover:text-orange-500"
+                                                            }`}
+                                                        >
+                                                            {rating}
+                                                        </span>
+                                                        <RatingStars count={rating} />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3">
+                                        <span className="text-[15px] font-bold text-gray-900">
+                                            Experience:
+                                        </span>
+                                        <div className="relative">
+                                            <select
+                                                value={experience}
+                                                onChange={(e) => setExperience(e.target.value)}
+                                                className={`input appearance-none cursor-pointer pr-10 ${
+                                                    experience ? "text-gray-500" : "text-gray-400"
                                                 }`}
                                             >
-                                                {rating}
-                                            </span>
-                                            <RatingStars count={rating} />
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                                <option value="">
+                                                    Select experience
+                                                </option>
+                                                <option value="0-2 Years">0-2 Years</option>
+                                                <option value="3-5 Years">3-5 Years</option>
+                                                <option value="5+ Years">5+ Years</option>
+                                            </select>
+                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                                                <Icon src="/icon/chevron-down.svg" className="h-4 w-4" />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        <div className="flex flex-col gap-3">
-                            <span className="text-[15px] font-bold text-gray-900">
-                                Experience:
-                            </span>
-                            <div className="relative">
-                                <select
-                                    value={experience}
-                                    onChange={(e) => setExperience(e.target.value)}
-                                    className={`input appearance-none cursor-pointer pr-10 ${
-                                        experience ? "text-black" : "text-gray-400"
-                                    }`}
-                                >
-                                    <option value="">
-                                        Select experience
-                                    </option>
-                                    <option value="0-2 Years">0-2 Years</option>
-                                    <option value="3-5 Years">3-5 Years</option>
-                                    <option value="5+ Years">5+ Years</option>
-                                </select>
-                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
-                                    <Icon src="/icon/chevron-down.svg" className="h-4 w-4" />
+                                    <div className="flex flex-col gap-3 lg:flex-row">
+                                        <button type="button" onClick={handleClear} className="btn btn-secondary w-full lg:flex-1">
+                                            Clear
+                                        </button>
+                                        <button type="submit" className="btn btn-primary w-full lg:flex-1">
+                                            Search
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="flex gap-3">
-                            <button type="button" onClick={handleClear} className="btn btn-secondary flex-1">
-                                Clear
-                            </button>
-                            <button type="submit" className="btn btn-primary flex-1">
-                                Search
-                            </button>
-                        </div>
                     </form>
                 </aside>
+
+                <div className="flex flex-col items-center gap-4 lg:hidden">
+                    <h1 className="text-center text-h3 font-bold text-gray-900">
+                        Search For Pet Sitter
+                    </h1>
+                    {viewToggle}
+                </div>
 
                 <section className={viewMode === "map" ? "relative min-h-96 lg:min-h-0" : "flex min-w-0 flex-col"}>
                     {loading ? (

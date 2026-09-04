@@ -11,15 +11,16 @@ const PET_BADGE = {
   rabbit: 'badge-rabbit',
 };
 
-function RatingStars({ count = 5 }) {
-  const ratingNum = typeof count === 'number' ? Math.round(count) : 5;
+function RatingStars({ count = 0 }) {
+  const ratingNum = Math.min(5, Math.max(0, Math.round(Number(count) || 0)));
+  if (ratingNum === 0) return null;
   return (
     <div className="flex items-center gap-0.5 text-green-500">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: ratingNum }).map((_, i) => (
         <Icon
           key={i}
           src="/icon/star.svg"
-          className={`h-3.5 w-3.5 ${i < ratingNum ? 'text-green-500 fill-green-500' : 'text-gray-200'}`}
+          className="h-3.5 w-3.5 text-green-500 fill-green-500"
         />
       ))}
     </div>
@@ -240,7 +241,7 @@ export default function SitterCardOverlay({
                     <h3 className="truncate text-sm font-bold text-gray-900">
                       {tradeName}
                     </h3>
-                    <RatingStars count={sitter.rating || 5} />
+                    <RatingStars count={sitter.rating ?? 0} />
                   </div>
                   {ownerName && (
                     <p className="mt-0.5 truncate text-xs text-gray-400">

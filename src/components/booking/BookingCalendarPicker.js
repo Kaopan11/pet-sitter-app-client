@@ -100,8 +100,8 @@ export function BookingCalendar({
 }) {
   return (
     <div
-      className={`absolute top-[calc(100%+8px)] z-30 w-80 rounded-xl bg-white p-4 shadow-(--shadow-dropdown) ${
-        align === "end" ? "right-0" : "left-0"
+      className={`absolute top-[calc(100%+8px)] z-30 left-0 right-0 w-auto rounded-xl bg-white p-4 shadow-(--shadow-dropdown) sm:w-80 sm:right-auto ${
+        align === "end" ? "sm:left-auto sm:right-0" : "sm:left-0"
       }`}
     >
       <div className="mb-3 flex items-center justify-between">
@@ -146,7 +146,7 @@ export function BookingCalendar({
               type="button"
               disabled={unavailable}
               onClick={() => onSelect(item.date)}
-              className={`mx-auto flex size-9 items-center justify-center rounded-full text-body-3 ${
+              className={`mx-auto flex aspect-square w-full max-w-9 items-center justify-center rounded-full text-body-3 ${
                 highlighted
                   ? "bg-orange-500 font-bold text-white"
                   : inRange
