@@ -223,9 +223,19 @@ function OwnerProfileForm() {
         router.replace("/login/owner");
         return;
       }
-      toast.error(error.message || "Failed to update profile", {
-        classNames: errorToastClassNames,
-      });
+      const message = error.message || "Failed to update profile";
+        if (
+          message.includes("already in use") ||
+          message.includes("users_email_key")
+        ) {
+          setErrors((prev) => ({ ...prev, email: "Email is already in use" }));
+        }
+        toast.error(
+          message.includes("users_email_key")
+            ? "Email is already in use"
+            : message,
+          { classNames: errorToastClassNames },
+        );
     } finally {
       setIsSaving(false);
     }
