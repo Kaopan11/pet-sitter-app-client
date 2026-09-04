@@ -9,11 +9,12 @@ import Pagination from "./Pagination";
 import PetSitterCard from "./PetSitterCard";
 import SitterCardOverlay from "./find-sitter/SitterCardOverlay";
 import { getSitters } from "@/lib/api";
+import { getSitterCoords } from "@/lib/sitterLocation";
 
 const Map = dynamic(() => import("@/components/Map"), {
     ssr: false,
     loading: () => (
-        <div className="h-[600px] w-full bg-gray-100 animate-pulse rounded-2xl flex items-center justify-center text-gray-400 font-medium">
+        <div className="flex h-full w-full animate-pulse items-center justify-center bg-gray-100 text-gray-400 font-medium">
             กำลังโหลดแผนที่...
         </div>
     ),
@@ -28,6 +29,7 @@ const PET_OPTIONS = [
 
 const RATING_OPTIONS = [5, 4, 3, 2, 1];
 const PAGE_SIZE = 5;
+const MAP_LIMIT = 1000;
 
 function parsePetTypes(value) {
     return String(value ?? "")
@@ -57,41 +59,6 @@ function experienceToQuery(value) {
     return String(value).replace(/\s*Years$/i, "").trim();
 }
 
-const LOCATION_COORDS = {
-  "khu khot": [13.9560, 100.6270],
-  "lam luk ka": [13.9446, 100.6325],
-  "pak kret": [13.9130, 100.4984],
-  "bang kapi": [13.7658, 100.6472],
-  "pattaya": [12.9236, 100.8825],
-  "pathum thani": [14.0208, 100.5250],
-  "pathumthani": [14.0208, 100.5250],
-  "nonthaburi": [13.8591, 100.5217],
-  "samut prakan": [13.5991, 100.5968],
-  "bangkok": [13.7563, 100.5018],
-  "chiang mai": [18.7883, 98.9853],
-  "chon buri": [13.3611, 100.9847],
-  "phuket": [7.8804, 98.3923],
-};
-
-
-function getSitterCoords(sitter, idx = 0) {
-  if (sitter?.latitude != null && sitter?.longitude != null && !isNaN(Number(sitter.latitude)) && !isNaN(Number(sitter.longitude))) {
-    return [Number(sitter.latitude), Number(sitter.longitude)];
-  }
-
-  const locStr = String(sitter?.location || sitter?.province || sitter?.district || "").toLowerCase();
-  for (const [key, coords] of Object.entries(LOCATION_COORDS)) {
-    if (locStr.includes(key)) {
-      const jitterLat = ((idx % 5) - 2) * 0.008;
-      const jitterLng = (Math.floor(idx / 5) - 1) * 0.008;
-      return [coords[0] + jitterLat, coords[1] + jitterLng];
-    }
-  }
-
-  return [13.7563 + ((idx % 4) * 0.012 - 0.018), 100.5018 + (Math.floor(idx / 4) * 0.015 - 0.015)];
-}
-
-
 function RatingStars({ count }) {
     return (
         <div className="flex items-center gap-0.5 text-green">
@@ -117,6 +84,7 @@ export default function PetSitterList() {
     const [error, setError] = useState("");
     const [selectedSitterId, setSelectedSitterId] = useState(null);
     const [mapCenter, setMapCenter] = useState([13.7563, 100.5018]);
+    const [mapZoom, setMapZoom] = useState(13);
 
     const syncFormFromUrl = useCallback(() => {
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
@@ -130,6 +98,7 @@ export default function PetSitterList() {
 
     const fetchSitters = useCallback(async () => {
         const page = Number.parseInt(searchParams.get("page") ?? "1", 10);
+        const isMap = viewMode === "map";
 
         setLoading(true);
         setError("");
@@ -140,15 +109,15 @@ export default function PetSitterList() {
                 petTypes: parsePetTypes(searchParams.get("petTypes")),
                 rating: parseRatings(searchParams.get("rating")),
                 experience: searchParams.get("experience") ?? "",
-                page: Number.isInteger(page) && page > 0 ? page : 1,
-                limit: PAGE_SIZE,
+                page: isMap ? 1 : Number.isInteger(page) && page > 0 ? page : 1,
+                limit: isMap ? MAP_LIMIT : PAGE_SIZE,
             });
             const data = result.data || [];
             setSitters(data);
-            setTotalPages(result.pagination?.totalPages || 0);
+            setTotalPages(isMap ? 0 : result.pagination?.totalPages || 0);
             if (data.length > 0) {
                 setSelectedSitterId(data[0].id);
-                setMapCenter(getSitterCoords(data[0], 0));
+                setMapCenter(getSitterCoords(data[0]));
             }
         } catch (err) {
             setSitters([]);
@@ -157,12 +126,13 @@ export default function PetSitterList() {
         } finally {
             setLoading(false);
         }
-    }, [searchParams]);
+    }, [searchParams, viewMode]);
 
-    const handleSelectSitter = (sitter, idx = 0) => {
+    const handleSelectSitter = (sitter) => {
         if (!sitter) return;
         setSelectedSitterId(sitter.id);
-        setMapCenter(getSitterCoords(sitter, idx));
+        setMapCenter(getSitterCoords(sitter));
+        setMapZoom(15);
     };
 
     useEffect(() => {
@@ -261,8 +231,10 @@ export default function PetSitterList() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] lg:items-start">
-                <aside className="lg:sticky lg:top-6 lg:self-start">
+                <div className={`grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] ${
+                    viewMode === "map" ? "lg:items-stretch" : "lg:items-start"
+                }`}>
+                <aside className={viewMode === "list" ? "lg:sticky lg:top-6 lg:self-start" : ""}>
                     <form onSubmit={handleSearch} className="flex flex-col gap-6 rounded-xl bg-white p-6 shadow-[var(--shadow-card)]">
                         <div className="flex flex-col">
                             <h2 className="text-[15px] font-bold text-gray-900">Search:</h2>
@@ -384,7 +356,7 @@ export default function PetSitterList() {
                     </form>
                 </aside>
 
-                <section className="flex min-w-0 flex-col">
+                <section className={viewMode === "map" ? "relative min-h-96 lg:min-h-0" : "flex min-w-0 flex-col"}>
                     {loading ? (
                         <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
                             Loading pet sitters...
@@ -398,25 +370,24 @@ export default function PetSitterList() {
                             No pet sitters found
                         </p>
                     ) : viewMode === "map" ? (
-                        <div className="relative h-[650px] w-full rounded-2xl overflow-hidden shadow-[var(--shadow-card)] border border-gray-200">
+                        <div className="relative h-96 w-full overflow-hidden rounded-2xl border border-gray-200 shadow-[var(--shadow-card)] lg:absolute lg:inset-0 lg:h-auto">
                             <Map
                                 center={mapCenter}
-                                zoom={13}
-                                markers={sitters.map((sitter, idx) => {
-                                    const coords = getSitterCoords(sitter, idx);
+                                zoom={mapZoom}
+                                markers={sitters.map((sitter) => {
+                                    const coords = getSitterCoords(sitter);
                                     return {
                                         id: sitter.id,
                                         position: coords,
                                         popup: sitter.trade_name || sitter.title || sitter.name || "Pet Sitter",
                                         sitterData: sitter,
-                                        idx: idx
                                     };
                                 })}
                                 selectedId={selectedSitterId}
                                 onMarkerClick={(marker) => {
                                     const targetSitter = sitters.find(s => s.id === marker.id) || marker.sitterData;
                                     if (targetSitter) {
-                                        handleSelectSitter(targetSitter, marker.idx);
+                                        handleSelectSitter(targetSitter);
                                     }
                                 }}
                                 className="h-full w-full z-0"
@@ -425,8 +396,7 @@ export default function PetSitterList() {
                                 sitters={sitters}
                                 selectedId={selectedSitterId}
                                 onSelect={(sitter) => {
-                                    const idx = sitters.findIndex(s => s.id === sitter.id);
-                                    handleSelectSitter(sitter, idx);
+                                    handleSelectSitter(sitter);
                                 }}
                             />
                         </div>

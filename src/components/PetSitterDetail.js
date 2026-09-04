@@ -21,6 +21,7 @@ const Map = dynamic(() => import("@/components/Map"), {
 });
 
 import { getToken, getUser } from "@/lib/auth";
+import { getSitterCoords } from "@/lib/sitterLocation";
 import {
   bookingRangeOverlapsBooked,
   combineBookingDateTime,
@@ -111,13 +112,6 @@ function normalizeSitter(raw) {
     latitude: raw.latitude,
     longitude: raw.longitude,
   };
-}
-
-function mapQuery(sitter) {
-  if (sitter.latitude != null && sitter.longitude != null && sitter.latitude !== "") {
-    return `${sitter.latitude},${sitter.longitude}`;
-  }
-  return sitter.location || "Bangkok";
 }
 
 function Stars({ count }) {
@@ -712,7 +706,8 @@ export default function PetSitterDetail({ sitterId }) {
     );
   }
 
-  const query = encodeURIComponent(mapQuery(sitter));
+  const pinCoords = getSitterCoords(sitter);
+  const query = encodeURIComponent(`${pinCoords[0]},${pinCoords[1]}`);
   const mapSrc = `https://maps.google.com/maps?q=${query}&z=15&output=embed`;
   const mapHref = `https://www.google.com/maps/search/?api=1&query=${query}`;
   const isOwnSitter = isOwnSitterListing(sitter.id ?? sitterId);
@@ -877,19 +872,13 @@ export default function PetSitterDetail({ sitterId }) {
             <section className="overflow-hidden rounded-2xl border border-gray-100 shadow-xs">
               <div className="relative h-72 w-full bg-gray-100">
                 <Map
-                  center={[
-                    Number(sitter.latitude) || 13.7563,
-                    Number(sitter.longitude) || 100.5018,
-                  ]}
+                  center={pinCoords}
                   zoom={15}
                   selectedId={sitter.id}
                   markers={[
                     {
                       id: sitter.id,
-                      position: [
-                        Number(sitter.latitude) || 13.7563,
-                        Number(sitter.longitude) || 100.5018,
-                      ],
+                      position: pinCoords,
                       popup: sitter.title || sitter.sitter_name || "Pet Sitter",
                       isSelected: true,
                     },

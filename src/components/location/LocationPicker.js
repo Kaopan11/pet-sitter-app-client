@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { selectedIcon } from '../Map';
 
@@ -11,13 +10,13 @@ const MapWithPicker = dynamic(
   async () => {
     const { MapContainer, TileLayer, Marker, useMap } = await import('react-leaflet');
 
-    function MapFlyTo({ center }) {
+    function MapFlyTo({ target }) {
       const map = useMap();
       useEffect(() => {
-        if (center && center[0] && center[1]) {
-          map.flyTo(center, 15, { animate: true });
+        if (target && target[0] && target[1]) {
+          map.flyTo(target, 15, { animate: true });
         }
-      }, [center, map]);
+      }, [target, map]);
       return null;
     }
 
@@ -45,7 +44,7 @@ const MapWithPicker = dynamic(
       );
     }
 
-    return function LocationMap({ center, onPositionChange, className }) {
+    return function LocationMap({ center, flyToTarget, onPositionChange, className }) {
       return (
         <MapContainer
           center={center}
@@ -53,7 +52,7 @@ const MapWithPicker = dynamic(
           scrollWheelZoom={true}
           className={className}
         >
-          <MapFlyTo center={center} />
+          <MapFlyTo target={flyToTarget} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -77,7 +76,11 @@ export default function LocationPicker({
   address = {},
   onChange = () => {},
 }) {
-  const prevAddressQueryRef = useRef('');
+  const prevAddressQueryRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+  const [flyToTarget, setFlyToTarget] = useState(null);
+
+  onChangeRef.current = onChange;
 
   const currentCoords = [
     Number(address.latitude) || 13.7563,
@@ -99,6 +102,11 @@ export default function LocationPicker({
       .filter(Boolean)
       .join(' ')
       .trim();
+
+    if (prevAddressQueryRef.current === null) {
+      prevAddressQueryRef.current = fullQuery;
+      return;
+    }
 
     if (!fullQuery || fullQuery === prevAddressQueryRef.current) return;
     prevAddressQueryRef.current = fullQuery;
@@ -128,7 +136,8 @@ export default function LocationPicker({
         coords = await queryGeocode(areaQuery);
       }
       if (coords) {
-        onChange({
+        setFlyToTarget(coords);
+        onChangeRef.current({
           latitude: coords[0],
           longitude: coords[1],
         });
@@ -138,18 +147,18 @@ export default function LocationPicker({
     return () => clearTimeout(timer);
   }, [address.addressDetail, address.subDistrict, address.district, address.province]);
 
-  // When dragging pin in map: Only update Lat & Long without changing address details
-  const handlePositionChange = (newCoords) => {
-    onChange({
+  const handlePositionChange = useCallback((newCoords) => {
+    onChangeRef.current({
       latitude: newCoords[0],
       longitude: newCoords[1],
     });
-  };
+  }, []);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-gray-100 shadow-xs h-[300px] w-full">
       <MapWithPicker
         center={currentCoords}
+        flyToTarget={flyToTarget}
         onPositionChange={handlePositionChange}
         className="h-full w-full z-0"
       />
