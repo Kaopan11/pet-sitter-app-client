@@ -106,7 +106,10 @@ export default function PetSitterProfilePage() {
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
   const approvalStyle = APPROVAL_STYLES[approvalStatus];
-  const fullProfileUnlocked = isFullProfileUnlocked(approvalStatus);
+  const fullProfileUnlocked = isFullProfileUnlocked(approvalStatus, {
+    address_detail: form.addressDetail,
+    province: form.province,
+  });
 
   async function loadSubDistricts(districtId) {
     if (!districtId) {
