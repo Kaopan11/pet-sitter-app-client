@@ -14,7 +14,7 @@ import { getSitterCoords } from "@/lib/sitterLocation";
 const Map = dynamic(() => import("@/components/Map"), {
     ssr: false,
     loading: () => (
-        <div className="h-[600px] w-full bg-gray-100 animate-pulse rounded-2xl flex items-center justify-center text-gray-400 font-medium">
+        <div className="flex h-full w-full animate-pulse items-center justify-center bg-gray-100 text-gray-400 font-medium">
             กำลังโหลดแผนที่...
         </div>
     ),
@@ -231,8 +231,10 @@ export default function PetSitterList() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] lg:items-start">
-                <aside className="lg:sticky lg:top-6 lg:self-start">
+                <div className={`grid grid-cols-1 gap-8 lg:grid-cols-[24rem_1fr] ${
+                    viewMode === "map" ? "lg:items-stretch" : "lg:items-start"
+                }`}>
+                <aside className={viewMode === "list" ? "lg:sticky lg:top-6 lg:self-start" : ""}>
                     <form onSubmit={handleSearch} className="flex flex-col gap-6 rounded-xl bg-white p-6 shadow-[var(--shadow-card)]">
                         <div className="flex flex-col">
                             <h2 className="text-[15px] font-bold text-gray-900">Search:</h2>
@@ -354,7 +356,7 @@ export default function PetSitterList() {
                     </form>
                 </aside>
 
-                <section className="flex min-w-0 flex-col">
+                <section className={viewMode === "map" ? "relative min-h-96 lg:min-h-0" : "flex min-w-0 flex-col"}>
                     {loading ? (
                         <p className="rounded-xl bg-white p-6 text-body-2 text-gray-400">
                             Loading pet sitters...
@@ -368,7 +370,7 @@ export default function PetSitterList() {
                             No pet sitters found
                         </p>
                     ) : viewMode === "map" ? (
-                        <div className="relative h-[650px] w-full rounded-2xl overflow-hidden shadow-[var(--shadow-card)] border border-gray-200">
+                        <div className="relative h-96 w-full overflow-hidden rounded-2xl border border-gray-200 shadow-[var(--shadow-card)] lg:absolute lg:inset-0 lg:h-auto">
                             <Map
                                 center={mapCenter}
                                 zoom={mapZoom}

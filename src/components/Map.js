@@ -29,6 +29,17 @@ function MapController({ center, zoom }) {
       });
     }
   }, [center[0], center[1], zoom, map]);
+
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    observer.observe(container);
+    map.invalidateSize();
+    return () => observer.disconnect();
+  }, [map]);
+
   return null;
 }
 
