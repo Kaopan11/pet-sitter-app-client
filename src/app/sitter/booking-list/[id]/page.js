@@ -195,7 +195,7 @@ export default function BookingDetailPage() {
       <article className="flex flex-col gap-8 rounded-2xl bg-white px-16 py-10">
         <div className="flex items-start justify-between gap-4">
           <DetailField label="Pet Owner Name">{ownerName}</DetailField>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-16">
             <button
               type="button"
               className="flex cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500 disabled:opacity-40"
@@ -236,9 +236,11 @@ export default function BookingDetailPage() {
                       />
                     ) : (
                       <div
-                        className="h-20 w-20 shrink-0 rounded-full bg-gray-200"
+                        className="flex h-26 w-26 shrink-0 items-center justify-center rounded-full bg-gray-200 text-white"
                         aria-hidden="true"
-                      />
+                      >
+                        <Icon src="/icon/paw.svg" className="h-12 w-12" />
+                      </div>
                     )}
                     <div className="flex flex-col items-center gap-2.5">
                       <p className="text-h4 font-bold text-gray-600">{pet.name}</p>
@@ -286,7 +288,12 @@ export default function BookingDetailPage() {
                   className="h-60 w-60 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-60 w-60 rounded-full bg-gray-200" aria-hidden="true" />
+                <div
+                  className="flex h-60 w-60 items-center justify-center rounded-full bg-gray-200 text-gray-400"
+                  aria-hidden="true"
+                >
+                  <Icon src="/icon/paw.svg" className="h-28 w-28" />
+                </div>
               )}
               <p className="w-full text-center text-h4 font-bold text-black">
                 {selectedPet.name}

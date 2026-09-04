@@ -15,9 +15,11 @@ import {
   normalizeBookingTime,
 } from "@/lib/booking";
 import BookingDateTimeModal from "@/components/booking/BookingDateTimeModal";
+import Pagination from "@/components/Pagination";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const PAGE_SIZE = 5; // แสดง booking แค่ 5 การ์ดล่าสุดต่อหน้า ที่เหลือกดเปลี่ยนหน้าดูผ่าน Pagination
 
 // สี/ข้อความของแต่ละสถานะ booking ใช้แสดง badge สถานะ
 const STATUS_CONFIG = {
@@ -103,6 +105,8 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState(null); // booking ที่กำลังเปิดดู modal รายละเอียด
   const [reviewBooking, setReviewBooking] = useState(null); // booking ที่กำลังเขียนรีวิวอยู่
   const [viewReviewBooking, setViewReviewBooking] = useState(null); // booking ที่กำลังดูรีวิวที่เคยเขียนไว้
@@ -135,15 +139,19 @@ export default function BookingHistoryPage() {
         return;
       }
 
+      setIsLoading(true);
       try {
         const token = getToken();
-        const res = await fetch(`${API_URL}/api/bookings/owner`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `${API_URL}/api/bookings/owner?page=${currentPage}&limit=${PAGE_SIZE}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          }
+        );
 
         const json = await res.json().catch(() => ({}));
 
@@ -162,6 +170,7 @@ export default function BookingHistoryPage() {
           : rows;
         if (!cancelled) {
           setBookings(next);
+          setTotalPages(json.totalPages ?? 1);
           setLoadError("");
         }
       } catch (error) {
@@ -179,7 +188,15 @@ export default function BookingHistoryPage() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, currentPage]);
+
+  // เปลี่ยนหน้า booking history (จาก Pagination component ด้านล่างรายการ)
+  const goToPage = (page) => {
+    setCurrentPage((prev) => {
+      const clamped = Math.min(Math.max(1, page), Math.max(1, totalPages));
+      return clamped === prev ? prev : clamped;
+    });
+  };
 
   // เปิดหน้าแชทกับ pet sitter ของ booking นี้ (สร้างห้องสนทนาใหม่ถ้ายังไม่มี)
   async function openSitterChat(event, booking) {
@@ -783,6 +800,16 @@ export default function BookingHistoryPage() {
 
                 </div>
               ))}
+            </div>
+          )}
+
+          {!isLoading && bookings.length > 0 && (
+            <div className="mt-6 flex justify-center">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={goToPage}
+              />
             </div>
           )}
         </div>
