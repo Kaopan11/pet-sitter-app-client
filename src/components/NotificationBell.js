@@ -127,8 +127,10 @@ export default function NotificationBell({
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+8px)] right-0 z-50 flex w-[min(calc(100vw-2.5rem),360px)] flex-col overflow-hidden rounded-lg bg-white shadow-[4px_4px_24px_0px_rgba(0,0,0,0.08)]">
-          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <div
+          className="fixed inset-x-4 top-14 z-[60] flex max-h-[calc(100dvh-4rem)] flex-col overflow-hidden rounded-lg bg-white shadow-[4px_4px_24px_0px_rgba(0,0,0,0.08)] md:absolute md:inset-x-auto md:right-0 md:top-[calc(100%+8px)] md:max-h-none md:w-[min(calc(100vw-2.5rem),360px)]"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3">
             <p className="text-body-2 font-medium text-gray-900">Notifications</p>
             {unreadCount > 0 ? (
               <button
@@ -140,7 +142,7 @@ export default function NotificationBell({
               </button>
             ) : null}
           </div>
-          <div className="max-h-80 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto md:max-h-80">
             {items.length === 0 ? (
               <p className="px-4 py-8 text-center text-body-3 text-gray-400">
                 No notifications yet
