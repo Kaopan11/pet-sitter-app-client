@@ -7,6 +7,8 @@ import { register } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
+import LegalAuthNotice from "@/components/legal/LegalAuthNotice";
+import { validatePassword } from "@/utils/validatePassword";
 
 // หน้าสมัครเดียว — toggle Owner/Sitter ส่ง asSitter ให้ backend
 export default function RegisterForm({
@@ -82,10 +84,10 @@ export default function RegisterForm({
       newErrors.phone = "Phone number must be 10 digits and start with 0";
     }
 
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length <= 8) {
-      newErrors.password = "Password must be more than 8 characters";
+    // ticket 01: กฎความยาวรหัสผ่านอยู่ที่ validatePassword (ใช้ร่วมกับ Reset password ใน ticket 02)
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     setErrors(newErrors);
@@ -122,14 +124,14 @@ export default function RegisterForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <header className="flex flex-col items-center gap-2 text-center">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5">
+      <header className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
         <h1 className="text-h2">{title}</h1>
         <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
 
       <div
-        className="mx-auto flex w-full max-w-70 rounded-full bg-gray-100 p-1"
+        className="mx-auto flex w-full max-w-none rounded-full bg-gray-100 p-1 sm:max-w-70"
         role="tablist"
         aria-label="Register as"
       >
@@ -137,7 +139,7 @@ export default function RegisterForm({
           type="button"
           role="tab"
           aria-selected={mode === "owner"}
-          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+          className={`min-h-11 flex-1 rounded-full py-2 text-body-3 font-bold transition ${
             mode === "owner"
               ? "bg-white text-orange-500 ring-1 ring-orange-500"
               : "text-gray-400"
@@ -150,7 +152,7 @@ export default function RegisterForm({
           type="button"
           role="tab"
           aria-selected={mode === "sitter"}
-          className={`flex-1 rounded-full py-2 text-body-3 font-bold transition ${
+          className={`min-h-11 flex-1 rounded-full py-2 text-body-3 font-bold transition ${
             mode === "sitter"
               ? "bg-white text-orange-500 ring-1 ring-orange-500"
               : "text-gray-400"
@@ -248,7 +250,9 @@ export default function RegisterForm({
             : "Register as Owner"}
       </button>
 
-      <SocialAuthButtons />
+      <SocialAuthButtons remember />
+
+      <LegalAuthNotice />
 
       <p className="text-center text-body-3 text-gray-500">
         {loginPrompt}{" "}

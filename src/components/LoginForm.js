@@ -9,11 +9,15 @@ import { saveAuth } from "@/lib/auth";
 import { errorToastClassNames } from "@/lib/toastStyles";
 import SocialAuthButtons from "@/components/SocialAuthButtons";
 import PasswordInput from "@/components/PasswordInput";
+import LegalAuthNotice from "@/components/legal/LegalAuthNotice";
 
 /** แปลง message จาก BE → ข้อความ toast (แยกอีเมล / รหัส) */
 function getLoginToastMessage(message) {
   const lower = String(message).toLowerCase();
 
+  if (lower.includes("banned")) {
+    return "This account has been banned";
+  }
   if (lower.includes("email")) {
     return "Incorrect email";
   }
@@ -23,7 +27,7 @@ function getLoginToastMessage(message) {
   return message || "Login failed";
 }
 
-// ฟอร์ม login ร่วม owner/sitter — หน้า page เป็นคนเปิด Remember / social
+// ฟอร์ม login ร่วม — หน้า page เป็นคนเปิด Remember / social
 export default function LoginForm({
   title,
   subtitle,
@@ -39,6 +43,14 @@ export default function LoginForm({
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // ลิงก์ไป /forgot-password — พกอีเมลที่พิมพ์ไว้ (ถ้ามี)
+  const forgotPasswordHref = (() => {
+    const trimmed = email.trim();
+    return trimmed
+      ? `/forgot-password?${new URLSearchParams({ email: trimmed })}`
+      : "/forgot-password";
+  })();
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -64,8 +76,8 @@ export default function LoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <header className="flex flex-col items-center gap-2 text-center">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5 sm:gap-6">
+      <header className="flex flex-col items-center gap-1.5 text-center sm:gap-2">
         <h1 className="text-h2">{title}</h1>
         <p className="text-body-2 text-gray-400">{subtitle}</p>
       </header>
@@ -99,27 +111,34 @@ export default function LoginForm({
       </div>
 
       {showRemember && showForgotPassword ? (
-        <div className="flex items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-body-3 text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <label className="flex min-h-11 items-center gap-2 text-body-3 text-gray-500">
             <input
               type="checkbox"
               checked={remember}
               onChange={(event) => setRemember(event.target.checked)}
+              className="size-4 shrink-0"
             />
             Remember?
           </label>
-          {/* ยังไม่เชื่อม API forgot-password */}
-          <button type="button" className="text-body-3 font-medium text-primary">
+          {/* ticket 02: ไปหน้าขอลิงก์รีเซ็ต → POST /api/auth/forgot-password */}
+          <Link
+            href={forgotPasswordHref}
+            className="inline-flex min-h-11 items-center text-body-3 font-medium text-primary"
+          >
             Forget Password?
-          </button>
+          </Link>
         </div>
       ) : null}
 
       {showForgotPassword && !showRemember ? (
         <p className="text-center">
-          <button type="button" className="text-body-3 font-medium text-primary">
+          <Link
+            href={forgotPasswordHref}
+            className="inline-flex min-h-11 items-center text-body-3 font-medium text-primary"
+          >
             Forget Password?
-          </button>
+          </Link>
         </p>
       ) : null}
 
@@ -127,7 +146,9 @@ export default function LoginForm({
         {loading ? "Logging in..." : "Login"}
       </button>
 
-      {showSocial ? <SocialAuthButtons /> : null}
+      {showSocial ? <SocialAuthButtons remember={showRemember ? remember : true} /> : null}
+
+      {showSocial ? <LegalAuthNotice /> : null}
 
       <p className="text-center text-body-3 text-gray-500">
         {registerPrompt}{" "}

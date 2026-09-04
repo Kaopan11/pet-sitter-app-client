@@ -1,13 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
+import { getUser, isAdminUser } from "@/lib/auth";
+import jwtInterceptor from "@/utils/jwtInterceptor";
+
+jwtInterceptor();
 
 export default function AdminLayout({ children }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const user = getUser();
+    if (!isAdminUser(user)) {
+      router.replace(user ? "/" : "/login/admin");
+      return;
+    }
+    setIsAdmin(true);
+  }, [router]);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
-    <div className="flex h-screen bg-[#F6F6F9] overflow-hidden font-sans">
+    <div className="flex h-screen overflow-hidden bg-gray-100 [&_button]:cursor-pointer [&_button:disabled]:cursor-not-allowed">
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -30,7 +50,7 @@ export default function AdminLayout({ children }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto px-10 pt-10 pb-20">
           {children}
         </main>
       </div>

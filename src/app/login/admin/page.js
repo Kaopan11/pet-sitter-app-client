@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import PasswordInput from "@/components/PasswordInput";
-import { saveAuth } from "@/lib/auth";
+import { login } from "@/lib/api";
+import { isAdminUser, saveAuth } from "@/lib/auth";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -20,19 +21,17 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      // Simulate/call API authentication
-      // In production/API integration: await loginAdmin({ username, password });
-      if (!username || !password) {
+      const email = username.trim();
+      if (!email || !password) {
         throw new Error("Please fill in both Username and Password.");
       }
 
-      // Save auth token & admin info
-      saveAuth({
-        token: "admin-session-token",
-        user: { username, role: "admin", name: "Administrator" },
-      });
+      const data = await login({ email, password });
+      if (!isAdminUser(data?.user)) {
+        throw new Error("This account is not an admin.");
+      }
 
-      // Redirect to Admin Navigation dashboard
+      saveAuth(data, true);
       router.push("/admin/pet-sitter");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please check your credentials.");

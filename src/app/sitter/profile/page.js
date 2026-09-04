@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, UserRound, CirclePlus, Calendar, X } from "lucide-react";
+import Image from "next/image";
+import { Plus, UserRound, CirclePlus, Calendar, X, CircleAlert } from "lucide-react";
 import PetTypeSelect from "@/components/PetTypeSelect";
 import {
   Select,
@@ -12,11 +13,23 @@ import {
 } from "@/components/ui/select";
 import axios from "axios";
 import { toast } from "sonner";
+import LoadingState from "@/components/LoadingState";
 import { updateStoredUser } from "@/lib/auth";
+import { isFullProfileUnlocked } from "@/lib/sitterApproval";
 import {
   errorToastClassNames,
   successToastClassNames,
 } from "@/lib/toastStyles";
+import dynamic from "next/dynamic";
+
+const LocationPicker = dynamic(() => import("@/components/location/LocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[300px] w-full items-center justify-center rounded-2xl bg-gray-100 text-body-2 text-gray-400 font-medium">
+      กำลังโหลดระบบแผนที่เลือกพิกัด...
+    </div>
+  )
+});
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
@@ -25,9 +38,12 @@ const EXPERIENCE_VALUES = ["0-2", "3-5", "5+"];
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.com$/i;
 
 const APPROVAL_STYLES = {
+  Unverified: { text: "text-gray-500", dot: "bg-gray-400" },
+  "Waiting for verify": { text: "text-pink", dot: "bg-pink" },
+  Verified: { text: "text-green", dot: "bg-green" },
+  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
   Approved: { text: "text-green", dot: "bg-green" },
   Rejected: { text: "text-red", dot: "bg-red" },
-  "Waiting for approve": { text: "text-pink", dot: "bg-pink" },
 };
 
 const initialForm = {
@@ -47,6 +63,8 @@ const initialForm = {
   subDistrict: "",
   province: "",
   postCode: "",
+  latitude: 13.7563,
+  longitude: 100.5018,
 };
 
 const initialErrors = {
@@ -72,21 +90,23 @@ export default function PetSitterProfilePage() {
   const galleryInputRef = useRef(null);
   const skipAddressSelect = useRef(true);
   const [form, setForm] = useState(initialForm);
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [imageFile, setImageFile] = useState(null);
-  const [photos, setPhotos] = useState([]);
-  const [galleryFiles, setGalleryFiles] = useState([]);
-  const [deletedPhotoIds, setDeletedPhotoIds] = useState([]);
+  const [avatarUrl, setAvatarUrl] = useState(""); // URL รูปโปรไฟล์ที่โชว์อยู่ (จากเซิร์ฟเวอร์/ร่าง)
+  const [imageFile, setImageFile] = useState(null); // ไฟล์ avatar ใหม่ที่เลือก ยังไม่อัปโหลด
+  const [existingGallery, setExistingGallery] = useState([]); // รูป gallery ที่มีอยู่แล้ว (id + photo_url)
+  const [galleryFiles, setGalleryFiles] = useState([]); // ไฟล์ gallery ใหม่ที่เลือก ยังไม่อัปโหลด
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
   const [approvalStatus, setApprovalStatus] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const districts =
     provinces.find((item) => item.nameEn === form.province)?.districts ?? [];
-  const approvalStyle = APPROVAL_STYLES[approvalStatus] ?? APPROVAL_STYLES["Waiting for approve"];
+  const approvalStyle = APPROVAL_STYLES[approvalStatus];
+  const fullProfileUnlocked = isFullProfileUnlocked(approvalStatus);
 
   async function loadSubDistricts(districtId) {
     if (!districtId) {
@@ -120,11 +140,13 @@ export default function PetSitterProfilePage() {
       subDistrict: profile.sub_district ?? "",
       province: profile.province ?? "",
       postCode: profile.post_code ?? "",
+      latitude: profile.latitude != null ? Number(profile.latitude) : 13.7563,
+      longitude: profile.longitude != null ? Number(profile.longitude) : 100.5018,
     };
 
     setForm(nextForm);
     setAvatarUrl(profile.avatar_url ?? "");
-    setPhotos(profile.sitter_photos ?? []);
+    setExistingGallery(profile.sitter_photos ?? []);
     updateStoredUser({
       name: profile.name,
       email: profile.email,
@@ -132,6 +154,7 @@ export default function PetSitterProfilePage() {
       avatarUrl: profile.avatar_url,
     });
     setApprovalStatus(profile.approval_status ?? "");
+    setRejectionReason(profile.rejection_reason ?? "");
     return nextForm;
   }
 
@@ -158,6 +181,7 @@ export default function PetSitterProfilePage() {
           "Failed to load profile",
       );
     } finally {
+      setIsLoading(false);
       // ยังไม่เปิดรับ onValueChange ทันทีที่ API กลับมา
       // รอให้ React วาด dropdown และให้ Radix ยิง event ปลอมจบก่อน แล้วค่อย skipAddressSelect = false
       requestAnimationFrame(() => {
@@ -169,7 +193,9 @@ export default function PetSitterProfilePage() {
   }
 
   useEffect(() => {
-    load();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only profile load
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
   }, []);
 
   function handleChange(event) {
@@ -251,7 +277,7 @@ export default function PetSitterProfilePage() {
   function handleGalleryChange(event) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    const remaining = 10 - photos.length - galleryFiles.length;
+    const remaining = 10 - existingGallery.length - galleryFiles.length;
     const validFiles = files
       .filter(
         (file) =>
@@ -275,8 +301,7 @@ export default function PetSitterProfilePage() {
   }
 
   function handleDeletePhoto(photoId) {
-    setPhotos((current) => current.filter((photo) => photo.id !== photoId));
-    setDeletedPhotoIds((current) => [...current, photoId]);
+    setExistingGallery((current) => current.filter((photo) => photo.id !== photoId));
   }
 
   function handleRemoveGalleryFile(index) {
@@ -331,36 +356,38 @@ export default function PetSitterProfilePage() {
       }
     }
 
-    if (!form.tradeName.trim()) {
-      newErrors.tradeName = "Pet sitter name is required";
-    }
+    if (fullProfileUnlocked) {
+      if (!form.tradeName.trim()) {
+        newErrors.tradeName = "Pet sitter name is required";
+      }
 
-    if (form.petTypes.length === 0) {
-      newErrors.petTypes = "Please select at least one pet type";
-    }
+      if (form.petTypes.length === 0) {
+        newErrors.petTypes = "Please select at least one pet type";
+      }
 
-    if (photos.length + galleryFiles.length > 10) {
-      newErrors.gallery = "Image gallery allows a maximum of 10 images";
-    }
+      if (existingGallery.length + galleryFiles.length > 10) {
+        newErrors.gallery = "Image gallery allows a maximum of 10 images";
+      }
 
-    if (!form.addressDetail.trim()) {
-      newErrors.addressDetail = "Address detail is required";
-    }
+      if (!form.addressDetail.trim()) {
+        newErrors.addressDetail = "Address detail is required";
+      }
 
-    if (!form.district.trim()) {
-      newErrors.district = "District is required";
-    }
+      if (!form.district.trim()) {
+        newErrors.district = "District is required";
+      }
 
-    if (!form.subDistrict.trim()) {
-      newErrors.subDistrict = "Sub-district is required";
-    }
+      if (!form.subDistrict.trim()) {
+        newErrors.subDistrict = "Sub-district is required";
+      }
 
-    if (!form.province.trim()) {
-      newErrors.province = "Province is required";
-    }
+      if (!form.province.trim()) {
+        newErrors.province = "Province is required";
+      }
 
-    if (!form.postCode.trim()) {
-      newErrors.postCode = "Post code is required";
+      if (!form.postCode.trim()) {
+        newErrors.postCode = "Post code is required";
+      }
     }
 
     setErrors(newErrors);
@@ -395,31 +422,41 @@ export default function PetSitterProfilePage() {
       formData.append("sub_district", form.subDistrict);
       formData.append("province", form.province);
       formData.append("post_code", form.postCode);
+      if (form.latitude != null) formData.append("latitude", String(form.latitude));
+      if (form.longitude != null) formData.append("longitude", String(form.longitude));
       formData.append("experience_years", form.experience);
       formData.append("email", form.email.trim());
       formData.append("id_number", form.idNumber.trim());
 
-      form.petTypes.forEach((petType) => {
-        formData.append("pet_types", petType);
-      });
+      if (fullProfileUnlocked) {
+        form.petTypes.forEach((petType) => {
+          formData.append("pet_types", petType);
+        });
+        formData.append(
+          "existing_gallery",
+          JSON.stringify(
+            existingGallery.map((photo) => ({
+              id: photo.id,
+              photo_url: photo.photo_url,
+            })),
+          ),
+        );
+      }
 
       if (imageFile) {
         formData.append("imageFile", imageFile);
       }
 
-      galleryFiles.forEach((file) => {
-        formData.append("galleryFiles", file);
-      });
+      if (fullProfileUnlocked) {
+        galleryFiles.forEach((file) => {
+          formData.append("galleryFiles", file);
+        });
+      }
 
       const { data: json } = await axios.put(`${API_BASE_URL}/api/sitters/me`, formData);
 
-      for (const id of deletedPhotoIds) {
-        await axios.delete(`${API_BASE_URL}/api/sitters/me/photos/${id}`);
-      }
-
       setImageFile(null);
       setGalleryFiles([]);
-      setDeletedPhotoIds([]);
       await loadProfile();
       window.dispatchEvent(new Event("sitter-profile-updated"));
       toast(json.message || "Profile updated successfully", {
@@ -461,15 +498,29 @@ export default function PetSitterProfilePage() {
         </div>
         <button
           type="submit"
-          className="btn btn-primary min-w-[120px]"
-          disabled={isSaving}
+          className="btn btn-primary min-w-30"
+          disabled={isLoading || isSaving}
         >
           {isSaving ? "Saving..." : "Update"}
         </button>
       </header>
 
+      {approvalStatus === "Rejected" ? (
+        <p className="flex items-center gap-2.5 rounded-md bg-gray-200 p-3 text-body-2 text-red">
+          <CircleAlert className="size-6 shrink-0" aria-hidden="true" />
+          <span>
+            Your request has not been approved
+            {rejectionReason ? `: '${rejectionReason}'` : "."}
+          </span>
+        </p>
+      ) : null}
+
       {error ? <p className="text-body-2 text-red">{error}</p> : null}
 
+      {isLoading ? (
+        <LoadingState />
+      ) : (
+        <>
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="basic-info-title"
@@ -481,12 +532,14 @@ export default function PetSitterProfilePage() {
         <div className="flex flex-col gap-4">
           <p className="text-body-2 text-black">Profile Image</p>
           <div className="relative w-fit">
-            <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-full bg-gray-200">
+            <div className="relative flex h-60 w-60 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Pet sitter profile"
-                  className="h-full w-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               ) : (
                 <UserRound className="h-26 w-26 text-white" />
@@ -607,7 +660,7 @@ export default function PetSitterProfilePage() {
 
           <FormField label="Introduction (Describe about yourself as pet sitter)">
             <textarea
-              className="input min-h-[120px] resize-y"
+              className="input min-h-30 resize-y"
               name="introduction"
               value={form.introduction}
               onChange={handleChange}
@@ -616,6 +669,7 @@ export default function PetSitterProfilePage() {
         </div>
       </section>
 
+      {fullProfileUnlocked ? (
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="pet-sitter-title"
@@ -653,7 +707,7 @@ export default function PetSitterProfilePage() {
 
         <FormField label="Services (Describe all of your service for pet sitting)">
           <textarea
-            className="input min-h-[120px] resize-y"
+            className="input min-h-30 resize-y"
             name="services"
             value={form.services}
             onChange={handleChange}
@@ -662,7 +716,7 @@ export default function PetSitterProfilePage() {
 
         <FormField label="My Place (Describe you place)">
           <textarea
-            className="input min-h-[120px] resize-y"
+            className="input min-h-30 resize-y"
             name="myPlace"
             value={form.myPlace}
             onChange={handleChange}
@@ -674,12 +728,14 @@ export default function PetSitterProfilePage() {
             Image Gallery (Maximum 10 images)
           </p>
           <div className="flex flex-wrap gap-4">
-            {photos.map((photo) => (
+            {existingGallery.map((photo) => (
               <div key={photo.id} className="relative size-42 overflow-hidden rounded-xl">
-                <img
+                <Image
                   src={photo.photo_url}
                   alt="Gallery photo"
-                  className="size-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
                 <button
                   type="button"
@@ -696,10 +752,12 @@ export default function PetSitterProfilePage() {
                 key={file.name + file.lastModified}
                 className="relative size-42 overflow-hidden rounded-xl"
               >
-                <img
+                <Image
                   src={URL.createObjectURL(file)}
                   alt="New gallery photo"
-                  className="size-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
                 <button
                   type="button"
@@ -711,7 +769,7 @@ export default function PetSitterProfilePage() {
                 </button>
               </div>
             ))}
-            {photos.length + galleryFiles.length < 10 ? (
+            {existingGallery.length + galleryFiles.length < 10 ? (
               <button
                 type="button"
                 className="btn-secondary flex size-42 flex-col items-center justify-center gap-2 rounded-xl cursor-pointer"
@@ -736,7 +794,9 @@ export default function PetSitterProfilePage() {
           )}
         </div>
       </section>
+      ) : null}
 
+      {fullProfileUnlocked ? (
       <section
         className="flex flex-col gap-6 rounded-2xl bg-white px-20 py-10"
         aria-labelledby="address-title"
@@ -831,14 +891,29 @@ export default function PetSitterProfilePage() {
           </div>
         </div>
 
-        <div
-          className="flex h-56 items-center justify-center rounded-xl bg-gray-200 text-body-2 text-gray-400"
-          role="img"
-          aria-label="Map preview"
-        >
-          Map preview
+        <div className="mt-4">
+          <LocationPicker
+            address={{
+              addressDetail: form.addressDetail,
+              district: form.district,
+              subDistrict: form.subDistrict,
+              province: form.province,
+              postcode: form.postCode,
+              latitude: form.latitude || 13.7563,
+              longitude: form.longitude || 100.5018,
+            }}
+            onChange={(updates) => {
+              setForm((prev) => ({
+                ...prev,
+                ...updates,
+              }));
+            }}
+          />
         </div>
       </section>
+      ) : null}
+        </>
+      )}
     </form>
   );
 }

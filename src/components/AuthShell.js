@@ -1,5 +1,6 @@
 // src/components — เลย์เอาต์หน้า auth
 // light = owner (ลายมุม) | plain = sitter (ขาวล้วน) | dark = การ์ดบนพื้นเข้ม
+// responsive: มือถือเลื่อนได้ / ลดของตกแต่ง / desktop คงเลย์เอาต์เดิม
 
 import AuthLogo from "@/components/AuthLogo";
 
@@ -9,27 +10,27 @@ export default function AuthShell({ label, variant = "dark", children }) {
 
   return (
     <main
-      className={`relative isolate flex min-h-svh flex-1 flex-col overflow-hidden ${
+      className={`relative isolate flex min-h-svh flex-1 flex-col overflow-x-hidden ${
         isLight ? "bg-white" : "bg-footer"
       }`}
     >
       {/* Logo มุมบนซ้าย — จุดเดียวกับ Homepage (px ตรง Navbar) */}
-      <div className="relative z-20 flex h-20 shrink-0 items-center px-5 md:px-20">
+      <div className="relative z-20 flex h-14 shrink-0 items-center px-5 sm:h-20 md:px-20">
         <AuthLogo />
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center px-4 pb-16">
+      <div className="relative flex flex-1 flex-col items-center justify-start px-5 pb-10 pt-2 sm:justify-center sm:px-6 sm:pb-16 sm:pt-0">
         {showOwnerDecor ? (
           <>
             <img
               src="/image/paw-yellow.svg"
               alt=""
-              className="pointer-events-none absolute top-0 right-0 z-0 w-52.5 translate-x-[28%] translate-y-[-18%] select-none"
+              className="pointer-events-none absolute top-0 right-0 z-0 w-36 translate-x-[20%] translate-y-[-12%] select-none sm:w-52.5 sm:translate-x-[28%] sm:translate-y-[-18%]"
             />
             <img
               src="/image/corner-bottom-left.svg"
               alt=""
-              className="pointer-events-none absolute bottom-0 left-0 z-0 w-63.75 select-none"
+              className="pointer-events-none absolute bottom-0 left-0 z-0 w-40 select-none sm:w-63.75"
             />
           </>
         ) : null}
@@ -38,15 +39,15 @@ export default function AuthShell({ label, variant = "dark", children }) {
           <>
             <div
               aria-hidden
-              className="pointer-events-none absolute -top-8 right-8 size-28 rotate-12 rounded-4xl bg-yellow opacity-90 sm:right-[12%]"
+              className="pointer-events-none absolute -top-8 right-4 size-20 rotate-12 rounded-4xl bg-yellow opacity-90 sm:right-[12%] sm:size-28"
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute -bottom-10 left-4 size-36 rounded-full bg-green opacity-80 sm:left-[10%]"
+              className="pointer-events-none absolute -bottom-10 left-2 size-28 rounded-full bg-green opacity-80 sm:left-[10%] sm:size-36"
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute bottom-8 left-20 size-24 rounded-full bg-blue opacity-90 sm:left-[16%]"
+              className="pointer-events-none absolute bottom-8 left-12 size-16 rounded-full bg-blue opacity-90 sm:left-[16%] sm:size-24"
             />
           </>
         ) : null}
@@ -64,7 +65,9 @@ export default function AuthShell({ label, variant = "dark", children }) {
           {isLight ? (
             children
           ) : (
-            <div className="card border-0 p-8 shadow-dropdown sm:p-10">{children}</div>
+            <div className="card border-0 p-6 shadow-dropdown sm:p-8 md:p-10">
+              {children}
+            </div>
           )}
         </div>
       </div>

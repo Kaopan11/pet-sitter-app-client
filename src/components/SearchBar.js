@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function SearchBar() {
     const router = useRouter();
     const [selectedPets, setSelectedPets] = useState([]);
-    const [selectedRating, setSelectedRating] = useState(null);
+    const [selectedRatings, setSelectedRatings] = useState([]);
     const [experience, setExperience] = useState("");
 
     const petOptions = [
@@ -18,6 +18,7 @@ export default function SearchBar() {
 
     const ratingOptions = [5, 4, 3, 2, 1];
 
+    // เพิ่ม/เอาชนิดสัตว์เลี้ยงออกจากตัวกรอง (เลือกได้หลายชนิดพร้อมกัน)
     const togglePet = (petId) => {
         if (selectedPets.includes(petId)) {
             setSelectedPets(selectedPets.filter((p) => p !== petId));
@@ -26,12 +27,23 @@ export default function SearchBar() {
         }
     };
 
+    // เพิ่ม/เอาระดับดาวออกจากตัวกรอง (เลือกได้หลายระดับพร้อมกัน)
+    const toggleRating = (rating) => {
+        setSelectedRatings((prev) =>
+            prev.includes(rating)
+                ? prev.filter((value) => value !== rating)
+                : [...prev, rating],
+        );
+    };
+
+    // รวบรวมตัวกรองที่เลือกไว้เป็น query string แล้วพาไปหน้า /find-sitter
     const handleSearch = (e) => {
         e.preventDefault();
         const params = new URLSearchParams();
         if (selectedPets.length) params.set("petTypes", selectedPets.join(","));
-        if (selectedRating) params.set("rating", String(selectedRating));
+        if (selectedRatings.length) params.set("rating", selectedRatings.join(","));
         if (experience) {
+            // ตัดคำว่า "Years" ออก เหลือแค่ตัวเลขช่วงปี เช่น "0-2 Years" -> "0-2"
             params.set("experience", experience.replace(/\s*Years$/i, ""));
         }
         const query = params.toString();
@@ -41,7 +53,7 @@ export default function SearchBar() {
     return (
         <div className="w-full max-w-[68.75rem] mx-auto rounded-[1.25rem] overflow-hidden shadow-sm flex flex-col bg-white">
             <form onSubmit={handleSearch} className="flex flex-col">
-                {/* Top Row: Pet Type Filter */}
+                {/* แถวบน: ตัวกรองชนิดสัตว์เลี้ยง */}
                 <div className="bg-[#F8F9FB] px-5 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-6">
                     <span className="text-[15px] font-bold text-gray-800">
                         Pet Type:
@@ -54,7 +66,7 @@ export default function SearchBar() {
                                     key={pet.id}
                                     className="flex items-center gap-2.5 cursor-pointer select-none group"
                                 >
-                                    {/* Custom Checkbox */}
+                                    {/* Checkbox ที่ทำสไตล์เอง (ซ่อน input จริงไว้ ใช้ div/svg แสดงผลแทน) */}
                                     <div className="relative flex items-center justify-center">
                                         <input
                                             type="checkbox"
@@ -88,23 +100,22 @@ export default function SearchBar() {
                     </div>
                 </div>
 
-                {/* Bottom Row: Rating, Experience, and Search Button */}
+                {/* แถวล่าง: คะแนนรีวิว, ประสบการณ์, และปุ่มค้นหา */}
                 <div className="bg-white px-5 sm:px-6 lg:px-8 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 lg:gap-4 xl:gap-6">
-                    {/* Rating */}
+                    {/* คะแนนรีวิว */}
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 w-full lg:w-auto">
                         <span className="text-[15px] font-bold text-gray-800 whitespace-nowrap">
                             Rating:
                         </span>
                         <div className="flex items-center gap-1.5 flex-wrap w-full pb-1 sm:pb-0 scrollbar-hide">
                             {ratingOptions.map((rating) => {
-                                const isSelected = selectedRating === rating;
+                                const isSelected = selectedRatings.includes(rating);
                                 return (
                                     <button
                                         key={rating}
                                         type="button"
-                                        onClick={() =>
-                                            setSelectedRating(isSelected ? null : rating)
-                                        }
+                                        aria-pressed={isSelected}
+                                        onClick={() => toggleRating(rating)}
                                         className={`group flex cursor-pointer items-center gap-1 rounded-lg border px-2.5 py-1.5 transition-all ${isSelected
                                             ? "border-[#FF7037] bg-white hover:bg-[#FFF1EC]"
                                             : "border-gray-200 bg-white hover:border-[#FF7037] hover:bg-[#FFF1EC]"
@@ -130,7 +141,7 @@ export default function SearchBar() {
                         </div>
                     </div>
 
-                    {/* Experience */}
+                    {/* ประสบการณ์ */}
                     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-3 w-full lg:w-auto">
                         <span className="text-[15px] font-bold text-gray-800 whitespace-nowrap">
                             Experience:
@@ -166,7 +177,7 @@ export default function SearchBar() {
                         </div>
                     </div>
 
-                    {/* Search Button */}
+                    {/* ปุ่มค้นหา */}
                     <button
                         type="submit"
                         className="w-full lg:w-auto flex-shrink-0 cursor-pointer rounded-full bg-[#FF7037] px-12 py-3 text-[15px] font-bold text-white transition-colors hover:bg-[#FF986F] active:bg-[#E44A0C]"

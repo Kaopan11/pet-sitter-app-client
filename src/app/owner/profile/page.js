@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, UserRound } from "lucide-react";
 import AccountSidebar from "../../../components/AccountSidebar";
 import { validateProfile } from "../../../utils/validateProfile"; 
 import { toast } from "sonner";
 import { getToken, getUser, updateStoredUser } from "@/lib/auth"; //ดึงฟังก์ชันที่เกี่ยวกับ login จากไฟล์ src/lib/auth.js มาใช้ในหน้าโปรไฟล์
+import {
+  errorToastClassNames,
+  successToastClassNames,
+} from "@/lib/toastStyles";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png"];
 
+//change dob output from api to dob format --> setDateOfBirth(toDateInputValue(argument));
 function toDateInputValue(value) {
   if (!value) return "";
   return String(value).slice(0, 10);
@@ -63,8 +68,19 @@ function persistUpdatedUser(profile) {
   window.dispatchEvent(new Event("owner-profile-updated"));
 }
 
-export default function OwnerProfilePage() {
+function isSafeInternalPath(path) {
+  return (
+    typeof path === "string" &&
+    path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.includes("://")
+  );
+}
+
+function OwnerProfileForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
   const avatarInputRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -196,25 +212,48 @@ export default function OwnerProfilePage() {
       setAvatarUrl(profile.avatar_url ?? "");
       setImageFile(null);
       persistUpdatedUser(profile);
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated successfully", {
+        classNames: successToastClassNames,
+      });
+      if (isSafeInternalPath(returnTo)) {
+        router.push(returnTo);
+      }
     } catch (error) {
       if (error.message === "NO_TOKEN" || error.message === "Unauthorized") {
         router.replace("/login/owner");
         return;
       }
-      toast.error(error.message || "Failed to update profile");
+      const message = error.message || "Failed to update profile";
+        if (
+          message.includes("already in use") ||
+          message.includes("users_email_key")
+        ) {
+          setErrors((prev) => ({ ...prev, email: "Email is already in use" }));
+        }
+        toast.error(
+          message.includes("users_email_key")
+            ? "Email is already in use"
+            : message,
+          { classNames: errorToastClassNames },
+        );
     } finally {
       setIsSaving(false);
     }
   }
 
   return (
-    <div className="flex h-full bg-gray-100">
-      <div className="mx-10 mt-6 flex w-full flex-row justify-center">
+    <div className="flex min-h-screen bg-gray-100">
+      <div className="mx-4 mt-6 flex w-full min-w-0 flex-col gap-4 pb-8 sm:mx-6 lg:mx-10 lg:flex-row lg:justify-center lg:gap-0">
         <AccountSidebar />
 
-        <div className="card m-4 ml-6 flex min-h-[888px] w-2/3 flex-col p-10">
+        <div className="card flex w-full flex-col p-4 sm:p-6 lg:m-4 lg:ml-6 lg:min-h-[888px] lg:w-2/3 lg:p-10">
           <h3 className="text-h3">Profile</h3>
+
+          {isSafeInternalPath(returnTo) && (
+            <p className="mt-4 text-body-2 text-orange-500">
+              Complete your profile to continue booking.
+            </p>
+          )}
 
           {loadError && (
             <p className="mt-4 text-body-3 text-red-500">{loadError}</p>
@@ -227,13 +266,13 @@ export default function OwnerProfilePage() {
           )}
 
           <div className="mx-4 my-8">
-          <div className="relative my-8 w-fit self-start">
-          <div className="relative size-60 overflow-hidden rounded-full bg-gray-200">
+          <div className="relative my-8 w-fit shrink-0 self-start">
+          <div className="relative size-60 shrink-0 overflow-hidden rounded-full bg-gray-200">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="Owner profile"
-                  className="size-full object-cover"
+                  className="h-full w-full max-w-none object-cover"
                 />
               ) : (
                 <div className="flex size-full items-center justify-center">
@@ -364,7 +403,7 @@ export default function OwnerProfilePage() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="btn btn-primary w-full sm:w-auto"
                 disabled={isLoading || isSaving}
               >
                 {isSaving ? "Updating..." : "Update Profile"}
@@ -374,5 +413,21 @@ export default function OwnerProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function OwnerProfileFallback() {
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      <p className="p-8 text-body-2 text-gray-400">Loading profile...</p>
+    </div>
+  );
+}
+
+export default function OwnerProfilePage() {
+  return (
+    <Suspense fallback={<OwnerProfileFallback />}>
+      <OwnerProfileForm />
+    </Suspense>
   );
 }
