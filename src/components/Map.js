@@ -1,7 +1,7 @@
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -19,25 +19,53 @@ export const unselectedIcon = L.icon({
   popupAnchor: [0, -42],
 });
 
+function isMapAlive(map) {
+  const container = map.getContainer?.();
+  return Boolean(container?.parentNode);
+}
+
 function MapController({ center, zoom }) {
   const map = useMap();
+  const hasMounted = useRef(false);
+
   useEffect(() => {
-    if (center && Array.isArray(center) && center.length === 2 && center[0] && center[1]) {
+    if (!center || !Array.isArray(center) || center.length !== 2) return;
+    if (!Number.isFinite(center[0]) || !Number.isFinite(center[1])) return;
+
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+
+    map.whenReady(() => {
+      if (!isMapAlive(map)) return;
       map.flyTo(center, zoom || map.getZoom(), {
         animate: true,
         duration: 0.8,
       });
-    }
+    });
   }, [center[0], center[1], zoom, map]);
 
   useEffect(() => {
+    let cancelled = false;
     const container = map.getContainer();
+
+    function refreshSize() {
+      if (cancelled || !isMapAlive(map)) return;
+      if (container.clientWidth === 0 || container.clientHeight === 0) return;
+      map.invalidateSize({ animate: false });
+    }
+
     const observer = new ResizeObserver(() => {
-      map.invalidateSize();
+      map.whenReady(refreshSize);
     });
     observer.observe(container);
-    map.invalidateSize();
-    return () => observer.disconnect();
+    map.whenReady(refreshSize);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
   }, [map]);
 
   return null;
