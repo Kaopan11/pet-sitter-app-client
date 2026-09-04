@@ -19,6 +19,7 @@ import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// สี/ข้อความของแต่ละสถานะ booking ใช้แสดง badge สถานะ
 const STATUS_CONFIG = {
   waiting_confirm: { color: "#FA8AC0", label: "Waiting for confirm" },
   waiting_service: { color: "#F5A623", label: "Waiting for service" },
@@ -27,6 +28,7 @@ const STATUS_CONFIG = {
   cancelled: { color: "#EA1010", label: "Cancelled" },
 };
 
+// สีเส้นขอบตอน hover การ์ด booking แต่ละใบ ให้เข้าชุดกับสีของสถานะนั้นๆ
 const HOVER_BORDER_CLASS = {
   waiting_confirm: "hover:border-[#FA8AC0]",
   waiting_service: "hover:border-[#F5A623]",
@@ -37,6 +39,8 @@ const HOVER_BORDER_CLASS = {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// ดึง sitter id ของ booking ออกมา โดยรับเฉพาะค่าที่เป็น UUID ที่ถูกต้องเท่านั้น
+// (กันเคสที่ backend ส่งค่าอื่นที่ไม่ใช่ id จริงมาปนมาด้วย)
 function bookingSitterId(booking) {
   const value =
     booking?.sitter?.id ??
@@ -46,6 +50,7 @@ function bookingSitterId(booking) {
   return UUID_PATTERN.test(String(value ?? "")) ? String(value) : "";
 }
 
+// เติม sitter id ที่ตรวจสอบแล้วกลับเข้าไปใน booking object เพื่อให้ใช้ id เดียวกันทั้งหน้า
 function normalizeOwnerBooking(booking) {
   const sitterId = bookingSitterId(booking);
   return {
@@ -58,6 +63,9 @@ function normalizeOwnerBooking(booking) {
   };
 }
 
+// กรณี booking ที่โหลดมาไม่มี sitter id ที่ใช้งานได้ (ข้อมูลเก่า/ไม่ครบ)
+// ให้ดึงรายชื่อ sitter จริงมาจับคู่ด้วยชื่อ ถ้าจับคู่ไม่ได้ก็ fallback ไปใช้ตัวใดตัวหนึ่งแทน
+// เพื่อให้ปุ่ม "Send Message"/"Call" ยังมี sitter id ไว้เปิดแชทได้
 async function attachLiveSitterIds(bookings) {
   try {
     const { data } = await getSitters({ limit: 20 });
@@ -85,6 +93,7 @@ async function attachLiveSitterIds(bookings) {
       });
     });
   } catch {
+    // ถ้าดึงรายชื่อ sitter ไม่สำเร็จ ให้ใช้ข้อมูล booking เดิมไปก่อน ไม่ให้หน้าพัง
     return bookings.map(normalizeOwnerBooking);
   }
 }
@@ -94,30 +103,31 @@ export default function BookingHistoryPage() {
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [reviewBooking, setReviewBooking] = useState(null);
-  const [viewReviewBooking, setViewReviewBooking] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null); // booking ที่กำลังเปิดดู modal รายละเอียด
+  const [reviewBooking, setReviewBooking] = useState(null); // booking ที่กำลังเขียนรีวิวอยู่
+  const [viewReviewBooking, setViewReviewBooking] = useState(null); // booking ที่กำลังดูรีวิวที่เคยเขียนไว้
   const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0); // ดาวที่ชี้เมาส์ค้างอยู่ ใช้ทำ preview ก่อนกดเลือกจริง
   const [reviewText, setReviewText] = useState("");
-  const [reportBooking, setReportBooking] = useState(null);
+  const [reportBooking, setReportBooking] = useState(null); // booking ที่กำลังจะแจ้งปัญหา (report)
   const [reportSubject, setReportSubject] = useState("");
   const [reportDescription, setReportDescription] = useState("");
-  const [cancelBooking, setCancelBooking] = useState(null);
+  const [cancelBooking, setCancelBooking] = useState(null); // booking ที่กำลังจะยกเลิก (แสดง modal ยืนยัน)
   const [isCancelling, setIsCancelling] = useState(false);
-  const [changeDateBooking, setChangeDateBooking] = useState(null);
+  const [changeDateBooking, setChangeDateBooking] = useState(null); // booking ที่กำลังเปลี่ยนวันที่/เวลา
   const [changeForm, setChangeForm] = useState({
     startDate: "",
     endDate: "",
     startTime: "",
     endTime: "",
   });
-  const [changeInitialMode, setChangeInitialMode] = useState("one");
-  const [changeBookedSlots, setChangeBookedSlots] = useState([]);
+  const [changeInitialMode, setChangeInitialMode] = useState("one"); // โหมดเริ่มต้นของ modal เปลี่ยนวันที่: "one" วันเดียว หรือ "many" หลายวัน
+  const [changeBookedSlots, setChangeBookedSlots] = useState([]); // ช่วงเวลาที่ sitter ถูกจองไปแล้ว ใช้กันไม่ให้เลือกวันซ้ำ
   const [isSavingDate, setIsSavingDate] = useState(false);
 
+  // โหลดรายการ booking ทั้งหมดของเจ้าของสัตว์เลี้ยงคนนี้เมื่อเปิดหน้า
   useEffect(() => {
-    let cancelled = false;
+    let cancelled = false; // กันการ setState หลัง component ถูก unmount ไปแล้ว (เช่น เปลี่ยนหน้าเร็วระหว่างรอ fetch)
 
     async function loadBookings() {
       if (!getToken()) {
@@ -146,6 +156,7 @@ export default function BookingHistoryPage() {
         }
 
         const rows = (json.data || []).map(normalizeOwnerBooking);
+        // ถ้ามี booking ไหนไม่มี sitter id ที่ใช้งานได้ ค่อยไปดึงรายชื่อ sitter มาจับคู่เพิ่ม (ลดการยิง API โดยไม่จำเป็น)
         const next = rows.some((booking) => !bookingSitterId(booking))
           ? await attachLiveSitterIds(rows)
           : rows;
@@ -170,8 +181,9 @@ export default function BookingHistoryPage() {
     };
   }, [router]);
 
+  // เปิดหน้าแชทกับ pet sitter ของ booking นี้ (สร้างห้องสนทนาใหม่ถ้ายังไม่มี)
   async function openSitterChat(event, booking) {
-    event.stopPropagation();
+    event.stopPropagation(); // กันไม่ให้คลิกทะลุไปเปิด modal รายละเอียด booking ที่อยู่ข้างหลัง
     const sitterId = bookingSitterId(booking);
 
     if (!sitterId) {
@@ -187,6 +199,7 @@ export default function BookingHistoryPage() {
     }
   }
 
+  // แสดง badge จุดสี + ข้อความสถานะของ booking
   const getStatusBadge = (status) => {
     const config = STATUS_CONFIG[status] || STATUS_CONFIG.waiting_confirm;
     return (
@@ -244,6 +257,7 @@ export default function BookingHistoryPage() {
     return formatDate(booking.start_date);
   }
 
+  // เปิด modal เขียนรีวิว โดยรีเซ็ตค่าดาว/ข้อความให้ว่างทุกครั้ง
   const openReviewModal = (booking) => {
     setRating(0);
     setHoverRating(0);
@@ -258,6 +272,7 @@ export default function BookingHistoryPage() {
     setReviewText("");
   };
 
+  // ส่งคะแนน + รีวิวไปบันทึก แล้วอัปเดตข้อมูล review ของ booking นั้นในหน้าจอทันที
   const handleSubmitReview = async () => {
     if (!reviewBooking) return;
     if (rating === 0) {
@@ -306,6 +321,7 @@ export default function BookingHistoryPage() {
     setCancelBooking(null);
   };
 
+  // ยืนยันยกเลิก booking แล้วอัปเดตสถานะในรายการเป็น "cancelled" โดยไม่ต้องโหลดหน้าใหม่
   const handleConfirmCancel = async () => {
     if (!cancelBooking) return;
 
@@ -363,6 +379,7 @@ export default function BookingHistoryPage() {
 
     try {
       const data = await getSitterAvailability(sitterId);
+      // ตัดช่วงวันเดิมของ booking นี้ออกจากคิววันที่ถูกจองแล้ว เพื่อไม่ให้ modal มองว่าวันเดิมของตัวเองถูกจับจอง
       const slots = normalizeBookedSlots(data).filter(
         (slot) => !(slot.date >= startDate && slot.date <= endDate)
       );
@@ -383,10 +400,12 @@ export default function BookingHistoryPage() {
     setChangeForm((current) => ({ ...current, ...patch }));
   }
 
+  // บันทึกวันที่/เวลาใหม่ของ booking (reschedule) แล้ว sync ค่าใหม่กลับเข้าทั้งรายการและ modal รายละเอียดที่เปิดอยู่
   const handleSaveDate = async () => {
     if (!changeDateBooking) return;
 
     const { startDate, endDate, startTime, endTime } = changeForm;
+    // จองหลายวันไม่มีเวลาเริ่ม/สิ้นสุดแบบวันเดียว จึงไม่ส่ง startTime/endTime ไปกับ request
     const isManyDay = Boolean(endDate && endDate > startDate);
 
     setIsSavingDate(true);
@@ -452,6 +471,7 @@ export default function BookingHistoryPage() {
     setReportDescription("");
   };
 
+  // ส่งแบบฟอร์มแจ้งปัญหา (report) เกี่ยวกับ booking นี้ไปให้แอดมิน
   const handleSubmitReport = async () => {
     if (!reportBooking) return;
     if (!reportSubject.trim()) {
@@ -523,7 +543,7 @@ export default function BookingHistoryPage() {
                   }`}
                   style={{ borderRadius: "16px" }}
                 >
-                  {/* Header: Sitter info + Booking date + Status badge */}
+                  {/* หัวการ์ด: ข้อมูล sitter + วันที่จอง + badge สถานะ */}
                   <div
                     className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
                     style={{ borderBottom: "1px solid #DCDFED", paddingBottom: "16px", marginBottom: "16px" }}
@@ -557,7 +577,7 @@ export default function BookingHistoryPage() {
                     </div>
                   </div>
 
-                  {/* Booking Details Row */}
+                  {/* แถวรายละเอียดการจอง: วันที่-เวลา / ระยะเวลา / สัตว์เลี้ยง */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-0" style={{ marginBottom: "24px" }}>
                     <div className="flex flex-col sm:pr-6 sm:border-r" style={{ borderColor: "#DCDFED" }}>
                       <span className="text-body-3 mb-1" style={{ color: "#7B7E8F" }}>
@@ -597,8 +617,9 @@ export default function BookingHistoryPage() {
                     </div>
                   </div>
 
-                  {/* Status Message Box with Actions */}
+                  {/* กล่องข้อความสถานะพร้อมปุ่ม action — เนื้อหาและปุ่มจะเปลี่ยนไปตาม booking.status */}
                   <div>
+                    {/* สถานะ: รอ sitter ยืนยันการจอง — แสดงปุ่มยกเลิก/ส่งข้อความ/โทร */}
                     {booking.status === "waiting_confirm" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
@@ -610,20 +631,20 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); openCancelModal(booking); }}
-                            className="btn btn-ghost shrink-0 hover:text-red-500!"
+                            className="btn btn-ghost shrink-0"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={(e) => openSitterChat(e, booking)}
-                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            className="btn btn-primary flex-1 sm:flex-none"
                             style={{ minWidth: "120px" }}
                           >
                             Send Message
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
-                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            className="btn btn-icon shrink-0"
                             style={{ width: "48px", height: "48px" }}
                             title="Call"
                           >
@@ -632,6 +653,7 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
+                    {/* สถานะ: sitter ยืนยันการจองแล้ว — แสดงปุ่มส่งข้อความ/โทร (ไม่มีปุ่มยกเลิก) */}
                     {booking.status === "confirmed" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
@@ -643,14 +665,14 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => openSitterChat(e, booking)}
-                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            className="btn btn-primary flex-1 sm:flex-none"
                             style={{ minWidth: "120px" }}
                           >
                             Send Message
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
-                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            className="btn btn-icon shrink-0"
                             style={{ width: "48px", height: "48px" }}
                             title="Call"
                           >
@@ -659,6 +681,7 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
+                    {/* สถานะ: รอถึงวันเริ่มบริการ */}
                     {booking.status === "waiting_service" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
@@ -670,14 +693,14 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Messaging feature coming soon"); }}
-                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            className="btn btn-primary flex-1 sm:flex-none"
                             style={{ minWidth: "120px" }}
                           >
                             Send Message
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
-                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            className="btn btn-icon shrink-0"
                             style={{ width: "48px", height: "48px" }}
                             title="Call"
                           >
@@ -686,6 +709,7 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
+                    {/* สถานะ: กำลังรับบริการอยู่ */}
                     {booking.status === "in_service" && (
                       <div
                         className="w-full flex flex-col items-stretch sm:flex-row sm:items-center sm:justify-between"
@@ -697,14 +721,14 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => openSitterChat(e, booking)}
-                            className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                            className="btn btn-primary flex-1 sm:flex-none"
                             style={{ minWidth: "120px" }}
                           >
                             Send Message
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toast.info("Call feature coming soon"); }}
-                            className="btn btn-icon shrink-0 hover:text-orange-500!"
+                            className="btn btn-icon shrink-0"
                             style={{ width: "48px", height: "48px" }}
                             title="Call"
                           >
@@ -713,6 +737,7 @@ export default function BookingHistoryPage() {
                         </div>
                       </div>
                     )}
+                    {/* สถานะ: บริการเสร็จสิ้นแล้ว — แจ้งปัญหาได้ และเขียน/ดูรีวิวได้ */}
                     {booking.status === "success" && (
                       <div
                         className="w-full flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between"
@@ -729,14 +754,15 @@ export default function BookingHistoryPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); openReportModal(booking); }}
-                            className="btn btn-ghost shrink-0 hover:text-orange-500!"
+                            className="btn btn-ghost shrink-0"
                           >
                             Report
                           </button>
                           {booking.review ? (
+                            // เคยรีวิวไว้แล้ว — กดเพื่อดูรีวิวเดิม แทนที่จะเขียนใหม่
                             <button
                               onClick={(e) => { e.stopPropagation(); setViewReviewBooking(booking); }}
-                              className="btn btn-secondary flex-1 sm:flex-none hover:text-orange-500!"
+                              className="btn btn-secondary flex-1 sm:flex-none"
                               style={{ minWidth: "120px" }}
                             >
                               Your Review
@@ -744,7 +770,7 @@ export default function BookingHistoryPage() {
                           ) : (
                             <button
                               onClick={(e) => { e.stopPropagation(); openReviewModal(booking); }}
-                              className="btn btn-primary flex-1 sm:flex-none hover:bg-orange-500!"
+                              className="btn btn-primary flex-1 sm:flex-none"
                               style={{ minWidth: "120px" }}
                             >
                               Review
@@ -762,6 +788,7 @@ export default function BookingHistoryPage() {
         </div>
       </div>
 
+      {/* Modal รายละเอียด booking — เปิดเมื่อคลิกที่การ์ด แสดงข้อมูลครบพร้อม action เปลี่ยนวันที่ */}
       {selectedBooking && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -777,7 +804,7 @@ export default function BookingHistoryPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* หัวข้อ Modal */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>
                 Booking Detail
@@ -787,7 +814,7 @@ export default function BookingHistoryPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* เนื้อหา Modal */}
             <div className="flex flex-col gap-4 px-6 py-5">
               {getStatusBadge(selectedBooking.status)}
 
@@ -849,7 +876,7 @@ export default function BookingHistoryPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
+            {/* ท้าย Modal: ยอดรวมราคา */}
             <div
               className="flex items-center justify-between"
               style={{
@@ -871,7 +898,7 @@ export default function BookingHistoryPage() {
         </div>
       )}
 
-      {/* Write Review Modal */}
+      {/* Modal เขียนรีวิว — เปิดจากปุ่ม "Review" ในสถานะ success */}
       {reviewBooking && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -888,7 +915,7 @@ export default function BookingHistoryPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* หัวข้อ */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Rating &amp; Review</h3>
               <button onClick={closeReviewModal} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
@@ -896,11 +923,12 @@ export default function BookingHistoryPage() {
               </button>
             </div>
 
-            {/* Body */}
+            {/* เนื้อหา */}
             <div className="flex flex-col items-center gap-6 px-6 py-8">
               <div className="flex flex-col items-center gap-4">
                 <span className="text-body-1" style={{ color: "#000000", fontWeight: 700 }}>What is your rate?</span>
                 <div className="flex items-center gap-2">
+                  {/* ดาว 5 ดวง — hover เพื่อ preview ก่อนคลิกเลือกคะแนนจริงด้วย setRating */}
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -936,7 +964,7 @@ export default function BookingHistoryPage() {
               </div>
             </div>
 
-            {/* Footer */}
+            {/* ท้าย Modal */}
             <div className="flex items-center justify-between px-6 pb-6">
               <button onClick={closeReviewModal} className="btn btn-secondary">
                 Cancel
@@ -949,7 +977,7 @@ export default function BookingHistoryPage() {
         </div>
       )}
 
-      {/* View Review Modal */}
+      {/* Modal ดูรีวิวที่เคยเขียนไว้แล้ว — เปิดจากปุ่ม "Your Review" */}
       {viewReviewBooking && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -966,7 +994,7 @@ export default function BookingHistoryPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* หัวข้อ */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Your Rating and Review</h3>
               <button onClick={() => setViewReviewBooking(null)} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
@@ -974,7 +1002,7 @@ export default function BookingHistoryPage() {
               </button>
             </div>
 
-            {/* Body */}
+            {/* เนื้อหา */}
             <div className="flex flex-col gap-4 px-6 py-6">
               <div className="flex items-center justify-between gap-3" style={{ paddingBottom: "16px", borderBottom: "1px solid #DCDFED" }}>
                 <div className="flex items-center gap-3">
@@ -1019,7 +1047,7 @@ export default function BookingHistoryPage() {
               )}
             </div>
 
-            {/* Footer */}
+            {/* ท้าย Modal */}
             <div className="flex items-center justify-center px-6 pb-6">
               <button
                 onClick={() => toast.info("View Pet Sitter feature coming soon")}
@@ -1032,7 +1060,7 @@ export default function BookingHistoryPage() {
         </div>
       )}
 
-      {/* Report Modal */}
+      {/* Modal แจ้งปัญหา (Report) — เปิดจากปุ่ม "Report" ในสถานะ success */}
       {reportBooking && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -1049,7 +1077,7 @@ export default function BookingHistoryPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* หัวข้อ */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Report</h3>
               <button onClick={closeReportModal} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
@@ -1057,7 +1085,7 @@ export default function BookingHistoryPage() {
               </button>
             </div>
 
-            {/* Body */}
+            {/* เนื้อหา */}
             <div className="flex flex-col gap-4 px-6 py-5">
               <div className="flex flex-col gap-2">
                 <span className="text-body-2" style={{ color: "#000000", fontWeight: 500 }}>Issue</span>
@@ -1084,7 +1112,7 @@ export default function BookingHistoryPage() {
               </div>
             </div>
 
-            {/* Footer */}
+            {/* ท้าย Modal */}
             <div className="flex items-center justify-between px-6 pb-6" style={{ marginTop: "auto" }}>
               <button onClick={closeReportModal} className="btn btn-secondary">
                 Cancel
@@ -1097,7 +1125,7 @@ export default function BookingHistoryPage() {
         </div>
       )}
 
-      {/* Cancel Booking Confirmation Modal */}
+      {/* Modal ยืนยันการยกเลิก booking */}
       {cancelBooking && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
@@ -1112,7 +1140,7 @@ export default function BookingHistoryPage() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* หัวข้อ */}
             <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid #DCDFED" }}>
               <h3 className="text-h3" style={{ color: "#3A3B46" }}>Cancel Booking</h3>
               <button onClick={closeCancelModal} disabled={isCancelling} aria-label="Close" className="cursor-pointer hover:opacity-70 transition-opacity">
@@ -1120,7 +1148,7 @@ export default function BookingHistoryPage() {
               </button>
             </div>
 
-            {/* Body */}
+            {/* เนื้อหา */}
             <div className="px-6 py-6">
               <p className="text-body-2" style={{ color: "#3A3B46" }}>
                 Are you sure you want to cancel this booking with{" "}
@@ -1128,7 +1156,7 @@ export default function BookingHistoryPage() {
               </p>
             </div>
 
-            {/* Footer */}
+            {/* ท้าย Modal */}
             <div className="flex items-center justify-between px-6 pb-6" style={{ gap: "16px" }}>
               <button onClick={closeCancelModal} disabled={isCancelling} className="btn btn-secondary flex-1">
                 Keep Booking
@@ -1141,7 +1169,7 @@ export default function BookingHistoryPage() {
         </div>
       )}
 
-      {/* Change Booking Date Modal — exact same modal as the Book Now flow */}
+      {/* Modal เปลี่ยนวันที่ booking — ใช้ modal ตัวเดียวกับตอน Book Now (รองรับทั้งจองวันเดียวและหลายวัน) */}
       {changeDateBooking && (
         <BookingDateTimeModal
           startDate={changeForm.startDate}

@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-// Reusable 8-point Starburst Badge Icon matching the Figma design
+// ไอคอนรูปดาว 8 แฉก ใช้เป็นสัญลักษณ์หน้ารายการบริการ (ดีไซน์ตาม Figma) นำกลับมาใช้ซ้ำได้
 function StarburstIcon({ color, className = "w-4 h-4 sm:w-5 sm:h-5" }) {
   return (
     <svg
@@ -15,6 +15,7 @@ function StarburstIcon({ color, className = "w-4 h-4 sm:w-5 sm:h-5" }) {
   );
 }
 
+// รายการบริการทั้งหมดที่แพลตฟอร์มมีให้ (แสดงเป็นลิสต์ฝั่งซ้ายของ section บน)
 const services = [
   {
     title: "Boarding",
@@ -42,6 +43,7 @@ const services = [
   },
 ];
 
+// จุดเด่นของแพลตฟอร์ม แสดงเป็นการ์ด 3 ใบพร้อมรูปวงกลม (section ล่าง)
 const features = [
   {
     image: "/image/content1.png",
@@ -73,14 +75,14 @@ export default function ContentSection() {
   return (
     <section className="w-full bg-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        {/* Section Main Title */}
+        {/* หัวข้อหลักของ section */}
         <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center tracking-tight leading-snug">
           &ldquo;Your Pets, Our Priority: Perfect Care, Anytime, Anywhere.&rdquo;
         </h2>
 
-        {/* Upper Section: Services List (Left) + Pet Portrait (Right) */}
+        {/* ส่วนบน: รายการบริการ (ซ้าย) + ภาพเหมือนสัตว์เลี้ยง (ขวา) */}
         <div className="mt-14 sm:mt-18 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-          {/* Left Column: Services list */}
+          {/* คอลัมน์ซ้าย: รายการบริการ */}
           <div className="lg:col-span-7 flex flex-col space-y-8 sm:space-y-10 pl-0 sm:pl-4">
             {services.map((service, index) => (
               <div key={index} className="flex items-start gap-3.5 group">
@@ -99,7 +101,7 @@ export default function ContentSection() {
             ))}
           </div>
 
-          {/* Right Column: Cat Portrait with Arch */}
+          {/* คอลัมน์ขวา: ภาพเหมือนแมวพร้อมส่วนโค้งประกอบ */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end items-center">
             <div className="relative w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[430px]">
               <Image
@@ -114,14 +116,14 @@ export default function ContentSection() {
           </div>
         </div>
 
-        {/* Lower Section: 3 Feature Cards with Circular Images */}
+        {/* ส่วนล่าง: การ์ดจุดเด่น 3 ใบ พร้อมรูปภาพวงกลม */}
         <div className="mt-20 sm:mt-28 grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-8 lg:gap-12">
           {features.map((feature, index) => (
             <div
               key={index}
               className="flex flex-col items-center text-center group"
             >
-              {/* Circular Image Container */}
+              {/* กรอบรูปภาพทรงวงกลม */}
               <div className="relative w-48 h-48 sm:w-52 sm:h-52 lg:w-60 lg:h-60 rounded-full overflow-hidden shadow-sm transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src={feature.image}
@@ -132,7 +134,7 @@ export default function ContentSection() {
                 />
               </div>
 
-              {/* Title with colored first word */}
+              {/* หัวข้อการ์ด: คำแรกใช้สีเน้นตาม feature.highlightColor */}
               <h3 className="mt-6 text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
                 <span className={feature.highlightColor}>
                   {feature.highlightText}
@@ -140,7 +142,7 @@ export default function ContentSection() {
                 <span>{feature.normalText}</span>
               </h3>
 
-              {/* Description */}
+              {/* คำอธิบายของการ์ด */}
               <p className="mt-3 text-sm sm:text-base text-gray-500 font-normal leading-relaxed max-w-[280px] sm:max-w-xs">
                 {feature.description}
               </p>
