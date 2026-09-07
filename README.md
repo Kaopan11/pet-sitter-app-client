@@ -27,7 +27,7 @@
 - [Backend Integration](#-backend-integration)
 - [Known Limitations](#-known-limitations)
 - [Deployment](#-deployment)
-- [Author](#-author)
+- [Contributors](#-contributors)
 
 ---
 
@@ -283,15 +283,16 @@ There is no `Dockerfile` or `vercel.json` in this repository — Vercel auto-det
 
 ---
 
-## 👤 Author
+## 👥 Contributors
 
-**Pet Sitter App Team**
+People who contributed to this repository ([view on GitHub](https://github.com/Kaopan11/pet-sitter-app-client/graphs/contributors)).
 
-| Member | Contact |
-|--------|---------|
-| — | [p.yuoeang@gmail.com](mailto:p.yuoeang@gmail.com) |
-| — | [dimkungz@gmail.com](mailto:dimkungz@gmail.com) |
-| — | [piradonleungamornnara@gmail.com](mailto:piradonleungamornnara@gmail.com) |
-| — | [nutchanoon.yen@gmail.com](mailto:nutchanoon.yen@gmail.com) |
-| — | [wolfman13bell@gmail.com](mailto:wolfman13bell@gmail.com) |
-| GitHub | [github.com/pitnarii](https://github.com/pitnarii) |
+| Name | GitHub | Contact |
+|------|--------|---------|
+| dimkungz | — | [dimkungz@gmail.com](mailto:dimkungz@gmail.com) |
+| Pongsakorn Yuoeang | — | [p.yuoeang@gmail.com](mailto:p.yuoeang@gmail.com) |
+| Kaopan | [Kaopan11](https://github.com/Kaopan11) | [atkaew@gmail.com](mailto:atkaew@gmail.com) |
+| Piradon | — | [piradonleungamornnara@gmail.com](mailto:piradonleungamornnara@gmail.com) |
+| Natchanon | — | [nutchanoon.yen@gmail.com](mailto:nutchanoon.yen@gmail.com) |
+| Bell Teerapat | — | [wolfman13bell@gmail.com](mailto:wolfman13bell@gmail.com) |
+| pitnaree | [pitnarii](https://github.com/pitnarii) | [pitnaree_@outlook.com](mailto:pitnaree_@outlook.com) |
