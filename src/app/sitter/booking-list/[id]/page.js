@@ -5,20 +5,17 @@ import { Eye, X } from "lucide-react";
 import Icon from "@/components/Icon";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
 import { toast } from "sonner";
 import { formatBookedDateDetail, formatDate } from "@/utils/formatDateTime";
 import { formatBookingDurationFromRecord } from "@/lib/booking";
 import { createConversation } from "@/lib/api";
 import {
-  BOOKING_ERROR_ACTION,
-  getSitterBooking,
-  normalizeBookingStatusError,
-  updateSitterBookingStatus,
-} from "@/lib/api/sitterBooking";
-import {
   errorToastClassNames,
   successToastClassNames,
 } from "@/lib/toastStyles";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const STATUS = {
   waiting_confirm: { label: "Waiting for confirm", text: "text-pink", dot: "bg-pink" },
@@ -28,12 +25,21 @@ const STATUS = {
   cancelled: { label: "Canceled", text: "text-red", dot: "bg-red" },
 };
 
+function getErrorMessage(error, fallback) {
+  return (
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    error.message ||
+    fallback
+  );
+}
+
 export default function BookingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [booking, setBooking] = useState(null);
-  const [selectedPet, setSelectedPet] = useState(null);
-  const [showOwner, setShowOwner] = useState(false);
+  const [showPetModal, setShowPetModal] = useState(null);
+  const [showOwnerModal, setShowOwnerModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -41,50 +47,39 @@ export default function BookingDetailPage() {
   const loadBooking = useCallback(async () => {
     if (!id) return;
     try {
-      const data = await getSitterBooking(id);
-      setBooking(data);
-    } catch (error) {
-      const { action, message } = normalizeBookingStatusError(
-        error,
-        "Failed to load booking",
+      const { data: json } = await axios.get(
+        `${API_BASE_URL}/api/sitters/bookings/${id}`,
       );
-      if (action === BOOKING_ERROR_ACTION.LOGIN) {
-        router.replace("/login");
-        return;
-      }
-      toast(message, { classNames: errorToastClassNames });
+      setBooking(json.data ?? null);
+    } catch (error) {
+      toast(getErrorMessage(error, "Failed to load booking"), {
+        classNames: errorToastClassNames,
+      });
     }
-  }, [id, router]);
+  }, [id]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only booking load
     void loadBooking();
   }, [loadBooking]);
 
-  /**
-   * PATCH สถานะ booking — T04
-   * Confirm (waiting_service): BE capture Stripe → ถ้าล้มเหลวคืน 402 + message
-   */
   const updateBookingStatus = async (nextStatus, successMessage) => {
     if (!id || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
     try {
-      await updateSitterBookingStatus(id, nextStatus);
+      await axios.patch(
+        `${API_BASE_URL}/api/sitters/bookings/${id}/status`,
+        { status: nextStatus },
+      );
       setShowRejectModal(false);
       await loadBooking();
       toast(successMessage, {
         classNames: successToastClassNames,
       });
     } catch (error) {
-      const { action, message } = normalizeBookingStatusError(error);
-
-      if (action === BOOKING_ERROR_ACTION.LOGIN) {
-        router.replace("/login");
-        return;
-      }
-
-      // 402 = Payment capture failed — แสดง error.message จาก BE (เช่น บัตรปฏิเสธ)
-      toast(message, { classNames: errorToastClassNames });
+      toast(getErrorMessage(error, "Failed to update booking status"), {
+        classNames: errorToastClassNames,
+      });
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -207,7 +202,7 @@ export default function BookingDetailPage() {
             <button
               type="button"
               className="flex cursor-pointer items-center gap-2 text-body-2 font-bold text-orange-500"
-              onClick={() => setShowOwner(true)}
+              onClick={() => setShowOwnerModal(true)}
             >
               <Eye className="h-6 w-6" aria-hidden="true" />
               View Profile
@@ -226,7 +221,7 @@ export default function BookingDetailPage() {
                   <button
                     type="button"
                     className="flex w-51.75 cursor-pointer flex-col items-center gap-4 rounded-2xl border border-gray-200 bg-white p-6 text-left"
-                    onClick={() => setSelectedPet(pet)}
+                    onClick={() => setShowPetModal(pet)}
                   >
                     {pet.avatar_url ? (
                       <img
@@ -277,14 +272,14 @@ export default function BookingDetailPage() {
         </DetailField>
       </article>
 
-      {selectedPet ? (
-        <Modal name={selectedPet.name} onClose={() => setSelectedPet(null)}>
+      {showPetModal ? (
+        <Modal name={showPetModal.name} onClose={() => setShowPetModal(null)}>
           <div className="flex gap-10">
             <div className="flex w-60 shrink-0 flex-col items-center gap-4">
-              {selectedPet.avatar_url ? (
+              {showPetModal.avatar_url ? (
                 <img
-                  src={selectedPet.avatar_url}
-                  alt={`${selectedPet.name} avatar`}
+                  src={showPetModal.avatar_url}
+                  alt={`${showPetModal.name} avatar`}
                   className="h-60 w-60 rounded-full object-cover"
                 />
               ) : (
@@ -296,28 +291,28 @@ export default function BookingDetailPage() {
                 </div>
               )}
               <p className="w-full text-center text-h4 font-bold text-black">
-                {selectedPet.name}
+                {showPetModal.name}
               </p>
             </div>
             <div className="grid flex-1 grid-cols-2 gap-x-10 gap-y-6 rounded-lg bg-[#FAFAFB] p-6">
-              <DetailField label="Pet Type">{selectedPet.pet_type || "—"}</DetailField>
-              <DetailField label="Breed">{selectedPet.breed || "—"}</DetailField>
-              <DetailField label="Sex">{selectedPet.sex || "—"}</DetailField>
+              <DetailField label="Pet Type">{showPetModal.pet_type || "—"}</DetailField>
+              <DetailField label="Breed">{showPetModal.breed || "—"}</DetailField>
+              <DetailField label="Sex">{showPetModal.sex || "—"}</DetailField>
               <DetailField label="Age">
-                {selectedPet.age_months != null ? `${selectedPet.age_months} Month` : "—"}
+                {showPetModal.age_months != null ? `${showPetModal.age_months} Month` : "—"}
               </DetailField>
-              <DetailField label="Color">{selectedPet.color || "—"}</DetailField>
+              <DetailField label="Color">{showPetModal.color || "—"}</DetailField>
               <DetailField label="Weight">
-                {selectedPet.weight_kg != null ? `${selectedPet.weight_kg} Kilogram` : "—"}
+                {showPetModal.weight_kg != null ? `${showPetModal.weight_kg} Kilogram` : "—"}
               </DetailField>
-              <DetailField label="About">{selectedPet.about || "—"}</DetailField>
+              <DetailField label="About">{showPetModal.about || "—"}</DetailField>
             </div>
           </div>
         </Modal>
       ) : null}
 
-      {showOwner ? (
-        <Modal name={owner.name || ownerName} onClose={() => setShowOwner(false)}>
+      {showOwnerModal ? (
+        <Modal name={owner.name || ownerName} onClose={() => setShowOwnerModal(false)}>
           <div className="flex w-full items-start gap-10">
             <div className="flex w-60 shrink-0 justify-center">
               {owner.avatar_url ? (
