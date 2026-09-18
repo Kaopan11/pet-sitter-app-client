@@ -97,6 +97,12 @@ export default function BookingListPage() {
 
       {isLoading ? (
         <LoadingState />
+      ) : bookingData.length === 0 ? (
+        <div className="overflow-hidden rounded-2xl bg-white">
+          <p className="py-16 text-center text-body-2 text-gray-400">
+            No bookings yet.
+          </p>
+        </div>
       ) : (
         <>
           <div className="overflow-hidden rounded-2xl bg-white">
