@@ -25,7 +25,7 @@ import dynamic from "next/dynamic";
 const LocationPicker = dynamic(() => import("@/components/location/LocationPicker"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[300px] w-full items-center justify-center rounded-2xl bg-gray-100 text-body-2 text-gray-400 font-medium">
+    <div className="flex h-75 w-full items-center justify-center rounded-2xl bg-gray-100 text-body-2 text-gray-400 font-medium">
       กำลังโหลดระบบแผนที่เลือกพิกัด...
     </div>
   )
@@ -63,8 +63,6 @@ const initialForm = {
   subDistrict: "",
   province: "",
   postCode: "",
-  latitude: 13.7563,
-  longitude: 100.5018,
 };
 
 const initialErrors = {
@@ -88,7 +86,7 @@ const initialErrors = {
 export default function PetSitterProfilePage() {
   const avatarInputRef = useRef(null);
   const galleryInputRef = useRef(null);
-  const skipAddressSelect = useRef(true);
+  const skipAddressSelect = useRef(true); // กัน onValueChange ตอนโหลดหน้า
   const [form, setForm] = useState(initialForm);
   const [avatarUrl, setAvatarUrl] = useState(""); // URL รูปโปรไฟล์ที่โชว์อยู่ (จากเซิร์ฟเวอร์/ร่าง)
   const [imageFile, setImageFile] = useState(null); // ไฟล์ avatar ใหม่ที่เลือก ยังไม่อัปโหลด
@@ -96,7 +94,6 @@ export default function PetSitterProfilePage() {
   const [galleryFiles, setGalleryFiles] = useState([]); // ไฟล์ gallery ใหม่ที่เลือก ยังไม่อัปโหลด
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [errors, setErrors] = useState(initialErrors);
   const [provinces, setProvinces] = useState([]);
   const [subDistricts, setSubDistricts] = useState([]);
@@ -143,8 +140,8 @@ export default function PetSitterProfilePage() {
       subDistrict: profile.sub_district ?? "",
       province: profile.province ?? "",
       postCode: profile.post_code ?? "",
-      latitude: profile.latitude != null ? Number(profile.latitude) : 13.7563,
-      longitude: profile.longitude != null ? Number(profile.longitude) : 100.5018,
+      latitude: profile.latitude != null ? Number(profile.latitude) : null,
+      longitude: profile.longitude != null ? Number(profile.longitude) : null,
     };
 
     setForm(nextForm);
@@ -178,10 +175,11 @@ export default function PetSitterProfilePage() {
         await loadSubDistricts(district.id);
       }
     } catch (err) {
-      setError(
+      toast(
         err.response?.data?.message ||
           err.response?.data?.error ||
           "Failed to load profile",
+        { classNames: errorToastClassNames },
       );
     } finally {
       setIsLoading(false);
@@ -196,9 +194,7 @@ export default function PetSitterProfilePage() {
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount-only profile load
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
   }, []);
 
   function handleChange(event) {
@@ -403,7 +399,6 @@ export default function PetSitterProfilePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
 
     if (!validateForm()) {
       return;
@@ -517,8 +512,6 @@ export default function PetSitterProfilePage() {
           </span>
         </p>
       ) : null}
-
-      {error ? <p className="text-body-2 text-red">{error}</p> : null}
 
       {isLoading ? (
         <LoadingState />
@@ -902,8 +895,8 @@ export default function PetSitterProfilePage() {
               subDistrict: form.subDistrict,
               province: form.province,
               postcode: form.postCode,
-              latitude: form.latitude || 13.7563,
-              longitude: form.longitude || 100.5018,
+              latitude: form.latitude,
+              longitude: form.longitude,
             }}
             onChange={(updates) => {
               setForm((prev) => ({

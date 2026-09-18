@@ -38,10 +38,10 @@ const menuItems = [
   },
 ];
 
-export default function SitterLayout({ children, precheckedSitter = false }) {
+export default function SitterLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isSitter, setIsSitter] = useState(precheckedSitter);
+  const [isSitter, setIsSitter] = useState(false);
   const [headerUser, setHeaderUser] = useState({ name: "", avatarUrl: "" });
   const unreadChatCount = useUnreadChatCount(isSitter);
 
@@ -85,14 +85,15 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
 
   return (
     <div className="fixed inset-0 flex overflow-hidden bg-gray-100">
-      <aside
-        className={`h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-[#FAFAFB] ${
-          pathname === "/messages" ? "hidden md:flex" : "flex"
-        }`}
-      >
+      <aside className="flex h-full w-60 shrink-0 flex-col border-r border-gray-200 bg-[#FAFAFB]">
         <div className="px-6 py-10">
           <Link href="/">
-            <Image src="/image/logo.png" alt="Sitter logo" width={120} height={40} />
+            <Image
+              src="/image/logo.png"
+              alt="Sitter logo"
+              width={120}
+              height={40}
+            />
           </Link>
         </div>
 
@@ -138,13 +139,7 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header
-          className={`relative z-20 h-18 shrink-0 items-center justify-between bg-white ${
-            pathname === "/messages"
-              ? "hidden px-4 md:flex md:px-16"
-              : "flex px-16"
-          }`}
-        >
+        <header className="relative z-20 flex h-18 shrink-0 items-center justify-between bg-white px-16">
           <div className="flex items-center gap-3">
             <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-200">
               {headerUser.avatarUrl ? (
@@ -164,37 +159,27 @@ export default function SitterLayout({ children, precheckedSitter = false }) {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <NotificationBell enabled={isSitter} variant="lucide" />
+            <NotificationBell variant="lucide" />
             <Link
-            href="/messages"
-            className={`relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 transition-colors hover:text-orange-500 ${
-              pathname === "/messages" ? "text-orange-500" : "text-gray-400"
-            }`}
-            aria-label={
-              unreadChatCount > 0
-                ? `Open messages, ${unreadChatCount} unread`
-                : "Open messages"
-            }
-          >
-            <MessagesSquare className="h-6 w-6" />
-            {unreadChatCount > 0 ? (
-              <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
-                {unreadChatCount > 9 ? "9+" : unreadChatCount}
-              </span>
-            ) : null}
-          </Link>
+              href="/messages"
+              className="relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:text-orange-500"
+              aria-label={
+                unreadChatCount > 0
+                  ? `Open messages, ${unreadChatCount} unread`
+                  : "Open messages"
+              }
+            >
+              <MessagesSquare className="h-6 w-6" />
+              {unreadChatCount > 0 ? (
+                <span className="absolute top-0 right-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                  {unreadChatCount > 9 ? "9+" : unreadChatCount}
+                </span>
+              ) : null}
+            </Link>
           </div>
         </header>
 
-        <div
-          className={
-            pathname === "/messages"
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-              : "flex-1 overflow-y-auto px-12 py-8"
-          }
-        >
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto px-12 py-8">{children}</div>
       </div>
     </div>
   );
