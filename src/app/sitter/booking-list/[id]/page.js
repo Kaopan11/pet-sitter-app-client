@@ -239,7 +239,7 @@ export default function BookingDetailPage() {
                     )}
                     <div className="flex flex-col items-center gap-2.5">
                       <p className="text-h4 font-bold text-gray-600">{pet.name}</p>
-                      <p className="w-16 rounded-full border border-green bg-green-100 px-4 py-1 text-center text-body-2 text-green-500">
+                      <p className="w-fit whitespace-nowrap rounded-full border border-green bg-green-100 px-4 py-1 text-center text-body-2 text-green-500">
                         {pet.pet_type}
                       </p>
                     </div>
