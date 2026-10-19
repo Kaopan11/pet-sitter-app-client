@@ -7,6 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const POLL_MS = 3000;
 const RETRY_MS = 2000;
 
+// SSE frames are separated by blank lines; keep the leftover partial frame.
 function parseSseChunk(buffer, onEvent) {
   const parts = buffer.split("\n\n");
   const rest = parts.pop() ?? "";
@@ -19,6 +20,7 @@ function parseSseChunk(buffer, onEvent) {
     const json = dataLine.replace(/^data:\s?/, "");
     try {
       const payload = JSON.parse(json);
+      // Backend sends a "connected" handshake; callers only care about message/read/etc.
       if (payload?.type && payload.type !== "connected") {
         onEvent(payload);
       }
@@ -30,6 +32,7 @@ function parseSseChunk(buffer, onEvent) {
   return rest;
 }
 
+// Live chat: open GET /api/conversations/events (SSE + JWT). If SSE fails, emit {type:"refresh"} every 3s so the page can refetch.
 export function useChatRealtime({ enabled, onEvent }) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;

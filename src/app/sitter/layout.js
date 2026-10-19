@@ -11,6 +11,7 @@ import jwtInterceptor from "@/utils/jwtInterceptor";
 import { useUnreadChatCount } from "@/lib/useUnreadChatCount";
 import NotificationBell from "@/components/NotificationBell";
 
+// Attach the JWT to axios once for this sitter shell (bookings, calendar, payout).
 jwtInterceptor();
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -38,6 +39,7 @@ const menuItems = [
   },
 ];
 
+// Sitter dashboard chrome: isSitter gate, sidebar, header (bell + unread chat). Non-sitters bounce to /.
 export default function SitterLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -68,6 +70,7 @@ export default function SitterLayout({ children }) {
     }
 
     loadHeaderUser();
+    // Profile page fires this after a save so the header name/avatar updates without a full reload.
     window.addEventListener("sitter-profile-updated", loadHeaderUser);
     return () => {
       window.removeEventListener("sitter-profile-updated", loadHeaderUser);

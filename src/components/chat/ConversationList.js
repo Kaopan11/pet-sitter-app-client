@@ -1,3 +1,4 @@
+// Left pane of /messages. On mobile it hides once a thread (?id=) is open.
 export default function ConversationList({
   conversations,
   activeId,

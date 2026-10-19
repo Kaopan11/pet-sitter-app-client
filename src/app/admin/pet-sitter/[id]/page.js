@@ -66,6 +66,7 @@ function Field({ label, children }) {
   );
 }
 
+// Profile tab: address, pets, gallery. Full profile only when isFullProfileUnlocked(approval_status).
 export default function AdminPetSitterProfilePage() {
   const sitterData = useContext(SitterDetailContext);
   const showFullProfile = isFullProfileUnlocked(

@@ -609,6 +609,7 @@ function ReviewsSection({ sitterId, ratingAvg, reviewCount }) {
   );
 }
 
+// Sitter public profile: GET /api/sitters/:id, reviews, Leaflet pin, Book now → /owner/booking, Send Message → /messages.
 export default function PetSitterDetail({ sitterId }) {
   const router = useRouter();
   const [sitter, setSitter] = useState(null);
@@ -677,6 +678,7 @@ export default function PetSitterDetail({ sitterId }) {
   }, [sitterId]);
 
   async function handleSendMessage() {
+    // createConversation(sitter.id) then /messages?id= — same entry as owner bookings and sitter booking detail.
     if (!getToken()) {
       router.push("/login");
       return;

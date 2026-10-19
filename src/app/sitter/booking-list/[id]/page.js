@@ -34,6 +34,7 @@ function getErrorMessage(error, fallback) {
   );
 }
 
+// One booking: GET /api/sitters/bookings/:id, PATCH .../status, or createConversation → /messages.
 export default function BookingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -64,6 +65,7 @@ export default function BookingDetailPage() {
   }, [loadBooking]);
 
   const updateBookingStatus = async (nextStatus, successMessage) => {
+    // waiting_confirm → waiting_service | cancelled; then in_service → success.
     if (!id || isUpdatingStatus) return;
     setIsUpdatingStatus(true);
     try {
@@ -86,6 +88,7 @@ export default function BookingDetailPage() {
   };
 
   async function handleSendMessage() {
+    // POST /api/conversations with the owner id, then go to /messages?id=.
     const ownerId = booking?.pet_owner?.id ?? booking?.owner_id;
     if (!ownerId || sendingMessage) {
       if (!ownerId) {

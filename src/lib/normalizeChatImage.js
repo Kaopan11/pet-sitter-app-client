@@ -51,7 +51,7 @@ async function decodeImage(file) {
     try {
       return await createImageBitmap(file);
     } catch {
-      // Some browsers cannot decode HEIC via createImageBitmap.
+      // Some browsers cannot decode HEIC via createImageBitmap — fall back to <img>.
     }
   }
 
@@ -85,6 +85,7 @@ async function convertToJpegFile(file) {
 
   let quality = 0.86;
   let blob = await canvasToJpeg(canvas, quality);
+  // Drop JPEG quality until we're under 2MB (or quality floor).
   while (blob.size > MAX_IMAGE_BYTES && quality > 0.5) {
     quality -= 0.12;
     blob = await canvasToJpeg(canvas, quality);
@@ -94,6 +95,7 @@ async function convertToJpegFile(file) {
   return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
 }
 
+// Chat attachments: HEIC / odd formats → JPEG, reject non-images, cap at 2MB before POST /messages.
 export async function normalizeChatImage(file) {
   if (!file) return null;
 

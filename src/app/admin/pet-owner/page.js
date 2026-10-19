@@ -13,6 +13,7 @@ const STATUS = {
   Banned: { label: "Banned", text: "text-red", dot: "bg-red" },
 };
 
+// Owner directory: GET /api/admin/owners via getAdminOwners. Search is debounced 300ms.
 export default function AdminPetOwnerPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");

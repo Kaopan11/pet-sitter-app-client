@@ -16,6 +16,7 @@ function FindSitterFallback() {
     );
 }
 
+// Suspense: PetSitterList reads useSearchParams for q/petTypes/rating/page.
 export default function FindSitterPage() {
     return (
         <Suspense fallback={<FindSitterFallback />}>

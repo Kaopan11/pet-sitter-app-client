@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import ChatBubble from "./ChatBubble";
 import ChatInput from "./ChatInput";
 
+// Open conversation: header, message list, ChatInput. Empty state until a thread is selected.
 export default function ChatThread({
   conversation,
   messages,
@@ -20,6 +21,7 @@ export default function ChatThread({
     if (!root || !end) return;
 
     const distance = root.scrollHeight - root.scrollTop - root.clientHeight;
+    // Stick to the latest message unless the user has scrolled up.
     if (distance < 160 || messages.length <= 1) {
       root.scrollTop = root.scrollHeight;
     }

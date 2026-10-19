@@ -30,6 +30,7 @@ function tabHref(id, tab) {
   return `/admin/pet-sitter/${id}`;
 }
 
+// Loads GET /api/admin/sitters/:id once, then shares it with Profile/Booking/Reviews tabs.
 export default function AdminPetSitterDetailLayout({ children }) {
   const { id } = useParams();
   const pathname = usePathname(); // href หน้าปัจจุบัน
@@ -64,6 +65,7 @@ export default function AdminPetSitterDetailLayout({ children }) {
   }, [id]);
 
   async function updateStatus(approvalStatus) {
+    // PATCH /api/admin/sitters/:id/status — Rejected also sends rejection_reason.
     setIsSaving(true);
     try {
       const body = { approval_status: approvalStatus };

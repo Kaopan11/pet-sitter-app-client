@@ -1,5 +1,6 @@
 import { formatMessageTime } from "@/utils/formatDateTime";
 
+// One chat row: orange on the right if mine, avatar + white bubble if theirs. Optional imageUrl.
 export default function ChatBubble({ message, isMine, avatarUrl }) {
   const hasText = Boolean(String(message.content ?? "").trim());
   const timeLabel = formatMessageTime(message.sentAt);

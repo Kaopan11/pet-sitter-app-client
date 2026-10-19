@@ -8,6 +8,7 @@ import PasswordInput from "@/components/PasswordInput";
 import { login } from "@/lib/api";
 import { isAdminUser, saveAuth } from "@/lib/auth";
 
+// Admin login: same POST /api/auth/login, but rejects anyone without isAdmin / is_admin.
 export default function AdminLoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");

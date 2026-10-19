@@ -11,6 +11,7 @@ function assertApiUrl() {
   }
 }
 
+// JSON/FormData fetch with Bearer from getToken(). 401 + "unauthorized" clears the stored JWT.
 export async function apiFetch(path, { method = "GET", body } = {}) {
   assertApiUrl();
 
@@ -411,6 +412,7 @@ export async function updatePet(id, formData) {
   });
   return mapPet(json.data);
 }
+// POST /api/conversations — body sends otherUserId and sitterId as the same id.
 export async function createConversation(otherUserId) {
   const json = await apiFetch("/api/conversations", {
     method: "POST",
@@ -420,11 +422,13 @@ export async function createConversation(otherUserId) {
 }
 
 export async function getConversations() {
+  // Inbox rows: id, otherUser, lastMessage, lastSentAt, unreadCount.
   const json = await apiFetch("/api/conversations");
   return json.data ?? [];
 }
 
 export async function getNotifications() {
+  // { items: [{ id, title, body, href, readAt, createdAt }], unreadCount }
   const json = await apiFetch("/api/notifications");
   return json.data ?? { items: [], unreadCount: 0 };
 }
@@ -445,6 +449,7 @@ export async function markAllNotificationsRead() {
 }
 
 export async function getMessages(conversationId) {
+  // Thread for one conversation — used on first open and on SSE "refresh".
   const json = await apiFetch(
     `/api/conversations/${encodeURIComponent(conversationId)}/messages`,
   );
@@ -452,6 +457,7 @@ export async function getMessages(conversationId) {
 }
 
 export async function markConversationRead(conversationId) {
+  // POST /read so unreadCount drops for this user on the other client's next list fetch.
   await apiFetch(
     `/api/conversations/${encodeURIComponent(conversationId)}/read`,
     { method: "POST" },
@@ -459,6 +465,7 @@ export async function markConversationRead(conversationId) {
 }
 
 export async function sendMessage(conversationId, { content = "", imageFile } = {}) {
+  // Multipart: content text + optional image (already passed through normalizeChatImage).
   const formData = new FormData();
   formData.append("content", content);
   if (imageFile) formData.append("image", imageFile);

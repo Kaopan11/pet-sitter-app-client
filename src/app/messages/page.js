@@ -24,6 +24,7 @@ function previewFromSend(text, hasImage) {
   return "";
 }
 
+// Match a temp bubble (id like temp-…) to the real message the server/SSE later returns.
 function isSameOptimistic(pending, incoming) {
   if (!pending?.pending) return false;
   if (pending.replaceWithId && sameId(incoming.id, pending.replaceWithId)) {
@@ -37,6 +38,7 @@ function isSameOptimistic(pending, incoming) {
 }
 
 function upsertMessage(current, incoming) {
+  // Prefer replacing by server id; otherwise swap the matching pending bubble.
   if (current.some((item) => sameId(item.id, incoming.id))) {
     return current.map((item) =>
       sameId(item.id, incoming.id)
@@ -64,6 +66,7 @@ function upsertMessage(current, incoming) {
   return [...current, incoming];
 }
 
+// Keep optimistic sends that the GET hasn't echoed yet so they don't flicker away on refetch.
 function mergeServerMessages(server, current, conversationId) {
   const leftover = current.filter(
     (item) =>
@@ -82,6 +85,7 @@ function MessagesFallback() {
   );
 }
 
+// Shared inbox for owner and sitter. Active thread is ?id=; live updates via useChatRealtime (SSE).
 function MessagesView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,6 +118,7 @@ function MessagesView() {
     );
   }, []);
 
+  // Zero unread locally + tell the navbar badge (chat-unread-cleared) before the POST /read finishes.
   function markConversationSeen(conversationId) {
     if (!conversationId) return;
     let hadUnread = false;
@@ -194,6 +199,7 @@ function MessagesView() {
 
   const handleRealtimeEvent = useCallback(
     (event) => {
+      // SSE payload: {type:"message"|"read"|…, conversationId, message?}
       const currentId = activeIdRef.current;
       const myUserId = currentUserIdRef.current;
       const incoming = event.message;
@@ -219,6 +225,7 @@ function MessagesView() {
         return;
       }
 
+      // refresh / reconnect: reload list + open thread instead of guessing the payload.
       loadConversations().catch(() => {});
 
       if (!currentId) return;
@@ -256,6 +263,7 @@ function MessagesView() {
     setDraft("");
   }
 
+  // Optimistic send: paint a temp bubble, POST FormData, then swap in the server row (or roll back).
   function handleSend({ imageFile } = {}) {
     if (!activeId) return false;
 
@@ -361,6 +369,7 @@ function MessagesView() {
 
 export default function MessagesPage() {
   return (
+    // useSearchParams needs a Suspense boundary in the App Router.
     <Suspense fallback={<MessagesFallback />}>
       <MessagesView />
     </Suspense>

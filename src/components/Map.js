@@ -24,6 +24,7 @@ function isMapAlive(map) {
   return Boolean(container?.parentNode);
 }
 
+// flyTo when the selected pin changes; ResizeObserver so tiles fill the container after layout.
 function MapController({ center, zoom }) {
   const map = useMap();
   const hasMounted = useRef(false);
@@ -71,6 +72,7 @@ function MapController({ center, zoom }) {
   return null;
 }
 
+// Leaflet map (react-leaflet). Used by find-sitter list + sitter detail. SSR is skipped by the parent dynamic() import.
 export default function Map({
   center = [13.7563, 100.5018],
   zoom = 13,

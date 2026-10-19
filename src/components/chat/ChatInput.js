@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { normalizeChatImage } from "@/lib/normalizeChatImage";
 
+// Composer: text + optional photo (normalized in ChatInput) → onSend({ imageFile }).
 export default function ChatInput({ value, onChange, onSend, disabled = false }) {
   const fileInputRef = useRef(null);
   const [imageFile, setImageFile] = useState(null);

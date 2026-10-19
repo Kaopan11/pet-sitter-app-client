@@ -6,6 +6,7 @@ import { getToken } from "@/lib/auth";
 
 const POLL_MS = 20000;
 
+// In-app bell: GET /api/notifications every 20s. Not SSE — the list is title/body/href from the API.
 export function useNotifications(enabled) {
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);

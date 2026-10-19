@@ -26,6 +26,7 @@ const STATUS = {
   Rejected: { label: "Rejected", text: "text-red", dot: "bg-red" },
 };
 
+// Sitter directory: GET /api/admin/sitters?search&status&page. Row click → /admin/pet-sitter/:id.
 export default function AdminPetSitterPage() {
   const router = useRouter();
   const [sitters, setSitters] = useState([]);

@@ -171,6 +171,7 @@ function IconButton({
   );
 }
 
+// Site header: guest CTAs vs logged-in bell/chat/avatar. Syncs JWT user from storage + GET /api/users/me.
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();

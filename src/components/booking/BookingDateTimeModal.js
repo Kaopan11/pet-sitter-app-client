@@ -92,6 +92,7 @@ export function TimeDropdown({ name, value, open, onToggle, onSelect, isOptionDi
  * (PetSitterDetail) and Booking History's "Change Booking Date" flow,
  * so both stay visually and behaviorally identical.
  */
+// Pick start/end date+time. Blocks slots from getSitterAvailability and requires a start ≥ 3 hours from now.
 export default function BookingDateTimeModal({
   startDate,
   endDate,

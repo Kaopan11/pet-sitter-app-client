@@ -37,6 +37,7 @@ function Stars({ count }) {
   );
 }
 
+// Reviews tab: GET /api/admin/sitters/:id/reviews. Approve = PATCH, delete = DELETE.
 export default function AdminPetSitterReviewsPage() {
   const { id } = useParams();
   const [reviews, setReviews] = useState([]);

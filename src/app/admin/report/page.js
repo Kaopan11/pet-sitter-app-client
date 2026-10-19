@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { getReports } from "@/lib/api";
 import Pagination from "@/components/Pagination";
 
+// Report list: GET /api/reports once, then filter/paginate in the browser.
 export default function AdminReportPage() {
   const [search, setSearch] = useState("");
   const [reports, setReports] = useState([]);

@@ -8,6 +8,7 @@ import jwtInterceptor from "@/utils/jwtInterceptor";
 
 jwtInterceptor();
 
+// Admin shell: jwtInterceptor + isAdminUser gate. Everyone else is sent to / or /login/admin.
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);

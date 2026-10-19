@@ -214,6 +214,7 @@ export default function BookingFlow({
   }
 
   async function handleConfirmYes() {
+    // Cash: POST /api/bookings then Thank You. Card: same POST, then StripePaymentModal with clientSecret.
     if (submitting || !canConfirm) return;
 
     if (profileIncomplete) {

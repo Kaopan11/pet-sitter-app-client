@@ -22,6 +22,7 @@ function formatWhen(value) {
   return sameDay ? formatMessageTime(value) : formatDate(value);
 }
 
+// Navbar/sitter bell. Polls via useNotifications; click an item → PATCH /read then router.push(item.href).
 export default function NotificationBell({
   enabled,
   variant = "circle",
@@ -49,6 +50,7 @@ export default function NotificationBell({
   }, [open]);
 
   async function handleMarkAll() {
+    // PATCH /api/notifications/read-all — response is the refreshed list.
     try {
       const data = await markAllNotificationsRead();
       setItems(data.items ?? []);
@@ -66,6 +68,7 @@ export default function NotificationBell({
         setItems(data.items ?? []);
         setUnreadCount(data.unreadCount ?? 0);
       } catch {
+        // Optimistic fallback so the unread highlight still clears if PATCH fails.
         setUnreadCount((count) => Math.max(0, count - 1));
         setItems((list) =>
           list.map((row) =>

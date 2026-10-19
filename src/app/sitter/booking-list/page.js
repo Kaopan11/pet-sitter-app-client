@@ -18,6 +18,7 @@ import Pagination from "@/components/Pagination";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Maps API status keys → label + color for the table badge.
 const STATUS = {
   waiting_confirm: { label: "Waiting for confirm", text: "text-pink", dot: "bg-pink" },
   waiting_service: { label: "Waiting for service", text: "text-yellow", dot: "bg-yellow" },
@@ -26,6 +27,7 @@ const STATUS = {
   cancelled: { label: "Canceled", text: "text-red", dot: "bg-red" },
 };
 
+// Sitter inbox of jobs: GET /api/sitters/bookings?status&search&page. Row click → /sitter/booking-list/:id.
 export default function BookingListPage() {
   const router = useRouter();
   const [bookingData, setBookingData] = useState([]);

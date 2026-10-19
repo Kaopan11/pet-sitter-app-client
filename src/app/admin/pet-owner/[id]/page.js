@@ -45,6 +45,7 @@ function Avatar({ src, alt }) {
   return <Image src={src} alt={alt} fill unoptimized className="object-cover" />;
 }
 
+// Owner detail: Profile / Pets / Reviews. Ban = PATCH /ban; pet hide = PATCH .../pets/:id/suspend.
 export default function AdminPetOwnerDetailPage() {
   const { id } = useParams();
   const [owner, setOwner] = useState(null);

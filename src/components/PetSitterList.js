@@ -12,6 +12,7 @@ import { getSitters } from "@/lib/api";
 import { getSitterCoords } from "@/lib/sitterLocation";
 
 const Map = dynamic(() => import("@/components/Map"), {
+    // Leaflet needs window — don't SSR the map.
     ssr: false,
     loading: () => (
         <div className="flex h-full w-full animate-pulse items-center justify-center bg-gray-100 text-gray-400 font-medium">
@@ -69,6 +70,7 @@ function RatingStars({ count }) {
     );
 }
 
+// Search results: GET /api/sitters from URL query. List view paginates; map view pulls up to MAP_LIMIT pins.
 export default function PetSitterList() {
     const router = useRouter();
     const searchParams = useSearchParams();

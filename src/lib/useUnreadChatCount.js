@@ -9,6 +9,7 @@ function countUnreadPeople(conversations) {
   return conversations.filter((item) => (item.unreadCount ?? 0) > 0).length;
 }
 
+// Don't bump the navbar badge if that thread is already open.
 function isViewingConversation(conversationId) {
   if (typeof window === "undefined" || conversationId == null) return false;
   const { pathname, search } = window.location;
@@ -17,6 +18,7 @@ function isViewingConversation(conversationId) {
   return openId != null && String(openId) === String(conversationId);
 }
 
+// Navbar/sitter-header badge: how many conversations have unreadCount > 0. Refreshes on SSE + GET /api/conversations.
 export function useUnreadChatCount(enabled) {
   const [count, setCount] = useState(0);
 
@@ -26,6 +28,7 @@ export function useUnreadChatCount(enabled) {
       return;
     }
 
+    // Own outbound messages shouldn't increment the badge.
     if (event?.type === "message" && event.message) {
       const me = getUser()?.id;
       if (me && String(event.message.senderId) === String(me)) {
@@ -53,6 +56,7 @@ export function useUnreadChatCount(enabled) {
       setCount((value) => Math.max(0, value - 1));
     }
 
+    // Messages page fires this after marking a thread seen, so the badge drops without waiting for a refetch.
     window.addEventListener("chat-unread-cleared", handleUnreadCleared);
     return () => {
       window.removeEventListener("chat-unread-cleared", handleUnreadCleared);

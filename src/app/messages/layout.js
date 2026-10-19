@@ -1,5 +1,6 @@
 import Navbar from "../../components/Navbar";
 
+// Full-height inbox: hide the desktop Navbar on mobile so the thread can fill the screen.
 export default function MessagesLayout({ children }) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-white">

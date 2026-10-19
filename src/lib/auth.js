@@ -10,6 +10,7 @@ function notifyAuthChanged() {
   }
 }
 
+// Decode JWT payload.exp in the browser so stale tokens never get sent.
 function isTokenExpired(token) {
   if (!token || typeof token !== "string") return true;
 
@@ -52,6 +53,7 @@ function normalizeUser(user) {
 }
 
 export function saveAuth({ token, user }, persist = true) {
+  // Remember me → localStorage; otherwise sessionStorage. Always wipe the other so we don't double-store.
   const storage = persist ? localStorage : sessionStorage;
   const other = persist ? sessionStorage : localStorage;
 

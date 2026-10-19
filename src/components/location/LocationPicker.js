@@ -72,6 +72,7 @@ const MapWithPicker = dynamic(
   }
 );
 
+// Sitter/admin address picker: Nominatim geocode on text change, draggable pin writes lat/lng back.
 export default function LocationPicker({
   address = {},
   onChange = () => {},

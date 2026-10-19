@@ -41,6 +41,7 @@ function PetCheckbox({ checked, disabled }) {
   );
 }
 
+// Step 1: pick pets that match this sitter's pet types. Eligible ids flow into POST /api/bookings.
 export default function YourPetStep({
   pets,
   sitterPetTypes,

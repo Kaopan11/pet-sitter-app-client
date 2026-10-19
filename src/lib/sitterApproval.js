@@ -10,6 +10,7 @@ function hasFullProfileData(profile) {
   );
 }
 
+// Admin/sitter UI: full address/gallery is hidden until the application is far enough along (or Rejected with leftover data).
 export function isFullProfileUnlocked(status, profile) {
   if (["Verified", "Waiting for approve", "Approved"].includes(status)) {
     return true;

@@ -131,6 +131,7 @@ function bookingSegments(booking, weekDays) {
   });
 }
 
+// Week view of GET /api/sitters/bookings for the visible range. Click an event → booking detail.
 export default function CalendarPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [search, setSearch] = useState("");

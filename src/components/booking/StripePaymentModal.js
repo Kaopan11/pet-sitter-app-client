@@ -11,6 +11,7 @@ import Icon from "@/components/Icon";
 import { getStripe } from "@/lib/stripe";
 import { isStripePaymentAuthorized } from "@/lib/stripePayment";
 
+// Payment Element → stripe.confirmPayment. Success = requires_capture | succeeded | processing.
 function StripeCheckoutForm({ onSuccess, onCancel }) {
   const stripe = useStripe();
   const elements = useElements();

@@ -32,6 +32,7 @@ function menuClassName(isActive) {
   }`;
 }
 
+// Admin nav: Pet Owner / Pet Sitter / Report. Logout clears JWT and returns to /login/admin.
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const router = useRouter();

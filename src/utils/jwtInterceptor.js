@@ -3,6 +3,7 @@ import { clearAuth, getToken } from "@/lib/auth";
 
 let attached = false;
 
+// Axios: attach Bearer on calls to NEXT_PUBLIC_API_URL; 401 Unauthorized → clearAuth + /login.
 function jwtInterceptor() {
   // attached: กันเรียกซ้ำในแท็บเดียวกัน
   // window undefined: ยังอยู่ฝั่งเซิร์ฟเวอร์ อย่าแปะ interceptor เพราะยังไม่มี window

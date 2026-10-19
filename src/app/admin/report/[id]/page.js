@@ -15,6 +15,7 @@ const DETAIL_FIELDS = [
   ["Date Submitted", "date"],
 ];
 
+// One report: GET /api/reports/:id. Resolve/cancel → PATCH .../status then back to the list.
 export default function AdminReportDetailPage() {
   const { id } = useParams();
   const router = useRouter();

@@ -145,6 +145,7 @@ function BookingDetailModal({ booking, onClose }) {
   );
 }
 
+// Booking tab: GET /api/admin/sitters/:id/bookings. Click a row → GET .../bookings/:bookingId modal.
 export default function AdminPetSitterBookingPage() {
   const { id } = useParams();
   const [bookingData, setBookingData] = useState([]);
